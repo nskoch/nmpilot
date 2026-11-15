@@ -13,7 +13,8 @@ nm_wasserstein(
   ref = 1,
   n_perm = 10000L,
   seed = 2025L,
-  max_levels = 5L
+  max_levels = 5L,
+  continuous = c("extremes", "pairwise")
 )
 
 \method{print}{nm_wasserstein}(x, ...)
@@ -45,6 +46,14 @@ order of the other tests. The user's random state is restored.}
 \item{max_levels}{A numeric covariate with at most this many distinct
 values is treated as categorical (default 5).}
 
+\item{continuous}{How continuous covariates are split into quartiles
+(defined once on the subjects of the covariate data): \code{"extremes"}
+(default) compares the highest quartile Q4 with the lowest Q1;
+\code{"pairwise"} compares every pair of quartiles (6 comparisons), as in the
+pairwise analysis of the original article. Adjusted p-values
+(\code{p_W_adj}, \code{p_t_adj}) use the Bonferroni correction over the
+comparisons of the same covariate within a run.}
+
 \item{x}{An \code{nm_wasserstein} object.}
 
 \item{...}{Ignored.}
@@ -54,7 +63,9 @@ An object of class \code{nm_wasserstein}, a list with:
 \describe{
 \item{\code{tests}}{one row per run x covariate comparison: \code{run},
 \code{covariate}, \code{type}, \code{comparison}, \code{n_1}, \code{n_0}, \code{W}, \code{p_W},
-\code{t_stat}, \code{p_t}.}
+\code{t_stat}, \code{p_t}, and the Bonferroni-adjusted \code{p_W_adj} and \code{p_t_adj}
+(equal to \code{p_W} and \code{p_t} when a covariate gives a single
+comparison).}
 \item{\code{r2w}}{one row per run: \code{run}, \code{eta}, \code{n}, \code{W_to_zero}, \code{R2W}
 (\code{1 - W_to_zero / W_to_zero[ref]}), \code{omega} and \code{shrinkage_pct}
 (eta-shrinkage \code{1 - sd(EBE)/sqrt(omega)}, when the \code{.ext} is found).
@@ -87,6 +98,11 @@ w <- nm_wasserstein(
 w                      # tests and R2W
 plot(w)                # ECDF of the ETA by group, per run and covariate
 plot(w, type = "r2w")  # Wasserstein-based R2
+
+# All pairs of CLCR quartiles, with Bonferroni-adjusted p-values
+wp <- nm_wasserstein(c(BASE = "base.reg", FINAL = "final.reg"),
+                     covariates = "CLCR", eta = "CL", continuous = "pairwise")
+wp$tests
 }
 }
 \references{

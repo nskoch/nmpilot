@@ -164,3 +164,35 @@ test_that("nm_identify_directory returns one row per control stream", {
   expect_equal(nrow(res), 2L)
   expect_setequal(res$PK_parameter, c("CL", "V"))
 })
+
+test_that("a THETA under a condition whose other branch is a constant is a covariate effect", {
+  f <- write_ctl(
+    "$INPUT ID TIME AMT DV CLCR CT01",
+    "$THETA (0,4)", " (0,20)", " (0,0.7)", " (0,0.1)",
+    "$OMEGA 0.4 0.4",
+    "$PK",
+    "IF (CT01.EQ.1) THEN",
+    "  FALL = THETA(3)",
+    "ELSE",
+    "  FALL = 1",
+    "ENDIF",
+    "  CL = ((THETA(1)*FALL)+(THETA(4)*(CLCR/89)))*(EXP(ETA(1)))",
+    "  V1 = THETA(2)*FALL*(EXP(ETA(2)))")
+  x <- nm_identify_parameters(f, likely_pk_only = FALSE)
+  expect_equal(theta_role(x, 1, "CL"), "typical_value")
+  expect_equal(theta_role(x, 3, "CL"), "covariate_effect")   # FALL = THETA(3) vs 1
+  expect_equal(theta_role(x, 4, "CL"), "covariate_effect")   # additive THETA(4)*CLCR/89
+  expect_equal(theta_role(x, 2, "V1"), "typical_value")
+})
+
+test_that("a THETA multiplying a covariate-dependent helper stays a covariate effect", {
+  f <- write_ctl(
+    "$INPUT ID TIME AMT DV C_RES",
+    "$THETA (0,0.1)", " (0.057) FIX", " (0.9) FIX", "$OMEGA 0.1",
+    "$PK",
+    "  RATIO = C_RES/(THETA(2)+C_RES)",
+    "  CL = THETA(1)*(1-THETA(3)*RATIO)*EXP(ETA(1))")
+  x <- nm_identify_parameters(f, likely_pk_only = FALSE)
+  expect_equal(theta_role(x, 1, "CL"), "typical_value")
+  expect_equal(theta_role(x, 3, "CL"), "covariate_effect")
+})

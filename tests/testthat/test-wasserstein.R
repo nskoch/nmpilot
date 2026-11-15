@@ -126,3 +126,24 @@ test_that("nm_wasserstein checks its inputs", {
   expect_error(nm_wasserstein(file.path(s$root, "none"), "CT01"), "Run not found")
   expect_error(nm_wasserstein(runs, "CT01", ref = "X", n_perm = 10), "ref")
 })
+
+test_that("pairwise quartile comparisons with Bonferroni adjustment", {
+  s <- wass_study()
+  runs <- file.path(s$root, c("base.reg", "final.reg"))
+  w <- nm_wasserstein(runs, covariates = c("CLCR", "CT01"), eta = "CL",
+                      continuous = "pairwise", n_perm = 200)
+  cl <- w$tests[w$tests$covariate == "CLCR" & w$tests$run == "base", ]
+  expect_equal(cl$comparison, c("Q2 vs Q1", "Q3 vs Q1", "Q4 vs Q1",
+                                "Q3 vs Q2", "Q4 vs Q2", "Q4 vs Q3"))
+  expect_equal(cl$p_W_adj, pmin(1, cl$p_W * 6))
+  expect_equal(cl$p_t_adj, pmin(1, cl$p_t * 6))
+  ct <- w$tests[w$tests$covariate == "CT01", ]
+  expect_equal(ct$p_W_adj, ct$p_W)                # single comparison: no adjustment
+  # Q4 vs Q1 identical to the default analysis
+  q <- dplyr::ntile(s$cov$CLCR, 4)
+  expect_equal(cl$W[cl$comparison == "Q4 vs Q1"],
+               w1_quantile(s$eta_base[q == 4], s$eta_base[q == 1]), tolerance = 1e-4)
+  expect_s3_class(plot(w, covariate = "CLCR"), "ggplot")
+  expect_output(print(w), "Bonferroni")
+  expect_error(nm_wasserstein(runs, "CLCR", continuous = "deciles", n_perm = 10))
+})

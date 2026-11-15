@@ -160,10 +160,11 @@
 
 # Two groups of subject IDs for one covariate.
 # Categorical (non-numeric, or at most `max_levels` distinct values): every
-# level is compared with the reference (first) level. Continuous: the lowest
-# quartile Q1 is compared with the highest quartile Q4 (quartiles defined once
-# on the subjects of the covariate data).
-.nm_w_groups <- function(cov, covariate, max_levels) {
+# level is compared with the reference (first) level. Continuous: quartiles
+# are defined once on the subjects of the covariate data; `continuous =
+# "extremes"` compares Q4 with Q1, `"pairwise"` compares every pair of
+# quartiles (6 comparisons).
+.nm_w_groups <- function(cov, covariate, max_levels, continuous = "extremes") {
   v <- cov[[covariate]]
   ok <- !is.na(v)
   ids <- cov$ID[ok]; v <- v[ok]
@@ -179,9 +180,15 @@
       label_1 = paste0(covariate, " = ", l), label_0 = paste0(covariate, " = ", lv[1])))
   } else {
     q <- dplyr::ntile(num, 4)
-    list(list(covariate = covariate, type = "continuous", comparison = "Q4 vs Q1",
-              group_1 = ids[q == 4], group_0 = ids[q == 1],
-              label_1 = "Q4 (high)", label_0 = "Q1 (low)"))
+    qlab <- c("Q1 (low)", "Q2", "Q3", "Q4 (high)")
+    pairs <- if (continuous == "pairwise") utils::combn(4, 2) else matrix(c(1, 4), 2)
+    lapply(seq_len(ncol(pairs)), function(j) {
+      a <- pairs[1, j]; b <- pairs[2, j]
+      list(covariate = covariate, type = "continuous",
+           comparison = paste0("Q", b, " vs Q", a),
+           group_1 = ids[q == b], group_0 = ids[q == a],
+           label_1 = qlab[b], label_0 = qlab[a])
+    })
   }
 }
 
@@ -218,12 +225,21 @@
 #'   order of the other tests. The user's random state is restored.
 #' @param max_levels A numeric covariate with at most this many distinct
 #'   values is treated as categorical (default 5).
+#' @param continuous How continuous covariates are split into quartiles
+#'   (defined once on the subjects of the covariate data): `"extremes"`
+#'   (default) compares the highest quartile Q4 with the lowest Q1;
+#'   `"pairwise"` compares every pair of quartiles (6 comparisons), as in the
+#'   pairwise analysis of the original article. Adjusted p-values
+#'   (`p_W_adj`, `p_t_adj`) use the Bonferroni correction over the
+#'   comparisons of the same covariate within a run.
 #'
 #' @return An object of class `nm_wasserstein`, a list with:
 #'   \describe{
 #'     \item{`tests`}{one row per run x covariate comparison: `run`,
 #'       `covariate`, `type`, `comparison`, `n_1`, `n_0`, `W`, `p_W`,
-#'       `t_stat`, `p_t`.}
+#'       `t_stat`, `p_t`, and the Bonferroni-adjusted `p_W_adj` and `p_t_adj`
+#'       (equal to `p_W` and `p_t` when a covariate gives a single
+#'       comparison).}
 #'     \item{`r2w`}{one row per run: `run`, `eta`, `n`, `W_to_zero`, `R2W`
 #'       (`1 - W_to_zero / W_to_zero[ref]`), `omega` and `shrinkage_pct`
 #'       (eta-shrinkage `1 - sd(EBE)/sqrt(omega)`, when the `.ext` is found).
@@ -250,11 +266,18 @@
 #' w                      # tests and R2W
 #' plot(w)                # ECDF of the ETA by group, per run and covariate
 #' plot(w, type = "r2w")  # Wasserstein-based R2
+#'
+#' # All pairs of CLCR quartiles, with Bonferroni-adjusted p-values
+#' wp <- nm_wasserstein(c(BASE = "base.reg", FINAL = "final.reg"),
+#'                      covariates = "CLCR", eta = "CL", continuous = "pairwise")
+#' wp$tests
 #' }
 #' @seealso [nm_identify_parameters()], [nm_compare()]
 #' @export
 nm_wasserstein <- function(runs, covariates, eta = "CL", data = NULL, ref = 1,
-                           n_perm = 10000L, seed = 2025L, max_levels = 5L) {
+                           n_perm = 10000L, seed = 2025L, max_levels = 5L,
+                           continuous = c("extremes", "pairwise")) {
+  continuous <- match.arg(continuous)
   if (!length(runs)) stop("`runs` is empty.", call. = FALSE)
   if (!length(covariates)) stop("`covariates` is empty.", call. = FALSE)
   n_perm <- as.integer(n_perm)
@@ -271,7 +294,7 @@ nm_wasserstein <- function(runs, covariates, eta = "CL", data = NULL, ref = 1,
   miss <- setdiff(covariates, names(cov))
   if (length(miss)) stop("Covariate(s) not found in the data: ", paste(miss, collapse = ", "),
                          call. = FALSE)
-  groups <- unlist(lapply(covariates, function(cv) .nm_w_groups(cov, cv, max_levels)),
+  groups <- unlist(lapply(covariates, function(cv) .nm_w_groups(cov, cv, max_levels, continuous)),
                    recursive = FALSE)
   if (!length(groups)) stop("No covariate defines two groups of subjects.", call. = FALSE)
 
@@ -322,6 +345,10 @@ nm_wasserstein <- function(runs, covariates, eta = "CL", data = NULL, ref = 1,
                  group = gr$label_0, ETA = x0, stringsAsFactors = FALSE))
   }
   tests <- do.call(rbind, tests); rownames(tests) <- NULL
+  # Bonferroni over the comparisons of one covariate within one run.
+  m <- stats::ave(seq_len(nrow(tests)), tests$run, tests$covariate, FUN = length)
+  tests$p_W_adj <- pmin(1, tests$p_W * m)
+  tests$p_t_adj <- pmin(1, tests$p_t * m)
   long <- do.call(rbind, long); rownames(long) <- NULL
   long$run <- factor(long$run, levels = labels)
 
@@ -329,7 +356,8 @@ nm_wasserstein <- function(runs, covariates, eta = "CL", data = NULL, ref = 1,
     tests = tests, r2w = r2w, data = long,
     settings = list(runs = stats::setNames(unname(unlist(runs)), labels),
                     covariates = covariates, eta = eta, ref = labels[ref_i],
-                    n_perm = n_perm, seed = seed, max_levels = max_levels)),
+                    n_perm = n_perm, seed = seed, max_levels = max_levels,
+                    continuous = continuous)),
     class = "nm_wasserstein")
 }
 
@@ -349,8 +377,12 @@ print.nm_wasserstein <- function(x, ...) {
       x$settings$ref, "\n\n", sep = "")
   t <- x$tests
   t$W <- signif(t$W, 3); t$t_stat <- round(t$t_stat, 2)
+  adj <- any(t$p_W_adj != t$p_W, na.rm = TRUE)
   t$p_W <- .nm_w_fmt_p(t$p_W); t$p_t <- .nm_w_fmt_p(t$p_t)
+  t$p_W_adj <- .nm_w_fmt_p(t$p_W_adj); t$p_t_adj <- .nm_w_fmt_p(t$p_t_adj)
+  if (!adj) t$p_W_adj <- t$p_t_adj <- NULL
   print(t, row.names = FALSE)
+  if (adj) cat("p_W_adj, p_t_adj: Bonferroni over the comparisons of each covariate.\n")
   cat("\nWasserstein-based R2 (R2W = 1 - W/W_ref, W = distance of the ETA to 0):\n")
   r <- x$r2w
   r$W_to_zero <- signif(r$W_to_zero, 3); r$R2W <- round(r$R2W, 3)
@@ -393,9 +425,13 @@ plot.nm_wasserstein <- function(x, type = c("ecdf", "r2w"), covariate = NULL, ..
   }
   d$panel <- paste0(d$covariate, " (", d$comparison, ")")
   tt$panel <- paste0(tt$covariate, " (", tt$comparison, ")")
+  lev <- unique(tt$panel)                  # panels in the order of the tests
+  d$panel <- factor(d$panel, levels = lev); tt$panel <- factor(tt$panel, levels = lev)
   plab <- function(nm, p) ifelse(!is.na(p) & p < 0.001, paste0(nm, " < 0.001"),
                                  paste0(nm, " = ", .nm_w_fmt_p(p)))
   tt$label <- paste0("W = ", signif(tt$W, 3), ", ", plab("p W", tt$p_W),
+                     ifelse(!is.na(tt$p_W_adj) & tt$p_W_adj != tt$p_W,
+                            paste0(" (adj. ", .nm_w_fmt_p(tt$p_W_adj), ")"), ""),
                      "\nt = ", round(tt$t_stat, 2), ", ", plab("p t", tt$p_t))
   tt$run <- factor(tt$run, levels = levels(d$run))
   ggplot2::ggplot(d, ggplot2::aes(x = .data$ETA, colour = .data$group)) +

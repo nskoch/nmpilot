@@ -762,6 +762,25 @@
   FALSE
 }
 
+# Variables reached from helper variables through the right-hand sides of
+# their definitions only (IF conditions are not followed). Recursive; the
+# pooled definitions of pk_resolved are used.
+.nm_ip_rhs_vars <- function(vars, pk_resolved, seen = character()) {
+  reserved <- c("THETA", "ETA", "ERR", "EPS", "EXP", "LOG", "LOG10", "SQRT",
+                "ABS", "MIN", "MAX")
+  out <- character()
+  for (v in setdiff(vars, seen)) {
+    rr <- pk_resolved[pk_resolved$lhs == v, , drop = FALSE]
+    if (!nrow(rr)) next
+    rhs <- paste(rr$rhs, collapse = " ")
+    w <- toupper(regmatches(rhs, gregexpr("\\b[A-Za-z][A-Za-z0-9_]*\\b", rhs, perl = TRUE))[[1]])
+    w <- setdiff(unique(w), reserved)
+    seen <- c(seen, v)
+    out <- c(out, w, .nm_ip_rhs_vars(intersect(w, pk_resolved$lhs), pk_resolved, seen))
+  }
+  unique(out)
+}
+
 # A THETA is a linear covariate effect when it is multiplied by a covariate
 # inside a sum, outside any EXP(). The sum is the innermost parenthesised
 # group (or the whole expression) containing the THETA, and it must have at
@@ -782,42 +801,49 @@
                 "NE", "GT", "GE", "LT", "LE")
 
   for (h in hits) {
-    # Innermost open parenthesis enclosing position h.
+    # Open parentheses enclosing position h, innermost last.
     stack <- integer()
     for (p in seq_len(h - 1L)) {
       if (ch[p] == "(") stack <- c(stack, p)
       if (ch[p] == ")" && length(stack)) stack <- stack[-length(stack)]
     }
-    if (length(stack)) {
-      op <- stack[length(stack)]
-      depth <- 0L; cl <- n
-      for (p in op:n) {
-        if (ch[p] == "(") depth <- depth + 1L
-        if (ch[p] == ")") { depth <- depth - 1L; if (depth == 0L) { cl <- p; break } }
+    # The sum is the innermost enclosing group with at least two additive
+    # terms: a group holding a single product, e.g. (THETA(8)*(CLCR/89)) in
+    # ((THETA(1)*FALL)+(THETA(8)*(CLCR/89))), is passed over. Stop at EXP(),
+    # which is handled elsewhere.
+    found <- FALSE
+    for (lev in c(rev(seq_along(stack)), 0L)) {
+      if (lev > 0L) {
+        op <- stack[lev]
+        depth <- 0L; cl <- n
+        for (p in op:n) {
+          if (ch[p] == "(") depth <- depth + 1L
+          if (ch[p] == ")") { depth <- depth - 1L; if (depth == 0L) { cl <- p; break } }
+        }
+        before <- if (op > 1L) paste(ch[1:(op - 1L)], collapse = "") else ""
+        if (grepl("EXP\\s*$", before, ignore.case = TRUE)) break
+        g_start <- op + 1L; g_end <- cl - 1L
+      } else {
+        g_start <- 1L; g_end <- n
       }
-      before <- if (op > 1L) paste(ch[1:(op - 1L)], collapse = "") else ""
-      if (grepl("EXP\\s*$", before, ignore.case = TRUE)) next  # handled elsewhere
-      g_start <- op + 1L; g_end <- cl - 1L
-    } else {
-      g_start <- 1L; g_end <- n
-    }
-    if (g_end < g_start) next
+      if (g_end < g_start) next
 
-    # Split the group into top-level additive terms, keeping their positions.
-    depth <- 0L; starts <- g_start; ends <- integer()
-    for (p in g_start:g_end) {
-      if (ch[p] == "(") depth <- depth + 1L
-      if (ch[p] == ")") depth <- depth - 1L
-      is_exp_sign <- p > 2L && toupper(ch[p - 1L]) == "E" && grepl("[0-9.]", ch[p - 2L])
-      if (depth == 0L && ch[p] %in% c("+", "-") && !is_exp_sign && p > g_start) {
-        ends <- c(ends, p - 1L); starts <- c(starts, p + 1L)
+      # Split the group into top-level additive terms, keeping their positions.
+      depth <- 0L; starts <- g_start; ends <- integer()
+      for (p in g_start:g_end) {
+        if (ch[p] == "(") depth <- depth + 1L
+        if (ch[p] == ")") depth <- depth - 1L
+        is_exp_sign <- p > 2L && toupper(ch[p - 1L]) == "E" && grepl("[0-9.]", ch[p - 2L])
+        if (depth == 0L && ch[p] %in% c("+", "-") && !is_exp_sign && p > g_start) {
+          ends <- c(ends, p - 1L); starts <- c(starts, p + 1L)
+        }
       }
+      ends <- c(ends, g_end)
+      terms <- mapply(function(a, b) if (b >= a) paste(ch[a:b], collapse = "") else "",
+                      starts, ends)
+      if (sum(nzchar(trimws(terms))) >= 2L) { found <- TRUE; break }
     }
-    ends <- c(ends, g_end)
-    terms <- mapply(function(a, b) if (b >= a) paste(ch[a:b], collapse = "") else "",
-                    starts, ends)
-    terms_ok <- nzchar(trimws(terms))
-    if (sum(terms_ok) < 2L) next
+    if (!found) next
 
     k <- which(starts <= h & ends >= h)[1]
     if (is.na(k)) next
@@ -828,11 +854,13 @@
                                            perl = TRUE))[[1]])
     vars <- setdiff(vars, reserved)
     if (!length(vars)) next
-    expanded <- vars
-    for (v in intersect(vars, pk_resolved$lhs)) {
-      rr <- pk_resolved[pk_resolved$lhs == v, , drop = FALSE]
-      expanded <- c(expanded, .nm_ip_split_vars(rr$variables_all[1]))
-    }
+    # Helper variables are followed through the variables of their
+    # right-hand sides only, not through the conditions of IF blocks: in
+    # THETA(1)*FALL with IF(CT01.EQ.1) FALL = THETA(7) ELSE FALL = 1, THETA(1)
+    # is a typical value (the CT01 effect is THETA(7), found by the
+    # conditional rule), whereas in THETA(6)*RATIO with
+    # RATIO = C_RES/(THETA(4)+C_RES), THETA(6) is a covariate effect.
+    expanded <- c(vars, .nm_ip_rhs_vars(intersect(vars, pk_resolved$lhs), pk_resolved))
     terminal <- setdiff(unique(expanded), pk_defs)
     if (length(terminal) && any(vapply(terminal, is_cov, logical(1)))) return(TRUE)
   }
@@ -939,6 +967,9 @@
   #   IF(SEX.EQ.1) THEN / CL = THETA(1) / ELSE / CL = THETA(2) / ENDIF
   #                                             -> THETA(1) reference (typical),
   #                                                THETA(2) covariate
+  #   IF(CT01.EQ.1) THEN / FALL = THETA(7) / ELSE / FALL = 1 / ENDIF
+  #                                             -> THETA(7) covariate (the
+  #                                                constant branch is the reference)
   if ("conditional" %in% names(ctx) && all(ctx$conditional)) {
     for (q in seq_len(nrow(ctx))) {
       cv <- .nm_ip_split_vars(ctx$condition_vars[q])
@@ -951,7 +982,11 @@
       same_lhs <- pk$lhs == ctx$lhs[q]
       has_unconditional <- any(same_lhs & !pk$conditional)
       is_first_definition <- ctx$line_order[q] == min(pk$line_order[same_lhs])
-      not_reference <- has_unconditional || !is_first_definition
+      # Another branch assigning a plain constant (no THETA, no variable) is
+      # the reference: IF(CT01.EQ.1) THEN / FALL = THETA(7) / ELSE / FALL = 1
+      constant_branch <- any(same_lhs & pk$line_order != ctx$line_order[q] &
+                               grepl("^\\s*[-+]?[0-9.]+([EeDd][-+]?[0-9]+)?\\s*$", pk$rhs))
+      not_reference <- has_unconditional || !is_first_definition || constant_branch
       if (not_reference && length(terminal) &&
           any(vapply(terminal, is_cov, logical(1))))
         return("covariate_effect")
