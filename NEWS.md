@@ -1,4 +1,4 @@
-# nmtools (development version)
+# nmtools 0.2.2
 
 ## Breaking changes
 
