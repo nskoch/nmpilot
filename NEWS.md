@@ -1,3 +1,16 @@
+# nmtools 0.2.1
+
+* `nm_wasserstein()`: new argument `continuous = "pairwise"` to compare every
+  pair of quartiles of a continuous covariate (6 comparisons), as in the
+  pairwise analysis of the original article; Bonferroni-adjusted p-values
+  `p_W_adj` and `p_t_adj` are added to the results. The default
+  (`"extremes"`, Q4 vs Q1) is unchanged.
+* `nm_identify_parameters()`: a THETA assigned under an IF condition whose
+  other branch is a plain constant (e.g. `IF (CT01.EQ.1) FALL = THETA(7)`,
+  `ELSE FALL = 1`) is now a covariate effect; a covariate term added inside a
+  sum written with extra parentheses (e.g.
+  `((THETA(1)*FALL) + (THETA(8)*(CLCR/89)))`) is now a covariate effect.
+
 # nmtools 0.2.0
 
 * New `nm_wasserstein()`: distribution-based covariate assessment with the
