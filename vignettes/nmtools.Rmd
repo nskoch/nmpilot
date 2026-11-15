@@ -12,7 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height
 ```
 
 This vignette walks through a small popPK analysis with **nmtools**, from the
-data set to the comparison of two models. NONMEM is not needed to read it:
+data set and a first control stream to the comparison of two models. NONMEM is not needed to read it:
 the package ships an example project whose NONMEM runs have already been
 made. The chunks that call NONMEM are shown but not run.
 
@@ -46,7 +46,44 @@ nm_summary(dat$data)
 nm_plot_dv(dat$data, scales = "log", verbose = FALSE)
 ```
 
-## 2. Running NONMEM
+## 2. Writing a control stream
+
+`nm_write_ctl()` writes a first control stream from the columns of the data
+set: here a one-compartment model with first-order absorption, as in
+`run1`, with a combined error model. `$INPUT` follows the column order of
+the file, the `#` of `#ID` becomes the `IGNORE` character, and the
+covariates are written in a `cotab` table.
+
+```{r write-ctl}
+ctl <- nm_write_ctl(data = "../example_data.csv",
+                    input = file.path(ex, "example_data.csv"),
+                    error = "combined", theta_init = c(CL = 4, V = 40),
+                    covariates = c("WT", "GENO"))
+ctl
+```
+
+`nm_ctl_check()` looks for inconsistencies that can be seen without NM-TRAN,
+such as a THETA, ETA or EPS used without a declaration. It also works on a
+control stream written by hand:
+
+```{r check-ctl}
+nm_ctl_check(ctl)
+nm_ctl_check(file.path(ex, "run1.ctl"))
+```
+
+Three functions transform a control stream: `nm_ctl_mu()` (MU referencing,
+for the EM and Bayesian methods), `nm_ctl_iov()` (inter-occasion
+variability) and `nm_ctl_m3()` (M3 method for data below the limit of
+quantification). With `reference`, `nm_ctl_check()` shows what changed:
+
+```{r mu-ctl}
+mu <- nm_ctl_mu(ctl)
+nm_ctl_check(mu, reference = ctl)
+```
+
+Use `file = "run3.ctl"` to write the result to disk.
+
+## 3. Running NONMEM
 
 `nm_run()` calls the `nmfe` launcher directly (no PsN, no Wings for NONMEM).
 By default each run gets its own `<run>.reg` subdirectory, as in the example
@@ -64,7 +101,7 @@ log <- nm_run(
 )
 ```
 
-## 3. Results of all the runs
+## 4. Results of all the runs
 
 `nm_extract_runs()` reads every run of a folder: objective function,
 minimisation and covariance status, parameters with their RSE and
@@ -90,7 +127,7 @@ A parameter table of one run can be exported to Word with
 nm_extract_run_table(run_rep = proj, run_name = "run2")
 ```
 
-## 4. Goodness-of-fit plots
+## 5. Goodness-of-fit plots
 
 ```{r gof, fig.height = 4}
 gof <- nm_gof(file.path(ex, "run2.reg", "sdtab2"))
@@ -99,7 +136,7 @@ gof$plots$dv_pred
 gof$plots$cwres_time
 ```
 
-## 5. Comparing two models
+## 6. Comparing two models
 
 `nm_compare()` puts the BASE and FINAL runs side by side, subject by subject
 and observation by observation.
@@ -110,7 +147,7 @@ cmp <- nm_compare(file.path(ex, "run1.reg"), file.path(ex, "run2.reg"),
 cmp
 ```
 
-## 6. Visual predictive check
+## 7. Visual predictive check
 
 The VPC needs two more NONMEM runs (the model re-run on the data, and the
 simulations). `nm_vpc_ctl()` writes and launches them, then `nm_vpc()` draws
@@ -124,7 +161,7 @@ nm_vpc(run_name = "run2", analysis_dir = proj,
        type = 2)
 ```
 
-## 7. Uncertainty
+## 8. Uncertainty
 
 `nm_profile()` (likelihood profiles), `nm_bootstrap()` (case bootstrap) and
 `nm_jackknife()` (influence of each subject) also run NONMEM and are not

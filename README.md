@@ -12,7 +12,7 @@ streams or in run subdirectories, and the Wings conventions (`.reg` run
 directories, `.smr` files, extended control streams with parameter labels)
 are also read, so that projects started with Wings can be continued.
 
-> **Status:** version 0.2, under active development. The interface may still
+> **Status:** version 0.3, under active development. The interface may still
 > change. Bug reports and suggestions are welcome in the
 > [issues](https://github.com/nskoch/nmtools/issues).
 
@@ -35,6 +35,7 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Step | Functions |
 |---|---|
 | Read and explore the data set | `nm_read_csv()`, `nm_data_previsual()`, `nm_plot_dv()`, `nm_summary()`, `nm_add_rate()`, `nm_export_data()` |
+| Write a control stream | `nm_write_ctl()` (compartmental PK model), `nm_ctl_mu()` (MU referencing), `nm_ctl_iov()` (inter-occasion variability), `nm_ctl_m3()` (M3 method for BQL data), `nm_ctl_check()` (static check) |
 | Run NONMEM | `nm_run()`, `nm_convert_ctl()` (Wings extended control stream to standard NONMEM) |
 | Read the results of one or several runs | `nm_extract_runs()`, `nm_filter_runs()`, `nm_compare_runs()`, `nm_extract_run_table()` (Word table) |
 | Identify what each THETA / ETA means | `nm_identify_parameters()`, `nm_identify_directory()` |
@@ -71,7 +72,11 @@ dat <- nm_read_csv("C:/nm76g64/run/study/data.csv")
 nm_summary(dat$data)
 nm_plot_dv(dat$data, scales = "both")
 
-# 2. Run one or several models. By default each run goes to <run>.reg/ in the
+# 2. Write a first control stream from the columns of the data set
+nm_write_ctl("C:/nm76g64/run/study/run1.ctl",
+             input = "C:/nm76g64/run/study/data.csv", error = "combined")
+
+# 3. Run one or several models. By default each run goes to <run>.reg/ in the
 #    analysis directory; run_subdir = "" runs it next to its control stream.
 #    A relative $DATA path is read from the control stream folder
 #    ($DATA data.csv) or from the run directory ($DATA ../data.csv).
@@ -81,13 +86,13 @@ log <- nm_run(
   analysis_dir = "C:/nm76g64/run/study"
 )
 
-# 3. Results of all the runs of the project
+# 4. Results of all the runs of the project
 runs <- nm_extract_runs("C:/nm76g64/run/study")
 runs                          # OFV, dOFV, minimisation and covariance status
 nm_compare_runs(runs)         # parameters side by side
 nm_extract_run_table(run_path = "C:/nm76g64/run/study/run2.reg")   # Word table
 
-# 4. Diagnostics, and comparison of two models
+# 5. Diagnostics, and comparison of two models
 gof <- nm_gof("C:/nm76g64/run/study/run2.reg/sdtab2")
 plot(gof)
 cmp <- nm_compare("C:/nm76g64/run/study/run1.reg",
@@ -95,14 +100,14 @@ cmp <- nm_compare("C:/nm76g64/run/study/run1.reg",
                   labels = c("Base", "+ WT on CL"))
 plot(cmp)
 
-# 5. VPC / pc-VPC
+# 6. VPC / pc-VPC
 nm_vpc_ctl("run2", "C:/nm76g64/run/study",
            nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_sim = 500)
 nm_vpc("run2", "C:/nm76g64/run/study",
        col_names = c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED"),
        type = 2)
 
-# 6. Uncertainty
+# 7. Uncertainty
 prof <- nm_profile("C:/nm76g64/run/nmfe76.bat",
                    "C:/nm76g64/run/study/run2.reg/run2.ctl",
                    param = "CL", from = 2, to = 6, by = 0.25)
@@ -132,6 +137,30 @@ directory of any name or a run prefix (`"C:/study/run1"` for
 folder that holds it. Control streams
 in Wings label syntax are converted automatically by `nm_run()` (this needs a
 run subdirectory) or by `nm_convert_ctl()`.
+
+## Writing control streams
+
+`nm_write_ctl()` writes a complete control stream for a 1- to 3-compartment
+PK model: IV or extravascular administration; first-order, zero-order
+(modelled rate `R1 = K0` with `RATE = -1`, or modelled duration `D1` with
+`RATE = -2`) or transit-compartment absorption; linear or Michaelis-Menten
+elimination; analytic (`ADVAN`/`TRANS`) or ODE solution. `$INPUT` follows
+the column order of the data set. Three functions then transform a control
+stream, generated or written by hand, and `nm_ctl_check()` looks for
+THETA/ETA/EPS used without a declaration and other static inconsistencies.
+
+```r
+ctl <- nm_write_ctl(input = c("ID", "TIME", "DV", "AMT", "EVID", "MDV", "CMT", "OCC", "BQL"),
+                    cpts = 2, error = "combined",
+                    theta_init = c(CL = 3, V2 = 30), iiv = c(CL = 30, V2 = 25, KA = 50))
+ctl <- nm_ctl_iov(ctl, parameters = "CL", n_occ = 2)   # $ABBR REPLACE + BLOCK SAME
+ctl <- nm_ctl_m3(ctl, lloq = 0.1)                       # M3 likelihood, LAPLACE
+nm_ctl_check(ctl)
+nm_ctl_mu(nm_write_ctl())                               # MU referencing for SAEM/IMP
+```
+
+The same functions are available as a Shiny application:
+<https://nicolas-simon.shinyapps.io/nonmem_ctl_publi/>.
 
 ## Parameter names from the model code
 

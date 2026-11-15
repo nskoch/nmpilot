@@ -1,3 +1,30 @@
+# nmtools 0.3.0
+
+## Writing control streams
+
+Functions ported from the Shiny application "Générateur NONMEM .ctl"
+(<https://nicolas-simon.shinyapps.io/nonmem_ctl_publi/>). All return an
+`nm_ctl` object (control stream lines, printed as text) and can write a file.
+
+* New `nm_write_ctl()`: writes a control stream for a 1- to 3-compartment PK
+  model, IV or extravascular, with first-order, zero-order (modelled rate
+  `R1 = K0`, `RATE = -1`, or modelled duration `D1`, `RATE = -2`) or
+  transit-compartment absorption, linear or Michaelis-Menten elimination,
+  analytic (`ADVAN`/`TRANS`) or ODE solution. `$INPUT` follows the column
+  order of the dataset; THETA bounds and FIX, IIV as CV% or variance,
+  diagonal or block `$OMEGA`, additive, proportional or combined error,
+  nine estimation methods, xpose-style `sdtab`/`patab`/`cotab` tables.
+* New `nm_ctl_mu()`: MU referencing of log-normal parameters (`"readable"`
+  or `"linear"` mode).
+* New `nm_ctl_iov()`: inter-occasion variability with `$ABBR REPLACE` and
+  `$OMEGA BLOCK(p) SAME(n-1)`; optional check of the occasion column.
+* New `nm_ctl_m3()`: M3 method for BQL data, with the LLOQ given as a
+  constant, a dataset column, or by analytical method code.
+* New `nm_ctl_check()`: static check of a control stream (THETA/ETA/EPS used
+  but not declared, over all records including `BLOCK`, `SAME` and
+  `$ABBR REPLACE`; `$INPUT` items; M3 requirements), with optional line
+  differences from a reference control stream.
+
 # nmtools 0.2.3
 
 * New `nm_jackknife()`: leave-one-subject-out jackknife of a NONMEM model
