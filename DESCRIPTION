@@ -1,0 +1,37 @@
+Package: nmtools
+Title: R Tools for Direct NONMEM Workflow Automation
+Version: 0.1.0
+Authors@R: person("Nicolas", "Simon", email = "nicolas.simon@univ-amu.fr",
+    role = c("aut", "cre"),
+    comment = c(ORCID = "0000-0003-4393-2257"))
+Description: Direct execution of NONMEM via nmfe (no Wings, no PsN),
+    parsing of NONMEM output files (.lst, .ext, .phi, .fit),
+    VPC/pc-VPC generation, dataset preparation and visualization,
+    and run comparison tools for pharmacometric workflows.
+License: MIT + file LICENSE
+URL: https://github.com/nskoch/nmtools
+BugReports: https://github.com/nskoch/nmtools/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    dplyr,
+    ggplot2,
+    graphics,
+    lubridate,
+    magrittr,
+    purrr,
+    rlang,
+    stats,
+    stringr,
+    tibble,
+    tidyr,
+    tools,
+    utils
+Suggests:
+    flextable,
+    officer,
+    patchwork,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
+RoxygenNote: 7.3.2
