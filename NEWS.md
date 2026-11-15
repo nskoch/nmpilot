@@ -1,4 +1,4 @@
-# nmtools (development version)
+# nmtools 0.2.0
 
 * New `nm_wasserstein()`: distribution-based covariate assessment with the
   Wasserstein distance (Simon, Hulot and von Fabeck, Front Pharmacol 2026,
