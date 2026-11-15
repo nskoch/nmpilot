@@ -167,7 +167,7 @@
 
 # $PK: individual parameters and scale; micro-constants only for ODE models
 # (the TRANS subroutine computes them for analytic models).
-.nm_ctl_pk_lines <- function(st, use_ode, eta_map, rate_mapped) {
+.nm_ctl_pk_lines <- function(st, use_ode, eta_map, rate_mapped, conc_factor = 1) {
   tdx <- stats::setNames(seq_along(st$params), st$params)
   out <- "$PK"
   for (p in st$params) {
@@ -175,8 +175,10 @@
     out <- c(out, if (p %in% names(eta_map))
       sprintf("%s = TV%s*EXP(ETA(%d))", p, p, eta_map[[p]]) else sprintf("%s = TV%s", p, p))
   }
-  out <- c(out, sprintf("S%d = %s   ; scale: concentration in the central compartment",
-                        st$central_cmt, st$vc))
+  out <- c(out, if (conc_factor == 1)
+    sprintf("S%d = %s   ; scale: concentration in the central compartment", st$central_cmt, st$vc) else
+    sprintf("S%d = %s/%s   ; scale: concentration in DV units (amount/volume x %s)",
+            st$central_cmt, st$vc, format(conc_factor, scientific = FALSE), format(conc_factor, scientific = FALSE)))
   if (use_ode) {
     if (st$linear) out <- c(out, sprintf("K = CL/%s", st$vc))
     for (p in st$peri) out <- c(out, sprintf("%s = %s/%s", p$kcp, p$q, st$vc),
@@ -439,11 +441,26 @@ print.nm_ctl <- function(x, ...) {
 #'   (NPDE).
 #' @param overwrite Logical. Replace an existing `file`.
 #' @param verbose Logical. Print a message when the file is written.
+#' @param from Optional `nm_model_suggestion` object from
+#'   [nm_suggest_model()]. The structure (`cpts`, `route`, `absorption`,
+#'   `transit_n`, `elimination`, `error`), the initial values (`theta_init`,
+#'   `iiv`, `sigma_init`) and the dataset (`data`, `input`) of candidate
+#'   `candidate` are used for every argument not given explicitly. A lag
+#'   time of the candidate is not written (no `ALAG1` in this function): a
+#'   message gives its value. When the structure is changed explicitly, only
+#'   the initial values whose names exist in the new model are kept.
+#' @param candidate Candidate number in `from` (default 1).
+#' @param conc_factor Unit factor between amount/volume and the DV units:
+#'   the scale is written `S = V/conc_factor` (e.g. 1000 for doses in mg,
+#'   volumes in L and concentrations in ng/mL). Default 1 (`S = V`). With
+#'   `from`, the `dose_conc_factor` of the suggestion is used, so that its
+#'   initial values (volumes in L, KM in amount/L) match the DV units.
 #'
 #' @return An object of class `nm_ctl` (a character vector of control
 #'   stream lines, printed as text), invisibly when `file` is given.
 #'
-#' @seealso [nm_ctl_check()], [nm_ctl_mu()], [nm_ctl_iov()], [nm_ctl_m3()]
+#' @seealso [nm_ctl_check()], [nm_ctl_mu()], [nm_ctl_iov()], [nm_ctl_m3()],
+#'   [nm_suggest_model()]
 #'
 #' @examples
 #' # One-compartment oral model with combined error
@@ -455,6 +472,11 @@ print.nm_ctl <- function(x, ...) {
 #'              theta_init = c(CL = 3, V1 = 20), theta_fix = "V2",
 #'              iiv = c(CL = 30, V1 = 25, V2 = 20), verbose = FALSE)
 #' nm_ctl_check(f)
+#'
+#' # From a data-driven suggestion
+#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+#' s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
+#' nm_write_ctl(from = s, candidate = 1, verbose = FALSE)
 #' @export
 nm_write_ctl <- function(file = NULL,
                          data = "data.csv",
@@ -487,8 +509,40 @@ nm_write_ctl <- function(file = NULL,
                          npde_esample = 300L,
                          npde_seed = 12334L,
                          overwrite = FALSE,
-                         verbose = TRUE) {
+                         verbose = TRUE,
+                         from = NULL,
+                         candidate = 1L,
+                         conc_factor = 1) {
 
+  # ---- candidate of nm_suggest_model() -------------------------------------------
+  from_theta <- FALSE; from_iiv <- FALSE
+  if (!is.null(from)) {
+    if (!inherits(from, "nm_model_suggestion"))
+      stop("`from` must be an nm_model_suggestion object (see nm_suggest_model()).")
+    if (length(candidate) != 1L || !candidate %in% seq_along(from$specs))
+      stop("`candidate` must be between 1 and ", length(from$specs), ".")
+    sp <- from$specs[[candidate]]
+    if (missing(cpts)) cpts <- sp$cpts
+    if (missing(route)) route <- sp$route
+    if (missing(absorption)) absorption <- sp$absorption
+    if (missing(transit_n)) transit_n <- sp$transit_n
+    if (missing(elimination)) elimination <- sp$elimination
+    if (missing(error)) error <- sp$error
+    if (missing(theta_init)) { theta_init <- sp$theta; from_theta <- TRUE }
+    if (missing(iiv) && missing(iiv_scale)) { iiv <- sp$iiv; from_iiv <- TRUE }
+    if (missing(sigma_init)) sigma_init <- sp$sigma
+    if (missing(conc_factor)) conc_factor <- from$settings$dose_conc_factor
+    df_file <- from$data_summary$data_file
+    if (missing(input))
+      input <- if (!is.null(df_file) && file.exists(df_file)) df_file else from$data_summary$columns
+    if (missing(data) && !is.null(df_file)) data <- basename(df_file)
+    if (!is.null(sp$alag) && verbose)
+      message("Candidate ", candidate, " has a lag time: add ALAG1 (initial value ", sp$alag,
+              ") by hand; nm_write_ctl() writes no lag time.")
+  }
+
+  if (!is.numeric(conc_factor) || length(conc_factor) != 1L || !is.finite(conc_factor) || conc_factor <= 0)
+    stop("`conc_factor` must be a positive number.")
   route <- match.arg(route); absorption <- match.arg(absorption)
   elimination <- match.arg(elimination); dynamics <- match.arg(dynamics)
   ode_subroutine <- match.arg(ode_subroutine); error <- match.arg(error)
@@ -505,6 +559,9 @@ nm_write_ctl <- function(file = NULL,
 
   st <- .nm_ctl_struct(cpts, route, absorption, elimination, transit_n)
   params <- st$params
+  # values taken from a suggestion: keep only those of the (possibly changed) model
+  if (from_theta) theta_init <- theta_init[names(theta_init) %in% params]
+  if (from_iiv) iiv <- iiv[names(iiv) %in% params]
 
   # ---- checks of user-supplied parameter names -------------------------------
   check_names <- function(x, arg) {
@@ -624,7 +681,7 @@ nm_write_ctl <- function(file = NULL,
             if (use_ode) "ODE" else "SUB/TRANS", if (route == "IV") "-" else absorption, elimination),
     input_line, data_line, advan_line,
     if (use_ode) .nm_ctl_model_lines(st),
-    .nm_ctl_pk_lines(st, use_ode, eta_map, rate_mapped),
+    .nm_ctl_pk_lines(st, use_ode, eta_map, rate_mapped, conc_factor),
     if (use_ode) .nm_ctl_des_lines(st),
     "",
     "$ERROR",

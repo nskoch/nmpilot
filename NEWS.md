@@ -1,3 +1,47 @@
+# nmtools 0.4.0
+
+## Data-driven suggestion of structural models
+
+* New `nm_suggest_model()`: analyses a NONMEM dataset, rich or sparse,
+  without running NONMEM and ranks candidate models: number of compartments
+  (sums of exponentials compared by BIC), input (IV bolus or infusion,
+  first-order, first-order with lag time, zero-order duration, transit
+  compartments; full-profile fits with a censoring penalty for early BLQ
+  samples), elimination (dose proportionality and curvature of the
+  log-concentration decline) and residual error model (additive,
+  proportional or combined; extended least squares on leverage-corrected
+  residuals). Each candidate comes with initial values for THETA, IIV
+  (variance of individual estimates) and SIGMA, the parameters likely to be
+  hard to estimate and their reasons, and alerts on features outside the
+  tested structures (double peaks, clearance changing between first dose
+  and steady state, unexpected accumulation, less than dose-proportional
+  exposure). Sparse data are analysed as naive pooled data. `print()` and
+  `plot()` methods (`"profiles"`, `"support"`, `"pooled"`, `"design"`).
+* New `nm_suggest_design()`: expected RSE and eta-shrinkage of a candidate
+  for the sampling design of the dataset or another one (population Fisher
+  information matrix, first-order approximation, analytic solution with
+  superposition of doses).
+* New `nm_suggest_run()`: writes the control streams of the best
+  candidates, runs them with `nm_run()` and compares the BIC ranking with
+  the data-driven score.
+* New `nm_suggest_covariates()`: Wasserstein-distance screening of
+  covariates on the individual estimates (CL, central volume, absorption)
+  before any modelling.
+* `nm_suggest_run()` gives each candidate a dataset that matches its
+  compartment numbering (depot 1 and central 2 for first-order and transit
+  absorption; central 1 for IV and zero-order input, with `RATE = -2` on the
+  doses for a modelled duration). A copy is written only when the original
+  dataset does not match; the original file is never modified. With
+  `overwrite = TRUE`, the candidates are run again even when previous runs
+  of the same name have terminated.
+* `nm_write_ctl()`: new arguments `from` and `candidate` to write the
+  control stream of a candidate of `nm_suggest_model()`; explicit arguments
+  keep priority. New argument `conc_factor`: the scale is written
+  `S = V/conc_factor` (e.g. 1000 for doses in mg, volumes in L and DV in
+  ng/mL); with `from`, the `dose_conc_factor` of the suggestion is used.
+* New validation script `inst/validation/validate_suggest_model.R`
+  (recognition rate of the true structure on simulated datasets).
+
 # nmtools 0.3.0
 
 ## Writing control streams

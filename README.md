@@ -35,6 +35,7 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Step | Functions |
 |---|---|
 | Read and explore the data set | `nm_read_csv()`, `nm_data_previsual()`, `nm_plot_dv()`, `nm_summary()`, `nm_add_rate()`, `nm_export_data()` |
+| Suggest a structural model before any run | `nm_suggest_model()` (compartments, input, elimination, error model, initial values, hard-to-estimate parameters, alerts), `nm_suggest_design()` (expected RSE and shrinkage), `nm_suggest_run()` (run and rank the candidates), `nm_suggest_covariates()` (covariate screening on individual estimates) |
 | Write a control stream | `nm_write_ctl()` (compartmental PK model), `nm_ctl_mu()` (MU referencing), `nm_ctl_iov()` (inter-occasion variability), `nm_ctl_m3()` (M3 method for BQL data), `nm_ctl_check()` (static check) |
 | Run NONMEM | `nm_run()`, `nm_convert_ctl()` (Wings extended control stream to standard NONMEM) |
 | Read the results of one or several runs | `nm_extract_runs()`, `nm_filter_runs()`, `nm_compare_runs()`, `nm_extract_run_table()` (Word table) |
@@ -72,8 +73,12 @@ dat <- nm_read_csv("C:/nm76g64/run/study/data.csv")
 nm_summary(dat$data)
 nm_plot_dv(dat$data, scales = "both")
 
-# 2. Write a first control stream from the columns of the data set
-nm_write_ctl("C:/nm76g64/run/study/run1.ctl",
+# 2. Suggest a structural model and write its control stream
+s <- nm_suggest_model("C:/nm76g64/run/study/data.csv", dose_conc_factor = 1000)
+s                                   # ranked candidates, initial values, alerts
+nm_write_ctl("C:/nm76g64/run/study/run1.ctl", from = s, candidate = 1)
+#    or write a control stream from the columns of the data set
+nm_write_ctl("C:/nm76g64/run/study/run2.ctl",
              input = "C:/nm76g64/run/study/data.csv", error = "combined")
 
 # 3. Run one or several models. By default each run goes to <run>.reg/ in the
@@ -161,6 +166,31 @@ nm_ctl_mu(nm_write_ctl())                               # MU referencing for SAE
 
 The same functions are available as a Shiny application:
 <https://nicolas-simon.shinyapps.io/nonmem_ctl_publi/>.
+
+## Suggesting a structural model
+
+`nm_suggest_model()` looks at the data before any NONMEM run: NCA and sums of
+exponentials on each rich dosing interval (or on naive pooled data when the
+sampling is sparse) give the support for 1, 2 or 3 compartments, for the
+input model (first-order, lag time, zero-order, transit), for linear or
+saturable elimination and for an additive, proportional or combined error.
+Candidates come with initial values in the names used by `nm_write_ctl()`,
+the parameters likely to be hard to estimate, and, for linear models, the
+expected RSE and eta-shrinkage for the sampling design.
+
+```r
+s <- nm_suggest_model("data.csv", dose_conc_factor = 1000)   # mg and ng/mL
+s$candidates
+plot(s, "profiles")
+nm_suggest_design(s, candidate = 1, times = c(1, 4, 12))     # another design
+nm_suggest_covariates(s, covariates = c("WT", "SEX"))
+r <- nm_suggest_run(s, analysis_dir = "C:/nm76g64/run/study",
+                    nmfe_path = "C:/nm76g64/run/nmfe76.bat", candidates = 1:3)
+```
+
+The scores rank candidates; they are no substitute for model comparison in
+NONMEM. The validation script `inst/validation/validate_suggest_model.R`
+measures how often the true structure is recovered on simulated datasets.
 
 ## Parameter names from the model code
 

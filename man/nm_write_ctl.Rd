@@ -35,7 +35,10 @@ nm_write_ctl(
   npde_esample = 300L,
   npde_seed = 12334L,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  from = NULL,
+  candidate = 1L,
+  conc_factor = 1
 )
 }
 \arguments{
@@ -117,6 +120,23 @@ automatically.}
 \item{overwrite}{Logical. Replace an existing \code{file}.}
 
 \item{verbose}{Logical. Print a message when the file is written.}
+
+\item{from}{Optional \code{nm_model_suggestion} object from
+\code{\link[=nm_suggest_model]{nm_suggest_model()}}. The structure (\code{cpts}, \code{route}, \code{absorption},
+\code{transit_n}, \code{elimination}, \code{error}), the initial values (\code{theta_init},
+\code{iiv}, \code{sigma_init}) and the dataset (\code{data}, \code{input}) of candidate
+\code{candidate} are used for every argument not given explicitly. A lag
+time of the candidate is not written (no \code{ALAG1} in this function): a
+message gives its value. When the structure is changed explicitly, only
+the initial values whose names exist in the new model are kept.}
+
+\item{candidate}{Candidate number in \code{from} (default 1).}
+
+\item{conc_factor}{Unit factor between amount/volume and the DV units:
+the scale is written \code{S = V/conc_factor} (e.g. 1000 for doses in mg,
+volumes in L and concentrations in ng/mL). Default 1 (\code{S = V}). With
+\code{from}, the \code{dose_conc_factor} of the suggestion is used, so that its
+initial values (volumes in L, KM in amount/L) match the DV units.}
 }
 \value{
 An object of class \code{nm_ctl} (a character vector of control
@@ -159,7 +179,13 @@ nm_write_ctl(f, route = "IV", cpts = 2,
              theta_init = c(CL = 3, V1 = 20), theta_fix = "V2",
              iiv = c(CL = 30, V1 = 25, V2 = 20), verbose = FALSE)
 nm_ctl_check(f)
+
+# From a data-driven suggestion
+ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
+nm_write_ctl(from = s, candidate = 1, verbose = FALSE)
 }
 \seealso{
-\code{\link[=nm_ctl_check]{nm_ctl_check()}}, \code{\link[=nm_ctl_mu]{nm_ctl_mu()}}, \code{\link[=nm_ctl_iov]{nm_ctl_iov()}}, \code{\link[=nm_ctl_m3]{nm_ctl_m3()}}
+\code{\link[=nm_ctl_check]{nm_ctl_check()}}, \code{\link[=nm_ctl_mu]{nm_ctl_mu()}}, \code{\link[=nm_ctl_iov]{nm_ctl_iov()}}, \code{\link[=nm_ctl_m3]{nm_ctl_m3()}},
+\code{\link[=nm_suggest_model]{nm_suggest_model()}}
 }

@@ -1,10 +1,13 @@
 Package: nmtools
 Title: R Tools for Direct NONMEM Workflow Automation
-Version: 0.3.0
+Version: 0.4.0
 Authors@R: person("Nicolas", "Simon", email = "nicolas.simon@univ-amu.fr",
     role = c("aut", "cre"),
     comment = c(ORCID = "0000-0003-4393-2257"))
 Description: Direct execution of NONMEM via nmfe (no Wings, no PsN),
+    data-driven suggestion of structural models before any NONMEM run
+    (number of compartments, input, elimination and residual error models,
+    initial values, expected precision of the sampling design),
     writing of control streams (compartmental PK models, MU referencing,
     inter-occasion variability, M3 method for BQL data) with a static check,
     parsing of NONMEM output files (.lst, .ext, .phi, .fit),
