@@ -1142,7 +1142,7 @@
   do.call(rbind, out)
 }
 
-.nm_ip_parameter_summary <- function(mapping) {
+.nm_ip_parameter_summary <- function(mapping, pk = NULL) {
   if (!nrow(mapping)) return(data.frame())
 
   x <- mapping[!grepl("^TV", mapping$pk_parameter), , drop = FALSE]
@@ -1153,6 +1153,17 @@
   if (nrow(xp)) x <- xp
 
   keys <- unique(x$pk_parameter)
+
+  # A parameter whose definition uses other parameters of the table
+  # (S2 = V, KE = CL/V) is derived: `derived_from` lists them (NA otherwise).
+  derived_from <- function(p) {
+    if (is.null(pk) || !nrow(pk) || !"variables_rhs" %in% names(pk)) return(NA_character_)
+    v <- unlist(strsplit(as.character(pk$variables_rhs[pk$lhs == p]), ","))
+    v <- unique(trimws(v))
+    v <- v[v %in% setdiff(keys, p)]
+    if (length(v)) paste(v, collapse = ", ") else NA_character_
+  }
+
   out <- lapply(keys, function(p) {
     d <- x[x$pk_parameter == p, , drop = FALSE]
 
@@ -1172,6 +1183,7 @@
       THETA_IIV_scale = get_symbols("iiv_scale", "THETA"),
       ETA_IIV = get_symbols("iiv", "ETA"),
       THETA_other = get_symbols("structural_other", "THETA"),
+      derived_from = derived_from(p),
       stringsAsFactors = FALSE
     )
   })
@@ -1233,7 +1245,10 @@
 #'   `mapping_detail_all` always keeps every variable.
 #'
 #' @return An object of class `nm_parameter_map`, a list with, among others:
-#'   `parameter_table` (one row per PK parameter with its THETA/ETA by role),
+#'   `parameter_table` (one row per PK parameter with its THETA/ETA by role;
+#'   `derived_from` names the parameters of the table that a derived
+#'   parameter is computed from, e.g. `"V"` for `S2 = V` or `"CL, V"` for
+#'   `KE = CL/V`, and is `NA` for the others),
 #'   `mapping_detail` and `mapping_detail_all` (one row per PK parameter /
 #'   THETA or ETA association; `depth` is the number of assignment steps
 #'   between the THETA/ETA and the parameter, 0 when it appears directly in
@@ -1278,7 +1293,7 @@ nm_identify_parameters <- function(file, likely_pk_only = TRUE) {
   else
     mapping_view <- mapping
 
-  summary <- .nm_ip_parameter_summary(mapping)
+  summary <- .nm_ip_parameter_summary(mapping, pk)
   residual <- .nm_ip_residual_error_mapping(theta, error)
   unmapped <- .nm_ip_find_unmapped(theta, om$eta, mapping, residual)
 

@@ -14,6 +14,20 @@ bibentry(
 )
 
 bibentry(
+  bibtype = "Manual",
+  header  = "If you use nm_jackknife(), please also cite:",
+  title   = "nonmem-jackknife-influence: Standalone jackknife influence analysis for NONMEM",
+  author  = person("Nicolas", "Simon"),
+  year    = "2026",
+  note    = "Version 1.0.0",
+  doi     = "10.5281/zenodo.22257994",
+  textVersion = paste0(
+    "Simon N (2026). nonmem-jackknife-influence: Standalone jackknife ",
+    "influence analysis for NONMEM. Version 1.0.0. doi:10.5281/zenodo.22257994"
+  )
+)
+
+bibentry(
   bibtype = "Article",
   header  = "If you use nm_wasserstein(), please also cite:",
   title   = "Distribution-based covariate assessment using Wasserstein distance in population pharmacokinetic models",

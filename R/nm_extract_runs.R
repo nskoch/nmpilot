@@ -5,8 +5,10 @@
 #
 # Design
 #   - Parameter names: when a .ctl is present, nm_identify_parameters() uses
-#     the $PK equations to name THETA/ETA (CL, V, KA...); the .smr file is a
-#     fallback. nm_compare_runs() aligns on these names by
+#     the $PK equations to name THETA/ETA (CL, V, KA...) and the $THETA
+#     comment labels to name the covariate-effect and residual-error THETAs
+#     (CL_WT, PROP, ADD...); the
+#     .smr file is a fallback. nm_compare_runs() aligns on these names by
 #     default; align_by = "index" gives a strict NONMEM-index comparison.
 #   - Run filtering (run_filter / nm_filter_runs()):
 #       all                   : all runs (default)
@@ -65,6 +67,14 @@
 #'   - `$params`: one row per parameter
 #'   - `$path`: the analysis directory
 #'   - `$created`: time of extraction
+#'
+#' @details
+#' When the control stream of a run is found, parameters are named from the
+#' model code with [nm_identify_parameters()]: typical-value THETAs and ETAs
+#' after the PK parameter they act on (`CL`, `V`...), covariate-effect and
+#' residual-error THETAs after their `$THETA` comment label when it is a short
+#' name (`CL_WT`, `PROP`, `ADD`...). Other THETAs keep their NONMEM name
+#' (`THETA6`...).
 #'
 #' @export
 nm_extract_runs <- function(path, runs = NULL, verbose = TRUE) {
@@ -663,7 +673,8 @@ print.nm_runs <- function(x, ...) {
 
 
 # Convert raw EXT parameters to a tidy table and add derived quantities.
-.nm_ext_params <- function(ext_obj, names_smr = NULL, semantic_map = NULL) {
+.nm_ext_params <- function(ext_obj, names_smr = NULL, semantic_map = NULL,
+                           residual_map = NULL) {
 
   if (is.null(ext_obj) || is.null(ext_obj$raw) || !nrow(ext_obj$raw)) {
     return(.nm_empty_params())
@@ -697,11 +708,40 @@ print.nm_runs <- function(x, ...) {
                          semantic_map$likely_pk_parameter, , drop = FALSE]
     eta_sem <- pick(me)
   }
+  # Covariate-effect THETAs (CL_WT...) and residual-error THETAs (PROP, ADD...)
+  # take their $THETA comment label when it is a short name ("PROP",
+  # "4 Prop (sigma_prop)" -> "Prop", "SD1 = proportional SD" -> "SD1"); a
+  # free-text comment ("erreur proportionnelle"), a label already used by a
+  # PK parameter or a duplicated label keeps the NONMEM name.
+  theta_res <- character(0)
+  lab_tab <- data.frame(theta = integer(0), label = character(0))
+  if (!is.null(semantic_map) && nrow(semantic_map) && "label" %in% names(semantic_map)) {
+    mc <- semantic_map[semantic_map$element_type == "THETA" &
+                         semantic_map$role == "covariate_effect" &
+                         !(as.character(semantic_map$index) %in% names(theta_sem)), , drop = FALSE]
+    mc <- mc[!duplicated(mc$index), , drop = FALSE]
+    lab_tab <- rbind(lab_tab, data.frame(theta = mc$index, label = as.character(mc$label)))
+  }
+  if (!is.null(residual_map) && nrow(residual_map))
+    lab_tab <- rbind(lab_tab, data.frame(theta = residual_map$theta,
+                                         label = as.character(residual_map$label)))
+  lab_tab <- lab_tab[!duplicated(lab_tab$theta), , drop = FALSE]
+  if (nrow(lab_tab)) {
+    lab <- trimws(lab_tab$label)
+    lab <- sub("^[0-9]+[.)]?\\s+", "", lab)          # leading index: "4 ", "6. "
+    lab <- trimws(sub("[(=:;].*$", "", lab))           # text before "(", "=", ":"
+    ok  <- !is.na(lab) & grepl("^[A-Za-z][A-Za-z0-9_.]{0,19}$", lab) &
+      !(lab %in% theta_sem)
+    ok  <- ok & !(lab %in% lab[ok][duplicated(lab[ok])])
+    theta_res <- stats::setNames(lab[ok], as.character(lab_tab$theta[ok]))
+  }
   eps_names   <- names_smr$err   %||% character(0)
 
   theta_label <- function(i) {
     si <- theta_sem[as.character(i)]
+    ri <- theta_res[as.character(i)]
     if (length(si) && !is.na(si) && nzchar(si)) si
+    else if (length(ri) && !is.na(ri) && nzchar(ri)) ri
     else if (i <= length(theta_names) && nzchar(theta_names[i])) theta_names[i]
     else paste0("THETA", i)
   }
@@ -1172,11 +1212,13 @@ print.nm_runs <- function(x, ...) {
                          error = function(e) NULL)
   }
   semantic_map <- if (!is.null(semantic)) semantic$mapping_detail_all else NULL
+  residual_map <- if (!is.null(semantic)) semantic$residual_error else NULL
 
   # Numeric source: EXT first.
   if (!is.null(e)) {
     params <- .nm_ext_params(e, names_smr = s$names %||% NULL,
-                             semantic_map = semantic_map)
+                             semantic_map = semantic_map,
+                             residual_map = residual_map)
   } else if (!is.null(s) && nrow(s$params)) {
     # Wings fallback when EXT is missing or unusable.
     params <- s$params %>%

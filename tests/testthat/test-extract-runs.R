@@ -37,6 +37,7 @@ test_that("nm_extract_runs reads .ext values and names parameters from the .ctl"
   th <- p[p$type == "THETA", ]
   expect_equal(th$name[th$index == 1], "CL")    # not KE (derived)
   expect_equal(th$name[th$index == 2], "V")     # not S1 / KE
+  expect_equal(th$name[th$index == 3], "PROP")  # residual error: $THETA label
   expect_equal(th$value[th$index == 1], 4.2)
   expect_equal(th$rse_pct[th$index == 2], 10)
   om <- p[p$type == "OMEGA", ]
@@ -63,4 +64,27 @@ test_that("nm_extract_runs fails clearly when no run is found", {
   d <- tempfile("empty")
   dir.create(d)
   expect_error(nm_extract_runs(d, verbose = FALSE), "No NONMEM run")
+})
+
+test_that("residual-error THETAs are named from short $THETA labels only", {
+  root <- tempfile("runs")
+  d <- make_run(root, "run1", c(4.2, 45, 0.15), 200)
+  ctl <- file.path(d, "run1.ctl")
+  set_label <- function(lab) {
+    l <- readLines(ctl); l[grepl("(0,0.2)", l, fixed = TRUE)] <- paste0(" (0,0.2) ; ", lab); writeLines(l, ctl)
+    p <- nm_extract_runs(root, verbose = FALSE)$params
+    p$name[p$type == "THETA" & p$index == 3]
+  }
+  expect_equal(set_label("3 Prop (sigma_prop)"), "Prop")
+  expect_equal(set_label("SD1 = proportional SD"), "SD1")
+  expect_equal(set_label("erreur proportionnelle"), "THETA3")   # free text
+  expect_equal(set_label("CL"), "THETA3")                       # already a PK name
+})
+
+test_that("covariate-effect THETAs are named from their $THETA label (example project)", {
+  ex <- system.file("extdata", "example", package = "nmtools")
+  skip_if(!nzchar(ex))
+  p <- nm_extract_runs(ex, verbose = FALSE)$params
+  th <- p[p$run == "run2" & p$type == "THETA", ]
+  expect_equal(th$name[order(th$index)], c("CL", "V", "KA", "PROP", "ADD", "CL_WT", "CL_GENO"))
 })

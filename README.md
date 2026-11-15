@@ -42,6 +42,7 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Compare two runs | `nm_compare()` (paired CWRES / NPDE, individual OFV) |
 | VPC and pc-VPC | `nm_vpc_ctl()`, `nm_vpc()` |
 | Parameter uncertainty | `nm_profile()` (likelihood profile), `nm_bootstrap()` (case bootstrap) |
+| Influential subjects | `nm_jackknife()` (leave-one-subject-out jackknife: OFV change and THETA shifts) |
 | Covariate assessment on the ETA distributions | `nm_wasserstein()` (Wasserstein distance, Simon et al. 2026) |
 | Export figures | `nm_export_plot()` |
 
@@ -169,8 +170,8 @@ plot(w, type = "r2w")
 citation("nmtools")
 ```
 
-gives the reference of the package and, for `nm_wasserstein()`, the
-reference of the original article.
+gives the reference of the package and, for `nm_jackknife()` and
+`nm_wasserstein()`, the reference of the original method.
 
 ## License
 

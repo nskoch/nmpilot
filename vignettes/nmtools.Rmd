@@ -126,14 +126,18 @@ nm_vpc(run_name = "run2", analysis_dir = proj,
 
 ## 7. Uncertainty
 
-`nm_profile()` (likelihood profiles) and `nm_bootstrap()` (case bootstrap)
-also run NONMEM and are not executed here.
+`nm_profile()` (likelihood profiles), `nm_bootstrap()` (case bootstrap) and
+`nm_jackknife()` (influence of each subject) also run NONMEM and are not
+executed here.
 
 ```{r uncertainty, eval = FALSE}
 prof <- nm_profile("C:/nm76g64/run/nmfe76.bat", file.path(proj, "run2.ctl"),
                    param = "THETA(6)", from = 0.1, to = 1, by = 0.1)
 boot <- nm_bootstrap(file.path(proj, "run2.ctl"), "C:/nm76g64/run/nmfe76.bat",
                      n = 500)
+jk <- nm_jackknife(file.path(proj, "run2.reg", "run2.ctl"),
+                   nmfe_path = "C:/nm76g64/run/nmfe76.bat")
+plot(jk, "scatter")
 ```
 
 The covariate assessment based on the Wasserstein distance is described in

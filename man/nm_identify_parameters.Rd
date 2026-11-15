@@ -15,7 +15,10 @@ variables that look like PK parameters (CL, V, Q, KA, F, ALAG...).
 }
 \value{
 An object of class \code{nm_parameter_map}, a list with, among others:
-\code{parameter_table} (one row per PK parameter with its THETA/ETA by role),
+\code{parameter_table} (one row per PK parameter with its THETA/ETA by role;
+\code{derived_from} names the parameters of the table that a derived
+parameter is computed from, e.g. \code{"V"} for \code{S2 = V} or \code{"CL, V"} for
+\code{KE = CL/V}, and is \code{NA} for the others),
 \code{mapping_detail} and \code{mapping_detail_all} (one row per PK parameter /
 THETA or ETA association; \code{depth} is the number of assignment steps
 between the THETA/ETA and the parameter, 0 when it appears directly in

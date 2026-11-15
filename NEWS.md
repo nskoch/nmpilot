@@ -1,3 +1,19 @@
+# nmtools 0.2.3
+
+* New `nm_jackknife()`: leave-one-subject-out jackknife of a NONMEM model
+  (method of the standalone script nonmem-jackknife-influence,
+  doi:10.5281/zenodo.22257994). Ranks the subjects by their likelihood
+  influence |dOFV| and reports the relative THETA shifts (L2 norm, maximum,
+  SE-standardised norm); `print()` and `plot()` methods (`"bar"`, `"rank"`,
+  `"scatter"`). Resumes an interrupted analysis. Data lines are copied
+  verbatim, as in `nm_bootstrap()`.
+* `nm_identify_parameters()`: new column `derived_from` in
+  `parameter_table`, naming the parameters a derived parameter is computed
+  from (`"V"` for `S2 = V`, `"CL, V"` for `KE = CL/V`; `NA` otherwise).
+* `nm_extract_runs()`: covariate-effect and residual-error THETAs are named
+  from their `$THETA` comment label when it is a short name (`CL_WT`, `PROP`,
+  `RUV_A`, `4 Prop (...)` -> `Prop`) instead of `THETA4`, `THETA5`...
+
 # nmtools 0.2.2
 
 ## Breaking changes

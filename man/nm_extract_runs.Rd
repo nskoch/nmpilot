@@ -25,3 +25,11 @@ An object of class \code{nm_runs} with:
 \description{
 Extract the results of several NONMEM runs
 }
+\details{
+When the control stream of a run is found, parameters are named from the
+model code with \code{\link[=nm_identify_parameters]{nm_identify_parameters()}}: typical-value THETAs and ETAs
+after the PK parameter they act on (\code{CL}, \code{V}...), covariate-effect and
+residual-error THETAs after their \verb{$THETA} comment label when it is a short
+name (\code{CL_WT}, \code{PROP}, \code{ADD}...). Other THETAs keep their NONMEM name
+(\code{THETA6}...).
+}

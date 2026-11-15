@@ -142,9 +142,15 @@ test_that("derived parameters are kept and depth points to the direct one", {
     "  MTT = THETA(1)*EXP(ETA(1))",
     "  CL = THETA(2)*EXP(ETA(2))",
     "  V  = THETA(3)*EXP(ETA(3))",
-    "  KE = CL/V")
+    "  KE = CL/V",
+    "  S2 = V")
   x <- nm_identify_parameters(f)
-  expect_true(all(c("MTT", "CL", "V", "KE") %in% x$parameter_table$PK_parameter))
+  pt <- x$parameter_table
+  expect_true(all(c("MTT", "CL", "V", "KE", "S2") %in% pt$PK_parameter))
+  # Derived parameters are flagged with the parameters they come from.
+  expect_equal(pt$derived_from[pt$PK_parameter == "KE"], "CL, V")
+  expect_equal(pt$derived_from[pt$PK_parameter == "S2"], "V")
+  expect_true(all(is.na(pt$derived_from[pt$PK_parameter %in% c("MTT", "CL", "V")])))
   m <- x$mapping_detail_all
   d <- m$depth[m$element_type == "THETA" & m$index == 2]
   names(d) <- m$pk_parameter[m$element_type == "THETA" & m$index == 2]
