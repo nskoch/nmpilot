@@ -1,6 +1,7 @@
 # nmtools
 
 <!-- badges: start -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24244340.svg)](https://doi.org/10.5281/zenodo.24244340)
 <!-- badges: end -->
 
 **nmtools** is an R package that drives a population pharmacokinetic (popPK)
