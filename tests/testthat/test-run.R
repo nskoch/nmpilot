@@ -35,7 +35,7 @@ test_that("nm_run checks its inputs", {
 test_that("nm_run copies the control stream, fixes $DATA and launches nmfe", {
   root <- run_setup()
   nmfe <- fake_nmfe(root)
-  log <- suppressMessages(nm_run(nmfe, "r1.ctl", root, verbose = FALSE))
+  expect_silent(log <- nm_run(nmfe, "r1.ctl", root, verbose = FALSE))
   expect_equal(log$action, "launched")
   expect_equal(log$exit_status, 0L)
   reg <- file.path(root, "r1.reg")

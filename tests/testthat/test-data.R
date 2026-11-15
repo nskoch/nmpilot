@@ -13,6 +13,7 @@ test_that("nm_summary counts subjects and observations", {
   expect_equal(s$n_subjects, 2L)
   expect_equal(s$n_records, 8L)
   expect_equal(s$n_observations, 6L)
+  expect_equal(s$unique_doses, "100")
 })
 
 test_that("nm_add_rate adds RATE after AMT", {

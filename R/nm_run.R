@@ -169,7 +169,7 @@
 }
 
 # Internal helper: fix $DATA path to absolute in a .ctl file
-.nm_fix_data_path <- function(ctl_file, analysis_dir, reg_dir) {
+.nm_fix_data_path <- function(ctl_file, analysis_dir, reg_dir, verbose = TRUE) {
   lines <- readLines(ctl_file, warn = FALSE)
   lines <- gsub("\r", "", lines, fixed = TRUE)
 
@@ -198,7 +198,7 @@
     abs_path   <- gsub("\\", "/", abs_path, fixed = TRUE)
     lines[idx] <- sub(data_file, abs_path, ln, fixed = TRUE)
 
-    message("  $DATA path resolved: ", data_file, " -> ", abs_path)
+    if (verbose) message("  $DATA path resolved: ", data_file, " -> ", abs_path)
   }
 
   writeLines(lines, ctl_file)
@@ -380,7 +380,7 @@ nm_run <- function(
     }
 
     # Fix $DATA path to absolute (handles relative paths like ..\data.csv)
-    .nm_fix_data_path(ctl_dest, analysis_dir, reg_dir)
+    .nm_fix_data_path(ctl_dest, analysis_dir, reg_dir, verbose = verbose)
 
     # Build and launch nmfe command
     lst_dest <- file.path(reg_dir, paste0(run_name, ".lst"))

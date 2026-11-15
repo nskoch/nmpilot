@@ -14,7 +14,7 @@ nm_summary(data, verbose = TRUE)
 \value{
 A one-row data.frame with: \code{n_subjects}, \code{n_records},
 \code{n_observations}, \code{n_blq}, \code{pct_blq}, \code{time_min}, \code{time_max},
-\code{time_unit}, \code{doses_uniques} (distinct positive doses), \code{n_cmt_obs}.
+\code{time_unit}, \code{unique_doses} (distinct positive doses), \code{n_cmt_obs}.
 }
 \description{
 Diagnostic summary of a NONMEM-like dataset

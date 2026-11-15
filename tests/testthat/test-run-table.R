@@ -14,9 +14,9 @@ test_that("nm_extract_run_table builds the parameter table and the Word file", {
   invisible(capture.output(suppressMessages(res <- nm_extract_run_table(run_path = d))))
   expect_true(file.exists(res$output_file))
   p <- res$params
-  expect_equal(p$Estimation[p$Type == "THETA"], c(4.2, 45, 0.15))
+  expect_equal(p$Estimate[p$Type == "THETA"], c(4.2, 45, 0.15))
   # ETA SD derived from the variance, correlation from the covariance.
-  expect_equal(p$Estimation[p$Type == "ETA_SD"], sqrt(c(0.09, 0.04)))
-  expect_equal(p$Estimation[p$Type == "ETA_COR"], 0.01 / sqrt(0.09 * 0.04))
+  expect_equal(p$Estimate[p$Type == "ETA_SD"], sqrt(c(0.09, 0.04)))
+  expect_equal(p$Estimate[p$Type == "ETA_COR"], 0.01 / sqrt(0.09 * 0.04))
   expect_true(p$Fixed[p$Type == "SIGMA"])
 })

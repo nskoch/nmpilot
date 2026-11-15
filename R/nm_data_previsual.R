@@ -690,7 +690,7 @@ nm_data_previsual <- function(file,
     time_min       = min(df$TIME, na.rm = TRUE),
     time_max       = max(df$TIME, na.rm = TRUE),
     time_unit      = time_unit,
-    doses_uniques  = if (all(is.na(doses_uniq))) NA_character_
+    unique_doses  = if (all(is.na(doses_uniq))) NA_character_
                      else paste(doses_uniq, collapse = ", "),
     n_cmt_obs      = if ("CMT" %in% names(mapping))
                        length(unique(obs_df$CMT[!is.na(obs_df$CMT)]))
@@ -707,8 +707,8 @@ nm_data_previsual <- function(file,
                       summary_df$n_blq, summary_df$pct_blq))
     message(sprintf("  TIME range           : %.2f - %.2f %s",
                     summary_df$time_min, summary_df$time_max, time_unit))
-    if (!is.na(summary_df$doses_uniques))
-      message(sprintf("  Distinct doses       : %s", summary_df$doses_uniques))
+    if (!is.na(summary_df$unique_doses))
+      message(sprintf("  Distinct doses       : %s", summary_df$unique_doses))
   }
 
   # ---------------------------------------------------------------------------

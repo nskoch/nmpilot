@@ -83,7 +83,7 @@ nm_export_data <- function(data, file) {
 #'
 #' @return A one-row data.frame with: `n_subjects`, `n_records`,
 #'   `n_observations`, `n_blq`, `pct_blq`, `time_min`, `time_max`,
-#'   `time_unit`, `doses_uniques` (distinct positive doses), `n_cmt_obs`.
+#'   `time_unit`, `unique_doses` (distinct positive doses), `n_cmt_obs`.
 #' @export
 nm_summary <- function(data, verbose = TRUE) {
 
@@ -125,7 +125,7 @@ nm_summary <- function(data, verbose = TRUE) {
     time_min       = min(data$TIME, na.rm = TRUE),
     time_max       = max(data$TIME, na.rm = TRUE),
     time_unit      = time_unit,
-    doses_uniques  = if (all(is.na(doses))) NA_character_
+    unique_doses  = if (all(is.na(doses))) NA_character_
                      else paste(doses, collapse = ", "),
     n_cmt_obs      = n_cmt,
     stringsAsFactors = FALSE)
@@ -140,8 +140,8 @@ nm_summary <- function(data, verbose = TRUE) {
                       res$n_blq, res$pct_blq))
     message(sprintf("  TIME range           : %.2f - %.2f %s",
                     res$time_min, res$time_max, time_unit))
-    if (!is.na(res$doses_uniques))
-      message(sprintf("  Distinct doses       : %s", res$doses_uniques))
+    if (!is.na(res$unique_doses))
+      message(sprintf("  Distinct doses       : %s", res$unique_doses))
     if (!is.na(res$n_cmt_obs))
       message(sprintf("  Observation CMTs     : %d", res$n_cmt_obs))
   }

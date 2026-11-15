@@ -428,10 +428,10 @@
     out[[length(out) + 1L]] <- tibble::tibble(
       Type = "THETA",
       Index = idx,
-      Parametre = paste0("THETA", idx),
-      Estimation = th$value,
+      Parameter = paste0("THETA", idx),
+      Estimate = th$value,
       SE = th$se,
-      RSE_pourcent = th$rse_pct,
+      RSE_pct = th$rse_pct,
       Fixed = th$fixed,
       Raw_name = th$raw_name,
       Derived = FALSE
@@ -461,10 +461,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "OMEGA",
         Index = id,
-        Parametre = paste0("OMEGA(", id, ",", id, ")"),
-        Estimation = zd$value,
+        Parameter = paste0("OMEGA(", id, ",", id, ")"),
+        Estimate = zd$value,
         SE = zd$se,
-        RSE_pourcent = zd$rse_pct,
+        RSE_pct = zd$rse_pct,
         Fixed = zd$fixed,
         Raw_name = zd$raw_name,
         Derived = FALSE
@@ -480,10 +480,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "OMEGA_COV",
         Index = seq_len(nrow(zc)),
-        Parametre = paste0("Cov(ETA", ic, ", ETA", jc, ")"),
-        Estimation = zc$value,
+        Parameter = paste0("Cov(ETA", ic, ", ETA", jc, ")"),
+        Estimate = zc$value,
         SE = zc$se,
-        RSE_pourcent = zc$rse_pct,
+        RSE_pct = zc$rse_pct,
         Fixed = zc$fixed,
         Raw_name = zc$raw_name,
         Derived = FALSE
@@ -517,10 +517,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "ETA_SD",
         Index = id,
-        Parametre = paste0("ETA", id, " SD (Wings)"),
-        Estimation = eta_sd,
+        Parameter = paste0("ETA", id, " SD (Wings)"),
+        Estimate = eta_sd,
         SE = eta_sd_se,
-        RSE_pourcent = eta_sd_rse,
+        RSE_pct = eta_sd_rse,
         Fixed = zd$fixed,
         Raw_name = zd$raw_name,
         Derived = TRUE
@@ -555,10 +555,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "ETA_COR",
         Index = seq_len(nrow(zc)),
-        Parametre = paste0("Cor(ETA", ic, ", ETA", jc, ")"),
-        Estimation = cor_val,
+        Parameter = paste0("Cor(ETA", ic, ", ETA", jc, ")"),
+        Estimate = cor_val,
         SE = NA_real_,
-        RSE_pourcent = NA_real_,
+        RSE_pct = NA_real_,
         Fixed = FALSE,
         Raw_name = zc$raw_name,
         Derived = TRUE
@@ -586,10 +586,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "SIGMA",
         Index = id,
-        Parametre = paste0("SIGMA(", id, ",", id, ")"),
-        Estimation = zd$value,
+        Parameter = paste0("SIGMA(", id, ",", id, ")"),
+        Estimate = zd$value,
         SE = zd$se,
-        RSE_pourcent = zd$rse_pct,
+        RSE_pct = zd$rse_pct,
         Fixed = zd$fixed,
         Raw_name = zd$raw_name,
         Derived = FALSE
@@ -616,10 +616,10 @@
       out[[length(out) + 1L]] <- tibble::tibble(
         Type = "EPS_SD",
         Index = id,
-        Parametre = paste0("EPS", id, " SD (Wings)"),
-        Estimation = eps_sd,
+        Parameter = paste0("EPS", id, " SD (Wings)"),
+        Estimate = eps_sd,
         SE = eps_sd_se,
-        RSE_pourcent = eps_sd_rse,
+        RSE_pct = eps_sd_rse,
         Fixed = zd$fixed,
         Raw_name = zd$raw_name,
         Derived = TRUE
@@ -635,32 +635,32 @@
 
   params <- params %>%
     dplyr::mutate(
-      IC95_lower = dplyr::if_else(
+      CI95_lower = dplyr::if_else(
         !.data$Fixed & is.finite(.data$SE),
-        .data$Estimation - 1.96 * .data$SE,
+        .data$Estimate - 1.96 * .data$SE,
         NA_real_
       ),
-      IC95_upper = dplyr::if_else(
+      CI95_upper = dplyr::if_else(
         !.data$Fixed & is.finite(.data$SE),
-        .data$Estimation + 1.96 * .data$SE,
+        .data$Estimate + 1.96 * .data$SE,
         NA_real_
       ),
-      IC95 = dplyr::case_when(
+      CI95 = dplyr::case_when(
         .data$Fixed ~ "FIX",
-        is.finite(.data$IC95_lower) & is.finite(.data$IC95_upper) ~
+        is.finite(.data$CI95_lower) & is.finite(.data$CI95_upper) ~
           paste0(
             "[",
-            sprintf("%.4f", .data$IC95_lower),
+            sprintf("%.4f", .data$CI95_lower),
             " ; ",
-            sprintf("%.4f", .data$IC95_upper),
+            sprintf("%.4f", .data$CI95_upper),
             "]"
           ),
         TRUE ~ NA_character_
       ),
       RSE = dplyr::case_when(
         .data$Fixed ~ "FIX",
-        is.finite(.data$RSE_pourcent) ~
-          paste0(round(.data$RSE_pourcent, 1), "%"),
+        is.finite(.data$RSE_pct) ~
+          paste0(round(.data$RSE_pct, 1), "%"),
         TRUE ~ NA_character_
       )
     ) %>%
@@ -687,9 +687,9 @@
 
   df_display <- df %>%
     dplyr::select(
-      "Parametre",
-      "Estimation",
-      "IC95",
+      "Parameter",
+      "Estimate",
+      "CI95",
       "RSE"
     )
 
@@ -697,34 +697,34 @@
 
   ft <- flextable::colformat_double(
     ft,
-    j = "Estimation",
+    j = "Estimate",
     digits = 4,
     na_str = ""
   )
 
   ft <- flextable::set_header_labels(
     ft,
-    Parametre = "Parameter",
-    Estimation = "Estimation",
-    IC95 = "95% CI",
+    Parameter = "Parameter",
+    Estimate = "Estimate",
+    CI95 = "95% CI",
     RSE = "RSE"
   )
 
   ft <- flextable::width(
     ft,
-    j = "Parametre",
+    j = "Parameter",
     width = 1.8
   )
 
   ft <- flextable::width(
     ft,
-    j = "Estimation",
+    j = "Estimate",
     width = 1.2
   )
 
   ft <- flextable::width(
     ft,
-    j = "IC95",
+    j = "CI95",
     width = 2.2
   )
 
@@ -771,14 +771,14 @@
 
   ft <- flextable::align(
     ft,
-    j = c("Estimation", "IC95", "RSE"),
+    j = c("Estimate", "CI95", "RSE"),
     align = "center",
     part = "body"
   )
 
   ft <- flextable::align(
     ft,
-    j = "Parametre",
+    j = "Parameter",
     align = "left",
     part = "body"
   )
