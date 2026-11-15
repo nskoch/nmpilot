@@ -156,7 +156,7 @@ NULL
 
 #' Generate VPC control streams and launch NONMEM runs
 #'
-#' From an estimation run (identified by its \code{.reg} directory), generates
+#' From an estimation run, generates
 #' two NONMEM control streams required for a VPC:
 #' \itemize{
 #'   \item \code{<run>_orig.ctl}: re-runs the model at \code{MAXEVAL=0} with
@@ -168,16 +168,21 @@ NULL
 #' Both control streams are then launched via \code{\link{nm_run}}.
 #'
 #' @param run_name Name of the estimation run, without extension
-#'   (e.g. \code{"run001"}). The function looks for \code{run001.reg/} inside
-#'   \code{analysis_dir}.
+#'   (e.g. \code{"run001"}). Its \code{.ctl}, \code{.ext} and \code{.lst}
+#'   files are looked for in \code{run001.reg/}, \code{run001.nm7/},
+#'   \code{run001/}, then directly in \code{analysis_dir} (flat layout).
 #' @param analysis_dir Root directory of the analysis, containing the
-#'   \code{.reg} subdirectory of the estimation run.
+#'   estimation run (in a subdirectory or directly).
 #' @param nmfe_path Full path to the nmfe executable
 #'   (e.g. \code{"C:/nm76g64/run/nmfe76.bat"}).
 #' @param n_sim Number of simulation replicates (default: 500).
 #' @param seed Random seed for \code{$SIMULATION} (default: 12345).
 #' @param skip_terminated Passed to \code{\link{nm_run}}. If \code{TRUE}
 #'   (default), already completed VPC runs are skipped.
+#' @param run_subdir Layout of the two VPC runs, passed to
+#'   \code{\link{nm_run}}. By default (\code{NULL}) the layout of the
+#'   estimation run is reused: \code{""} (flat) if its files were found
+#'   directly in \code{analysis_dir}, \code{".reg"} otherwise.
 #' @param verbose Passed to \code{\link{nm_run}} and used locally for messages.
 #'
 #' @return A \code{data.frame} run log (from \code{\link{nm_run}}) with one
@@ -193,8 +198,8 @@ NULL
 #' in both generated control streams.
 #'
 #' The generated \code{.ctl} files are written to \code{analysis_dir} (not
-#' inside the \code{.reg} subdirectory). They can be inspected or edited
-#' before running if needed.
+#' inside a run subdirectory). They can be inspected or edited before running
+#' if needed. Wings for NONMEM is not required.
 #'
 #' @examples
 #' \dontrun{
@@ -220,24 +225,21 @@ nm_vpc_ctl <- function(
     n_sim            = 500,
     seed             = 12345,
     skip_terminated  = TRUE,
+    run_subdir       = NULL,
     verbose          = TRUE
 ) {
 
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
 
   # --- Locate estimation run files -------------------------------------------
-  reg_dir  <- file.path(analysis_dir, paste0(run_name, ".reg"))
-  if (!dir.exists(reg_dir)) {
-    stop("Estimation .reg directory not found: ", reg_dir)
-  }
+  reg_dir  <- .nm_find_run_dir(analysis_dir, run_name,
+                               need = c(".ctl", ".ext", ".lst"))
+  if (is.null(run_subdir))
+    run_subdir <- if (normalizePath(reg_dir) == analysis_dir) "" else ".reg"
 
   ctl_src  <- file.path(reg_dir, paste0(run_name, ".ctl"))
   ext_src  <- file.path(reg_dir, paste0(run_name, ".ext"))
   lst_src  <- file.path(reg_dir, paste0(run_name, ".lst"))
-
-  if (!file.exists(ctl_src)) stop(".ctl not found in .reg: ", ctl_src)
-  if (!file.exists(ext_src)) stop(".ext not found in .reg: ", ext_src)
-  if (!file.exists(lst_src)) stop(".lst not found in .reg: ", lst_src)
 
   # --- Read control stream and estimates -------------------------------------
   if (verbose) message("Reading estimation run: ", run_name)
@@ -268,6 +270,7 @@ nm_vpc_ctl <- function(
     ctl_files       = c(orig_ctl, sim_ctl),
     analysis_dir    = analysis_dir,
     skip_terminated = skip_terminated,
+    run_subdir      = run_subdir,
     verbose         = verbose
   )
 }

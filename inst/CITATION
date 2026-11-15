@@ -1,0 +1,32 @@
+citHeader("To cite nmtools in publications, please use:")
+
+bibentry(
+  bibtype = "Manual",
+  title   = "nmtools: R Tools for Direct NONMEM Workflow Automation",
+  author  = person("Nicolas", "Simon"),
+  year    = "2026",
+  note    = paste("R package version", meta$Version),
+  url     = "https://github.com/nskoch/nmtools",
+  textVersion = paste0(
+    "Simon N (2026). nmtools: R Tools for Direct NONMEM Workflow Automation. ",
+    "R package version ", meta$Version, ". https://github.com/nskoch/nmtools"
+  )
+)
+
+bibentry(
+  bibtype = "Article",
+  header  = "If you use nm_wasserstein(), please also cite:",
+  title   = "Distribution-based covariate assessment using Wasserstein distance in population pharmacokinetic models",
+  author  = c(person("Nicolas", "Simon"), person("Jean-Sébastien", "Hulot"),
+              person("K.", "von Fabeck")),
+  journal = "Frontiers in Pharmacology",
+  year    = "2026",
+  volume  = "17",
+  pages   = "1804989",
+  doi     = "10.3389/fphar.2026.1804989",
+  textVersion = paste0(
+    "Simon N, Hulot JS, von Fabeck K (2026). Distribution-based covariate ",
+    "assessment using Wasserstein distance in population pharmacokinetic ",
+    "models. Front Pharmacol 17:1804989. doi:10.3389/fphar.2026.1804989"
+  )
+)

@@ -1,0 +1,42 @@
+$PROBLEM nmtools example - BASE model (1-cpt oral, no covariate)
+; Simulated data, fictitious subjects (see README_example.txt)
+$INPUT ID TIME AMT DV EVID MDV CMT WT GENO
+$DATA ../example_data.csv IGNORE=#
+$SUBROUTINES ADVAN2 TRANS2
+
+$PK
+  NSIM = 1
+  TVCL = THETA(1)
+  TVV  = THETA(2)
+  TVKA = THETA(3)
+  CL = TVCL*EXP(ETA(1))
+  V  = TVV*EXP(ETA(2))
+  KA = TVKA*EXP(ETA(3))
+  S2 = V
+
+$ERROR
+  IPRED = F
+  W = SQRT((THETA(4)*IPRED)**2 + THETA(5)**2)
+  IF (W.EQ.0) W = 1
+  IRES  = DV - IPRED
+  IWRES = IRES/W
+  Y = IPRED + W*EPS(1)
+
+$THETA
+ (0, 4)     ; CL
+ (0, 40)    ; V
+ (0, 1)     ; KA
+ (0, 0.1)   ; PROP
+ (0, 0.05)  ; ADD
+
+$OMEGA
+ 0.1 ; IIV_CL
+ 0.1 ; IIV_V
+ 0.1 ; IIV_KA
+
+$SIGMA 1 FIX
+
+$ESTIMATION METHOD=1 INTERACTION MAXEVAL=9999 PRINT=5 POSTHOC
+$COVARIANCE
+$TABLE ID TIME DV PRED IPRED CPRED CWRES IWRES NPDE MDV EVID WT GENO
+  ONEHEADER NOPRINT NOAPPEND FILE=sdtab1

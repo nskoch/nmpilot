@@ -35,7 +35,7 @@ test_that("nm_vpc checks its arguments and inputs", {
   root <- vpc_root()
   expect_error(nm_vpc("run1", root, vpc_cols, type = 3), "type")
   expect_error(nm_vpc("run1", root, vpc_cols, bin_method = 5), "bin_method")
-  expect_error(nm_vpc("nope", root, vpc_cols, show_hist = FALSE), "_orig.fit not found")
+  expect_error(nm_vpc("nope", root, vpc_cols, show_hist = FALSE), "nope_orig.fit not found")
 })
 
 test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
@@ -69,11 +69,45 @@ test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
   expect_true(any(grepl("4.2 FIX", sim, fixed = TRUE)))
   expect_false(any(grepl("^\\$COV", sim)))
   expect_true(any(grepl("FILE=est_sim.fit", sim, fixed = TRUE)))
+  # Estimation run in a .reg directory: the VPC runs use .reg directories too.
+  expect_equal(called$run_subdir, ".reg")
 })
 
 test_that("nm_vpc_ctl stops when the estimation run is missing", {
   root <- tempfile("vpcctl2")
   dir.create(root)
   expect_error(nm_vpc_ctl("est", root, nmfe_path = "nmfe.bat", verbose = FALSE),
-               ".reg directory not found")
+               "not found for run 'est'")
+})
+
+test_that("nm_vpc and nm_vpc_ctl work without .reg directories (flat layout)", {
+  root <- vpc_root()
+  for (s in c("orig", "sim")) {
+    f <- file.path(root, paste0("run1_", s, ".reg"), paste0("run1_", s, ".fit"))
+    file.rename(f, file.path(root, basename(f)))
+  }
+  unlink(file.path(root, c("run1_orig.reg", "run1_sim.reg")), recursive = TRUE)
+  g <- suppressMessages(nm_vpc("run1", root, vpc_cols, show_hist = FALSE, bin_method = 3))
+  expect_s3_class(g, "ggplot")
+
+  # Estimation run made directly in the analysis directory
+  root2 <- tempfile("vpcflat")
+  dir.create(root2)
+  writeLines(c("$PROB x", "$INPUT ID TIME AMT DV MDV", "$DATA data.csv IGNORE=@",
+               "$SUBR ADVAN1 TRANS2", "$PK", "  NSIM = 1", "  CL = THETA(1)*EXP(ETA(1))",
+               "  V = THETA(2)", "$ERROR", "  Y = F + F*EPS(1)", "$THETA (0,5)", " (0,50)",
+               "$OMEGA 0.1", "$SIGMA 0.04", "$EST METHOD=1 INTER",
+               "$TABLE ID TIME FILE=sdtab1"), file.path(root2, "est.ctl"))
+  writeLines(c("TABLE NO.     1: First Order",
+               " ITERATION    THETA1       THETA2       SIGMA(1,1)   OMEGA(1,1)   OBJ",
+               ext_row(-1000000000, c(4.2, 45, 0.04, 0.09, 200))), file.path(root2, "est.ext"))
+  writeLines("MINIMIZATION SUCCESSFUL", file.path(root2, "est.lst"))
+  called <- NULL
+  local_mocked_bindings(nm_run = function(...) {
+    called <<- list(...)
+    data.frame(run = "mock")
+  })
+  nm_vpc_ctl("est", root2, nmfe_path = "nmfe.bat", n_sim = 10, verbose = FALSE)
+  expect_equal(called$run_subdir, "")
+  expect_true(file.exists(file.path(root2, "est_sim.ctl")))
 })

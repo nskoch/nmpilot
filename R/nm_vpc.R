@@ -86,8 +86,9 @@ NULL
 #'
 #' @param run_name Name of the estimation run without extension
 #'   (e.g. \code{"run001"}). The function looks for
-#'   \code{run001_orig.reg/run001_orig.fit} and
-#'   \code{run001_sim.reg/run001_sim.fit} inside \code{analysis_dir}.
+#'   \code{run001_orig.fit} and \code{run001_sim.fit}, looked for in
+#'   \code{run001_orig.reg/} (resp. \code{_sim.reg/}), \code{.nm7/}, a folder
+#'   of the same name, then directly in \code{analysis_dir}.
 #' @param analysis_dir Root directory of the analysis.
 #' @param col_names Character vector of column names matching the \code{$TABLE}
 #'   output columns in the \code{.fit} files
@@ -186,12 +187,12 @@ nm_vpc <- function(
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
 
   # --- Locate .fit files ------------------------------------------------------
-  orig_fit <- file.path(analysis_dir,
-                        paste0(run_name, "_orig.reg"),
-                        paste0(run_name, "_orig.fit"))
-  sim_fit  <- file.path(analysis_dir,
-                        paste0(run_name, "_sim.reg"),
-                        paste0(run_name, "_sim.fit"))
+  orig_name <- paste0(run_name, "_orig")
+  sim_name  <- paste0(run_name, "_sim")
+  orig_fit <- file.path(.nm_find_run_dir(analysis_dir, orig_name, ".fit"),
+                        paste0(orig_name, ".fit"))
+  sim_fit  <- file.path(.nm_find_run_dir(analysis_dir, sim_name, ".fit"),
+                        paste0(sim_name, ".fit"))
 
   if (!file.exists(orig_fit)) stop("_orig.fit not found: ", orig_fit)
   if (!file.exists(sim_fit))  stop("_sim.fit not found: ", sim_fit)

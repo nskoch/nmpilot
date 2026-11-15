@@ -1,3 +1,46 @@
+# nmtools (development version)
+
+## Breaking changes
+
+* Output column names are now in English. `nm_extract_run_table()`,
+  `params` table: `Parameter`, `Estimate`, `RSE_pct`, `CI95`, `CI95_lower`,
+  `CI95_upper` (were `Parametre`, `Estimation`, `RSE_pourcent`, `IC95`,
+  `IC95_lower`, `IC95_upper`). `nm_summary()` and `nm_data_previsual()`:
+  `unique_doses` (was `doses_uniques`).
+
+## Wings for NONMEM is optional
+
+* `nm_run()`: new argument `run_subdir`. `".reg"` (default) keeps the
+  Wings-compatible layout `run1.reg/`; any other suffix can be used; `""`
+  runs NONMEM in the folder of the control stream, without copying it.
+  A control stream in Wings label syntax cannot be run with `run_subdir = ""`
+  (clear error message).
+* `nm_run()`: a relative `$DATA` path is looked up from the folder of the
+  control stream (`$DATA data.csv`), then from the run directory
+  (`$DATA ../data.csv`, Wings style).
+* `nm_vpc_ctl()`, `nm_vpc()` and `nm_extract_run_table()` find a run in
+  `<run>.reg/`, `<run>.nm7/`, a folder named `<run>`, or directly in the
+  analysis directory. `nm_vpc_ctl()` gains `run_subdir`; by default the VPC
+  runs use the layout of the estimation run.
+
+## Bug fixes
+
+* `nm_run()`: NONMEM is now launched from the run directory (NM-TRAN failed
+  when started from another working directory).
+* `nm_run()`: standard control streams with comments after `$THETA` or
+  `$OMEGA` values are no longer taken for Wings control streams.
+* `nm_run()`: `verbose = FALSE` now silences all messages.
+
+## Documentation
+
+* Example project in `inst/extdata/example`: simulated data (60 fictitious
+  subjects, one-compartment oral model) and the NONMEM outputs of a BASE and
+  a FINAL model.
+* Two vignettes: `vignette("nmtools")` (getting started) and
+  `vignette("wasserstein")`.
+* `citation("nmtools")` cites the package and, for `nm_wasserstein()`, the
+  original article.
+
 # nmtools 0.2.1
 
 * `nm_wasserstein()`: new argument `continuous = "pairwise"` to compare every

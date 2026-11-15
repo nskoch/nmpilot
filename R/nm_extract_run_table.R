@@ -4,7 +4,7 @@
 # Read a NONMEM .ext file directly and export a parameter table to Word.
 #
 # - Numeric source: .ext only
-# - Automatic detection of .nm7 / .reg run directories
+# - Automatic detection of the run directory (.nm7, .reg, <run>/ or flat)
 # - THETA: direct estimate
 # - Diagonal OMEGA: also shown as ETA standard deviations = sqrt(OMEGA)
 # - Diagonal SIGMA: also shown as EPS standard deviations = sqrt(SIGMA)
@@ -25,10 +25,14 @@
                                 run_name,
                                 extensions = c("nm7", "reg")) {
 
-  candidate_dirs <- file.path(
-    run_rep,
-    paste0(run_name, ".", extensions)
+  # Run subdirectories (<run>.nm7, <run>.reg), a folder named <run>, then the
+  # parent directory itself (flat layout: outputs next to the control stream)
+  candidate_dirs <- c(
+    file.path(run_rep, paste0(run_name, ".", extensions)),
+    file.path(run_rep, run_name),
+    run_rep
   )
+  extensions <- c(extensions, "dir", "flat")
 
   candidate_ext <- file.path(
     candidate_dirs,
@@ -53,7 +57,7 @@
       paste0(
         "Several .ext files found for '", run_name, "'. ",
         "The first one in the order ",
-        paste0(".", extensions, collapse = " then "),
+        paste(extensions, collapse = " then "),
         " will be used."
       ),
       call. = FALSE
@@ -1017,7 +1021,7 @@
     extensions = extensions
   )
 
-  message("Run directory detected: .", run_info$extension)
+  message("Run directory detected: ", run_info$run_dir)
 
   output_file <- file.path(
     run_info$run_dir,
@@ -1056,18 +1060,24 @@
 #'
 #' Two call forms are accepted:
 #' - `run_rep` (parent directory) + `run_name`;
-#' - `run_path`, the full path to the run, with or without the Wings
-#'   directory extension (`.nm7` or `.reg`).
+#' - `run_path`, the full path to the run directory (`.nm7`, `.reg`) or to
+#'   the run stem (e.g. `C:/project/run1` for `C:/project/run1.ext`).
 #'
-#' @param run_rep     Parent directory containing the run directory.
+#' The `.ext` file is looked for in `<run>.nm7/`, `<run>.reg/`, a folder named
+#' `<run>`, then directly in `run_rep` (flat layout, as produced by a plain
+#' nmfe call). Wings for NONMEM is not required.
+#'
+#' @param run_rep     Parent directory containing the run directory, or the
+#'   run files themselves (flat layout).
 #' @param run_name    Run name (stem of the `.ext` file). A full path given
 #'   here by mistake is converted automatically.
 #' @param run_path    Full path to the run (alternative to `run_rep` +
 #'   `run_name`).
 #' @param output_name Name of the Word file, written in the run directory
 #'   (default `"nonmem_results.docx"`).
-#' @param extensions  Run directory extensions to try, in order
-#'   (default `c("nm7", "reg")`).
+#' @param extensions  Run directory extensions to try first, in order
+#'   (default `c("nm7", "reg")`), before the folder `<run>` and the flat
+#'   layout.
 #'
 #' @return Invisibly, a list with `flextable`, `params` (parameter table),
 #'   `ext` (parsed .ext), `output_file`, `ext_file`, `run_dir` and

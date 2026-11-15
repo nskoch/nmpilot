@@ -13,7 +13,8 @@ nm_extract_run_table(
 )
 }
 \arguments{
-\item{run_rep}{Parent directory containing the run directory.}
+\item{run_rep}{Parent directory containing the run directory, or the
+run files themselves (flat layout).}
 
 \item{run_name}{Run name (stem of the \code{.ext} file). A full path given
 here by mistake is converted automatically.}
@@ -24,8 +25,9 @@ here by mistake is converted automatically.}
 \item{output_name}{Name of the Word file, written in the run directory
 (default \code{"nonmem_results.docx"}).}
 
-\item{extensions}{Run directory extensions to try, in order
-(default \code{c("nm7", "reg")}).}
+\item{extensions}{Run directory extensions to try first, in order
+(default \code{c("nm7", "reg")}), before the folder \verb{<run>} and the flat
+layout.}
 }
 \value{
 Invisibly, a list with \code{flextable}, \code{params} (parameter table),
@@ -42,9 +44,13 @@ SE); ETA correlations are derived from the OMEGA matrix.
 Two call forms are accepted:
 \itemize{
 \item \code{run_rep} (parent directory) + \code{run_name};
-\item \code{run_path}, the full path to the run, with or without the Wings
-directory extension (\code{.nm7} or \code{.reg}).
+\item \code{run_path}, the full path to the run directory (\code{.nm7}, \code{.reg}) or to
+the run stem (e.g. \verb{C:/project/run1} for \verb{C:/project/run1.ext}).
 }
+
+The \code{.ext} file is looked for in \verb{<run>.nm7/}, \verb{<run>.reg/}, a folder named
+\verb{<run>}, then directly in \code{run_rep} (flat layout, as produced by a plain
+nmfe call). Wings for NONMEM is not required.
 }
 \examples{
 \dontrun{

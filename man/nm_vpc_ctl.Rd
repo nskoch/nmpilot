@@ -11,16 +11,18 @@ nm_vpc_ctl(
   n_sim = 500,
   seed = 12345,
   skip_terminated = TRUE,
+  run_subdir = NULL,
   verbose = TRUE
 )
 }
 \arguments{
 \item{run_name}{Name of the estimation run, without extension
-(e.g. \code{"run001"}). The function looks for \code{run001.reg/} inside
-\code{analysis_dir}.}
+(e.g. \code{"run001"}). Its \code{.ctl}, \code{.ext} and \code{.lst}
+files are looked for in \code{run001.reg/}, \code{run001.nm7/},
+\code{run001/}, then directly in \code{analysis_dir} (flat layout).}
 
 \item{analysis_dir}{Root directory of the analysis, containing the
-\code{.reg} subdirectory of the estimation run.}
+estimation run (in a subdirectory or directly).}
 
 \item{nmfe_path}{Full path to the nmfe executable
 (e.g. \code{"C:/nm76g64/run/nmfe76.bat"}).}
@@ -32,6 +34,11 @@ nm_vpc_ctl(
 \item{skip_terminated}{Passed to \code{\link{nm_run}}. If \code{TRUE}
 (default), already completed VPC runs are skipped.}
 
+\item{run_subdir}{Layout of the two VPC runs, passed to
+\code{\link{nm_run}}. By default (\code{NULL}) the layout of the
+estimation run is reused: \code{""} (flat) if its files were found
+directly in \code{analysis_dir}, \code{".reg"} otherwise.}
+
 \item{verbose}{Passed to \code{\link{nm_run}} and used locally for messages.}
 }
 \value{
@@ -39,7 +46,7 @@ A \code{data.frame} run log (from \code{\link{nm_run}}) with one
 row per VPC run (\code{_orig} and \code{_sim}).
 }
 \description{
-From an estimation run (identified by its \code{.reg} directory), generates
+From an estimation run, generates
 two NONMEM control streams required for a VPC:
 \itemize{
 \item \code{<run>_orig.ctl}: re-runs the model at \code{MAXEVAL=0} with
@@ -60,8 +67,8 @@ estimation run (row \code{-1000000000}) and written as \code{FIX} values
 in both generated control streams.
 
 The generated \code{.ctl} files are written to \code{analysis_dir} (not
-inside the \code{.reg} subdirectory). They can be inspected or edited
-before running if needed.
+inside a run subdirectory). They can be inspected or edited before running
+if needed. Wings for NONMEM is not required.
 }
 \examples{
 \dontrun{

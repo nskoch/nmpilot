@@ -7,3 +7,5 @@
 ^nmtools\.Rproj$
 ^dev$
 ^_a_supprimer$
+^doc$
+^Meta$

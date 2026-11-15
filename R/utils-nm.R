@@ -69,3 +69,22 @@ utils::globalVariables(c(
   if (length(m) == 0) return(paste0("$DATA ", new_file))
   paste0(m[2], new_file, m[4])
 }
+
+
+# Locate the directory holding the output files of a run, whatever the
+# layout: <run>.reg (Wings / nm_run default), <run>.nm7, a folder named
+# <run>, or the analysis directory itself (flat layout, outputs next to the
+# control stream). Returns the first candidate containing all files
+# <run_name><need>, or stops with the list of paths tried.
+.nm_find_run_dir <- function(analysis_dir, run_name, need = ".ext",
+                             subdirs = c(".reg", ".nm7")) {
+  cand <- c(file.path(analysis_dir, paste0(run_name, subdirs)),
+            file.path(analysis_dir, run_name),
+            analysis_dir)
+  for (d in cand) {
+    if (all(file.exists(file.path(d, paste0(run_name, need))))) return(d)
+  }
+  stop("Files ", paste0(run_name, need, collapse = ", "),
+       " not found for run '", run_name, "'. Folders tried:\n - ",
+       paste(cand, collapse = "\n - "), call. = FALSE)
+}

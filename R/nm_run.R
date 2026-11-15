@@ -1,10 +1,11 @@
 # =============================================================================
 # nm_run.R
-# Launch one or more NONMEM runs with .reg directory management
+# Launch one or more NONMEM runs, each in its own run directory (<run>.reg by
+# default) or directly in the folder of its control stream (run_subdir = "").
 #
 # Assumptions:
 #   - The user has written the control streams, including $DATA.
-#   - The data file is NOT copied into .reg directories.
+#   - The data file is NOT copied into run directories.
 #   - nmfe76.bat (or equivalent) is accessible on the machine.
 # =============================================================================
 
@@ -142,34 +143,16 @@
 
 # Internal helper: detect if a .ctl is in Wings extended format
 .nm_is_wings_ctl <- function(ctl_file) {
+  # Wings extended syntax: the model records use labels of the $THETA/$OMEGA/
+  # $SIGMA comments (POPCL, eta_cl) that are never assigned in the code and
+  # are not $INPUT items. A standard control stream whose comments repeat
+  # parameter names (";CL" next to CL = THETA(1)*...) is not Wings.
   lines <- readLines(ctl_file, warn = FALSE)
-  lines <- gsub("\r", "", lines, fixed = TRUE)
-
-  # Build mapping from $THETA/$OMEGA/$SIGMA comments
-  theta_map <- .nm_build_mapping(lines, "^\\s*\\$THETA", "THETA")
-  eta_map   <- .nm_build_eta_mapping(lines)
-  err_map   <- .nm_build_err_mapping(lines)
-  all_names <- c(names(theta_map), names(eta_map), names(err_map))
-
-  if (length(all_names) == 0L) return(FALSE)
-
-  # Check if any name appears in model records ($PK, $PRED, $ERROR, $DES)
-  model_pat <- "^\\s*\\$(PK|PRED|ERROR|DES|AES|MIX)\\b"
-  in_model  <- FALSE
-  for (ln in lines) {
-    if (grepl(model_pat, ln, ignore.case = TRUE)) { in_model <- TRUE; next }
-    if (in_model && grepl("^\\s*\\$[A-Za-z]", ln)) in_model <- FALSE
-    if (!in_model) next
-    code_part <- sub(";.*$", "", ln)
-    for (nm in all_names) {
-      if (grepl(paste0("\\b", nm, "\\b"), code_part)) return(TRUE)
-    }
-  }
-  FALSE
+  nrow(.nm_ip_expand_labels(lines)$substitutions) > 0L
 }
 
 # Internal helper: fix $DATA path to absolute in a .ctl file
-.nm_fix_data_path <- function(ctl_file, analysis_dir, reg_dir, verbose = TRUE) {
+.nm_fix_data_path <- function(ctl_file, src_dir, reg_dir, verbose = TRUE) {
   lines <- readLines(ctl_file, warn = FALSE)
   lines <- gsub("\r", "", lines, fixed = TRUE)
 
@@ -189,11 +172,13 @@
         grepl("^/",         data_file) ||
         grepl("^\\\\",  data_file)) next
 
-    # Resolve relative path from reg_dir (Wings uses "..\" relative to .reg)
-    abs_path <- normalizePath(
-      file.path(reg_dir, data_file),
-      mustWork = FALSE
-    )
+    # A relative path is looked up first from the folder of the original
+    # control stream (plain nmfe usage: $DATA data.csv), then from the run
+    # directory (Wings usage: $DATA ../data.csv). If neither exists, the
+    # control-stream folder is used and NM-TRAN will report the missing file.
+    cand <- c(file.path(src_dir, data_file), file.path(reg_dir, data_file))
+    hit <- cand[file.exists(cand)]
+    abs_path <- normalizePath(if (length(hit)) hit[1] else cand[1], mustWork = FALSE)
     # Use forward slashes (NONMEM accepts both on Windows)
     abs_path   <- gsub("\\", "/", abs_path, fixed = TRUE)
     lines[idx] <- sub(data_file, abs_path, ln, fixed = TRUE)
@@ -234,18 +219,27 @@
 #' Run one or more NONMEM models
 #'
 #' Sequentially launches a list of NONMEM control streams via the `nmfe`
-#' executable (direct call, no Wings for NONMEM, no PsN required). For each
-#' run, a subdirectory `<run>.reg` is created inside `analysis_dir` to store
-#' the control stream and all NONMEM output files. The data file is not copied:
-#' the `$DATA` record in each control stream must point to the data file using
-#' an absolute path.
+#' executable (direct call, no Wings for NONMEM, no PsN required). By
+#' default each run gets its own subdirectory `<run>.reg` inside
+#' `analysis_dir`, holding a copy of the control stream and all NONMEM output
+#' files; with `run_subdir = ""` the run is made directly in the folder of
+#' its control stream, as when nmfe is called by hand. The data file is not
+#' copied. A relative `$DATA` path is accepted: it is looked up from the
+#' folder of the control stream (`$DATA data.csv`), then from the run
+#' directory (`$DATA ../data.csv`, Wings style), and written as an absolute
+#' path in the copied control stream.
 #'
 #' @param nmfe_path Full path to the nmfe executable
 #'   (e.g. `"C:/nm76g64/run/nmfe76.bat"`).
 #' @param ctl_files Character vector of paths to `.ctl` files. May be absolute
 #'   paths or file names relative to `analysis_dir`.
-#' @param analysis_dir Root directory of the analysis. One `.reg` subdirectory
-#'   will be created here for each run.
+#' @param analysis_dir Root directory of the analysis. One run subdirectory
+#'   is created here for each run (see `run_subdir`).
+#' @param run_subdir Suffix of the run subdirectories: `".reg"` (default,
+#'   Wings-compatible layout `run001.reg/`), any other suffix (e.g. `".run"`),
+#'   or `""` to run in the folder of the control stream itself, without
+#'   copying it (outputs next to the `.ctl`). Control streams in Wings label
+#'   syntax need a subdirectory, because the converted copy is written there.
 #' @param skip_terminated Logical. If `TRUE` (default), runs whose `.lst` file
 #'   already exists and reports a terminal state are skipped.
 #' @param accept_failed Logical. Only used when `skip_terminated = TRUE`.
@@ -260,7 +254,7 @@
 #'   columns:
 #'   \describe{
 #'     \item{run}{Run name (without extension).}
-#'     \item{reg_dir}{Full path to the `.reg` directory.}
+#'     \item{reg_dir}{Full path to the run directory (`<run>.reg`, or the folder of the control stream when `run_subdir = ""`).}
 #'     \item{action}{One of `"launched"`, `"skipped_done"`, or
 #'       `"skipped_no_ctl"`.}
 #'     \item{exit_status}{Shell return code from `nmfe` (0 = success).}
@@ -278,9 +272,11 @@
 #'   }
 #'
 #' @details
-#' The `.reg` directory convention mirrors the Wings for NONMEM output
-#' structure: a run named `run001.ctl` produces a directory `run001.reg/`
-#' containing `run001.ctl`, `run001.lst`, `run001.ext`, etc.
+#' Wings for NONMEM is not needed. The default `.reg` layout mirrors the
+#' Wings output structure (a run named `run001.ctl` produces a directory
+#' `run001.reg/` containing `run001.ctl`, `run001.lst`, `run001.ext`, etc.),
+#' so that projects started with Wings can be continued; the other functions
+#' of the package read runs in any of these layouts.
 #'
 #' Run status is parsed from the `.lst` file after completion.
 #' The `skip_terminated` mechanism reads any existing `.lst` before launching,
@@ -311,6 +307,7 @@ nm_run <- function(
     skip_terminated = TRUE,
     accept_failed   = TRUE,
     overwrite_ctl   = TRUE,
+    run_subdir      = ".reg",
     verbose         = TRUE
 ) {
 
@@ -327,6 +324,8 @@ nm_run <- function(
   }
 
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
+  if (is.null(run_subdir)) run_subdir <- ""
+  flat <- !nzchar(run_subdir)
 
   # --- Loop over runs ---------------------------------------------------------
 
@@ -340,7 +339,7 @@ nm_run <- function(
     }
 
     run_name <- tools::file_path_sans_ext(basename(ctl_full))
-    reg_dir  <- file.path(analysis_dir, paste0(run_name, ".reg"))
+    reg_dir  <- if (flat) dirname(ctl_full) else file.path(analysis_dir, paste0(run_name, run_subdir))
     lst_file <- file.path(reg_dir, paste0(run_name, ".lst"))
     # Note: if Wings CTL is converted, run_name keeps original name
 
@@ -363,7 +362,13 @@ nm_run <- function(
 
     # Auto-convert Wings extended CTL if detected
     ctl_to_use <- ctl_full
-    if (.nm_is_wings_ctl(ctl_full)) {
+    wings <- .nm_is_wings_ctl(ctl_full)
+    if (wings && flat)
+      stop("Control stream ", basename(ctl_full), " uses Wings label syntax: ",
+           "it must be converted, which needs a run subdirectory. ",
+           "Use run_subdir = \".reg\", or convert it first with nm_convert_ctl().",
+           call. = FALSE)
+    if (wings) {
       if (verbose) message("    [Wings CTL detected] Converting to standard NONMEM...")
       # Convert to a temp file, keeping original run name
       tmp_ctl <- tempfile(fileext = ".ctl")
@@ -373,25 +378,28 @@ nm_run <- function(
       if (verbose) message("    Wings CTL converted successfully.")
     }
 
-    # Copy .ctl into .reg (always using original run_name for the dest file)
-    ctl_dest <- file.path(reg_dir, paste0(run_name, ".ctl"))
-    if (overwrite_ctl || !file.exists(ctl_dest)) {
-      file.copy(ctl_to_use, ctl_dest, overwrite = TRUE)
+    if (flat) {
+      # Run in place: the user's control stream is used as it is.
+      ctl_dest <- ctl_full
+    } else {
+      # Copy .ctl into the run directory (always using the original run name)
+      ctl_dest <- file.path(reg_dir, paste0(run_name, ".ctl"))
+      if (overwrite_ctl || !file.exists(ctl_dest)) {
+        file.copy(ctl_to_use, ctl_dest, overwrite = TRUE)
+      }
+      # Write the $DATA path as an absolute path in the copy
+      .nm_fix_data_path(ctl_dest, dirname(ctl_full), reg_dir, verbose = verbose)
     }
-
-    # Fix $DATA path to absolute (handles relative paths like ..\data.csv)
-    .nm_fix_data_path(ctl_dest, analysis_dir, reg_dir, verbose = verbose)
 
     # Build and launch nmfe command
     lst_dest <- file.path(reg_dir, paste0(run_name, ".lst"))
-    cmd <- paste(
-      shQuote(nmfe_path),
-      shQuote(ctl_dest),
-      shQuote(lst_dest)
-    )
+    cmd <- paste0(shQuote(nmfe_path), " ", basename(ctl_dest), " ",
+                  basename(lst_dest), "   (in ", reg_dir, ")")
 
     if (verbose) message("    Command: ", cmd)
-    exit_status <- system(cmd, wait = TRUE)
+    # nmfe is run from inside the .reg directory: NM-TRAN writes its work
+    # files in the current directory.
+    exit_status <- .nm_launch(nmfe_path, reg_dir, run_name)
     if (verbose) message("    Exit status: ", exit_status)
 
     .nm_run_log_row(run_name, reg_dir, "launched", exit_status, lst_file)

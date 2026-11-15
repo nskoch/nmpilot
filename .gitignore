@@ -22,3 +22,5 @@ nonmem.exe
 _a_supprimer/
 dev/
 install_package.R
+/doc/
+/Meta/

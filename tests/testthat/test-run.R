@@ -50,3 +50,52 @@ test_that("nm_run copies the control stream, fixes $DATA and launches nmfe", {
   log2 <- nm_run(nmfe, "r1.ctl", root, verbose = FALSE)
   expect_equal(log2$action, "skipped_done")
 })
+
+test_that("Wings label syntax is detected only when labels replace THETA/ETA", {
+  std <- write_ctl("$INPUT ID TIME DV WT", "$THETA (0,5) ; CL", " (0,50) ; V",
+                   "$OMEGA 0.1 ; CL", "$PK", "  CL = THETA(1)*EXP(ETA(1))", "  V = THETA(2)",
+                   "  S2 = V")
+  expect_false(nmtools:::.nm_is_wings_ctl(std))
+  wings <- write_ctl("$INPUT ID TIME DV", "$THETA (0,5) ;POPCL", "$OMEGA 0.1 ; eta_cl",
+                     "$PK", "  CL = POPCL*EXP(eta_cl)")
+  expect_true(nmtools:::.nm_is_wings_ctl(wings))
+})
+
+test_that("nm_run accepts $DATA relative to the control stream folder", {
+  root <- run_setup()
+  ctl <- file.path(root, "r1.ctl")
+  l <- readLines(ctl); l[grepl("^\\$DATA", l)] <- "$DATA data.csv IGNORE=@"
+  writeLines(l, ctl)
+  log <- nm_run(fake_nmfe(root), "r1.ctl", root, verbose = FALSE)
+  data_line <- grep("^\\$DATA", readLines(file.path(root, "r1.reg", "r1.ctl")), value = TRUE)
+  data_path <- strsplit(trimws(data_line), "\\s+")[[1]][2]
+  expect_true(file.exists(data_path))
+  expect_equal(normalizePath(data_path), normalizePath(file.path(root, "data.csv")))
+})
+
+test_that("nm_run can run in the control stream folder (run_subdir = \"\")", {
+  root <- run_setup()
+  ctl <- file.path(root, "r1.ctl")
+  l <- readLines(ctl); l[grepl("^\\$DATA", l)] <- "$DATA data.csv IGNORE=@"
+  writeLines(l, ctl)
+  before <- readLines(ctl)
+  log <- nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = "", verbose = FALSE)
+  expect_equal(log$action, "launched")
+  expect_false(dir.exists(file.path(root, "r1.reg")))
+  expect_true(file.exists(file.path(root, "r1.lst")))
+  expect_identical(readLines(ctl), before)       # control stream left untouched
+  expect_equal(nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = "",
+                      verbose = FALSE)$action, "skipped_done")
+  # Other suffix
+  log3 <- nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = ".run", verbose = FALSE)
+  expect_true(file.exists(file.path(root, "r1.run", "r1.lst")))
+})
+
+test_that("nm_run refuses a Wings label control stream in the flat layout", {
+  root <- run_setup()
+  writeLines(c("$PROB x", "$INPUT ID TIME AMT DV", "$DATA data.csv IGNORE=@",
+               "$PRED", "  Y = POPA + EPS(1)", "$THETA 1 ;POPA", "$SIGMA 1"),
+             file.path(root, "w1.ctl"))
+  expect_error(nm_run(fake_nmfe(root), "w1.ctl", root, run_subdir = "", verbose = FALSE),
+               "Wings label syntax")
+})

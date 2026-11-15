@@ -25,8 +25,9 @@ nm_vpc(
 \arguments{
 \item{run_name}{Name of the estimation run without extension
 (e.g. \code{"run001"}). The function looks for
-\code{run001_orig.reg/run001_orig.fit} and
-\code{run001_sim.reg/run001_sim.fit} inside \code{analysis_dir}.}
+\code{run001_orig.fit} and \code{run001_sim.fit}, looked for in
+\code{run001_orig.reg/} (resp. \code{_sim.reg/}), \code{.nm7/}, a folder
+of the same name, then directly in \code{analysis_dir}.}
 
 \item{analysis_dir}{Root directory of the analysis.}
 

@@ -6,10 +6,12 @@
 **nmtools** is an R package that drives a population pharmacokinetic (popPK)
 analysis with NONMEM from R, from the data set to the final model diagnostics.
 It calls the NONMEM `nmfe` launcher directly and does not need PsN or
-Wings for NONMEM, while still reading the Wings conventions (`.reg` run
-directories, `.smr` files, extended control streams with parameter labels).
+Wings for NONMEM. Wings is optional: runs can sit next to their control
+streams or in run subdirectories, and the Wings conventions (`.reg` run
+directories, `.smr` files, extended control streams with parameter labels)
+are also read, so that projects started with Wings can be continued.
 
-> **Status:** version 0.1, under active development. The interface may still
+> **Status:** version 0.2, under active development. The interface may still
 > change. Bug reports and suggestions are welcome in the
 > [issues](https://github.com/nskoch/nmtools/issues).
 
@@ -18,6 +20,9 @@ directories, `.smr` files, extended control streams with parameter labels).
 ```r
 # install.packages("remotes")
 remotes::install_github("nskoch/nmtools")
+
+# with the vignettes:
+remotes::install_github("nskoch/nmtools", build_vignettes = TRUE)
 ```
 
 Running models requires a working NONMEM installation. The package is
@@ -39,6 +44,21 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Covariate assessment on the ETA distributions | `nm_wasserstein()` (Wasserstein distance, Simon et al. 2026) |
 | Export figures | `nm_export_plot()` |
 
+## Example project and vignettes
+
+The package ships a small example project, with simulated data (60
+fictitious subjects, one-compartment oral model) and the NONMEM outputs of a
+BASE and a FINAL model, so that every function that reads results can be
+tried without NONMEM:
+
+```r
+ex <- system.file("extdata", "example", package = "nmtools")
+runs <- nm_extract_runs(ex)
+```
+
+Two vignettes use it: `vignette("nmtools")` (getting started, from the data
+set to the comparison of two models) and `vignette("wasserstein")`.
+
 ## A typical workflow
 
 ```r
@@ -49,9 +69,10 @@ dat <- nm_read_csv("C:/nm76g64/run/study/data.csv")
 nm_summary(dat$data)
 nm_plot_dv(dat$data, scales = "both")
 
-# 2. Run one or several models. Each run goes to <run>.reg/ in the analysis
-#    directory; $DATA paths are read relative to that run directory
-#    (e.g. $DATA ../data.csv).
+# 2. Run one or several models. By default each run goes to <run>.reg/ in the
+#    analysis directory; run_subdir = "" runs it next to its control stream.
+#    A relative $DATA path is read from the control stream folder
+#    ($DATA data.csv) or from the run directory ($DATA ../data.csv).
 log <- nm_run(
   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
   ctl_files    = c("run1.ctl", "run2.ctl"),
@@ -89,6 +110,27 @@ boot <- nm_bootstrap("C:/nm76g64/run/study/run2.reg/run2.ctl",
                      n = 500, seed = 1)
 ```
 
+## Run layouts (Wings not required)
+
+`nm_run()` writes each run either in its own subdirectory or directly in the
+folder of its control stream:
+
+| `run_subdir` | Outputs of `run1.ctl` |
+|---|---|
+| `".reg"` (default) | `run1.reg/run1.lst`, `run1.reg/run1.ext`... (same layout as Wings) |
+| `".run"` or any suffix | `run1.run/run1.lst`... |
+| `""` | `run1.lst`, `run1.ext`... next to `run1.ctl` (as a manual nmfe call) |
+
+`nm_extract_run_table()`, `nm_vpc_ctl()` and `nm_vpc()` find a run in
+`<run>.reg/`, `<run>.nm7/`, a folder named `<run>`, or directly in the
+analysis directory. `nm_extract_runs()` reads every run of a folder, in
+subdirectories or not. `nm_wasserstein()` and `nm_compare()` take a run
+directory of any name or a run prefix (`"C:/study/run1"` for
+`C:/study/run1.ext`, `run1.phi`...), and `nm_gof()` a table file or the
+folder that holds it. Control streams
+in Wings label syntax are converted automatically by `nm_run()` (this needs a
+run subdirectory) or by `nm_convert_ctl()`.
+
 ## Parameter names from the model code
 
 `nm_identify_parameters()` reads `$PK` (or `$PRED`) and links every THETA and
@@ -119,6 +161,15 @@ w
 plot(w)
 plot(w, type = "r2w")
 ```
+
+## Citation
+
+```r
+citation("nmtools")
+```
+
+gives the reference of the package and, for `nm_wasserstein()`, the
+reference of the original article.
 
 ## License
 

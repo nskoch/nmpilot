@@ -11,6 +11,7 @@ nm_run(
   skip_terminated = TRUE,
   accept_failed = TRUE,
   overwrite_ctl = TRUE,
+  run_subdir = ".reg",
   verbose = TRUE
 )
 }
@@ -21,8 +22,8 @@ nm_run(
 \item{ctl_files}{Character vector of paths to \code{.ctl} files. May be absolute
 paths or file names relative to \code{analysis_dir}.}
 
-\item{analysis_dir}{Root directory of the analysis. One \code{.reg} subdirectory
-will be created here for each run.}
+\item{analysis_dir}{Root directory of the analysis. One run subdirectory
+is created here for each run (see \code{run_subdir}).}
 
 \item{skip_terminated}{Logical. If \code{TRUE} (default), runs whose \code{.lst} file
 already exists and reports a terminal state are skipped.}
@@ -34,6 +35,12 @@ If \code{TRUE} (default), runs that terminated with an error are also skipped
 \item{overwrite_ctl}{Logical. If \code{TRUE} (default), the \code{.ctl} file is
 overwritten in the \code{.reg} directory if already present.}
 
+\item{run_subdir}{Suffix of the run subdirectories: \code{".reg"} (default,
+Wings-compatible layout \verb{run001.reg/}), any other suffix (e.g. \code{".run"}),
+or \code{""} to run in the folder of the control stream itself, without
+copying it (outputs next to the \code{.ctl}). Control streams in Wings label
+syntax need a subdirectory, because the converted copy is written there.}
+
 \item{verbose}{Logical. If \code{TRUE} (default), progress messages are printed
 to the console.}
 }
@@ -42,7 +49,7 @@ A \code{data.frame} (run log) with one row per run and the following
 columns:
 \describe{
 \item{run}{Run name (without extension).}
-\item{reg_dir}{Full path to the \code{.reg} directory.}
+\item{reg_dir}{Full path to the run directory (\verb{<run>.reg}, or the folder of the control stream when \code{run_subdir = ""}).}
 \item{action}{One of \code{"launched"}, \code{"skipped_done"}, or
 \code{"skipped_no_ctl"}.}
 \item{exit_status}{Shell return code from \code{nmfe} (0 = success).}
@@ -61,16 +68,22 @@ columns:
 }
 \description{
 Sequentially launches a list of NONMEM control streams via the \code{nmfe}
-executable (direct call, no Wings for NONMEM, no PsN required). For each
-run, a subdirectory \verb{<run>.reg} is created inside \code{analysis_dir} to store
-the control stream and all NONMEM output files. The data file is not copied:
-the \verb{$DATA} record in each control stream must point to the data file using
-an absolute path.
+executable (direct call, no Wings for NONMEM, no PsN required). By
+default each run gets its own subdirectory \verb{<run>.reg} inside
+\code{analysis_dir}, holding a copy of the control stream and all NONMEM output
+files; with \code{run_subdir = ""} the run is made directly in the folder of
+its control stream, as when nmfe is called by hand. The data file is not
+copied. A relative \verb{$DATA} path is accepted: it is looked up from the
+folder of the control stream (\verb{$DATA data.csv}), then from the run
+directory (\verb{$DATA ../data.csv}, Wings style), and written as an absolute
+path in the copied control stream.
 }
 \details{
-The \code{.reg} directory convention mirrors the Wings for NONMEM output
-structure: a run named \code{run001.ctl} produces a directory \verb{run001.reg/}
-containing \code{run001.ctl}, \code{run001.lst}, \code{run001.ext}, etc.
+Wings for NONMEM is not needed. The default \code{.reg} layout mirrors the
+Wings output structure (a run named \code{run001.ctl} produces a directory
+\verb{run001.reg/} containing \code{run001.ctl}, \code{run001.lst}, \code{run001.ext}, etc.),
+so that projects started with Wings can be continued; the other functions
+of the package read runs in any of these layouts.
 
 Run status is parsed from the \code{.lst} file after completion.
 The \code{skip_terminated} mechanism reads any existing \code{.lst} before launching,

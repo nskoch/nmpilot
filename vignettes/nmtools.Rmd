@@ -1,0 +1,140 @@
+---
+title: "Getting started with nmtools"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with nmtools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
+```
+
+This vignette walks through a small popPK analysis with **nmtools**, from the
+data set to the comparison of two models. NONMEM is not needed to read it:
+the package ships an example project whose NONMEM runs have already been
+made. The chunks that call NONMEM are shown but not run.
+
+```{r setup}
+library(nmtools)
+ex <- system.file("extdata", "example", package = "nmtools")
+list.files(ex, recursive = TRUE)
+```
+
+The data are **simulated** (60 fictitious subjects, single oral dose of
+100 mg, 9 samples each, body weight `WT` and a binary genotype `GENO`; see
+`README.txt` and `sim_example_data.R` in the example folder). Two models were
+fitted with NONMEM 7.6:
+
+* `run1`: one-compartment model with first-order absorption, no covariate
+  (BASE);
+* `run2`: same model with weight on CL (estimated exponent) and V (exponent
+  fixed to 1), and genotype on CL (FINAL).
+
+## 1. The data set
+
+`nm_read_csv()` reads a NONMEM data set, identifies the reserved columns and
+computes the time after dose. `nm_summary()` gives a short diagnostic.
+
+```{r data}
+dat <- nm_read_csv(file.path(ex, "example_data.csv"))
+nm_summary(dat$data)
+```
+
+```{r plot-dv}
+nm_plot_dv(dat$data, scales = "log", verbose = FALSE)
+```
+
+## 2. Running NONMEM
+
+`nm_run()` calls the `nmfe` launcher directly (no PsN, no Wings for NONMEM).
+By default each run gets its own `<run>.reg` subdirectory, as in the example
+folder; `run_subdir = ""` runs it next to its control stream instead. The
+functions that write files are run here on a copy of the example folder.
+
+```{r run, eval = FALSE}
+file.copy(ex, tempdir(), recursive = TRUE)
+proj <- file.path(tempdir(), "example")
+log <- nm_run(
+  nmfe_path       = "C:/nm76g64/run/nmfe76.bat",
+  ctl_files       = c("run1.ctl", "run2.ctl"),
+  analysis_dir    = proj,
+  skip_terminated = FALSE
+)
+```
+
+## 3. Results of all the runs
+
+`nm_extract_runs()` reads every run of a folder: objective function,
+minimisation and covariance status, parameters with their RSE and
+shrinkage. Parameters are named from the model code (`CL`, `V`, `KA`...).
+
+```{r runs}
+runs <- nm_extract_runs(ex)
+runs$runs[, c("run", "ofv", "dOFV", "min_ok", "cov_status")]
+nm_compare_runs(runs, what = "value", format = TRUE)
+```
+
+The link between each THETA/ETA and the PK parameter comes from
+`nm_identify_parameters()`:
+
+```{r identify}
+nm_identify_parameters(file.path(ex, "run2.ctl"))$parameter_table
+```
+
+A parameter table of one run can be exported to Word with
+`nm_extract_run_table()` (packages flextable and officer):
+
+```{r run-table, eval = FALSE}
+nm_extract_run_table(run_rep = proj, run_name = "run2")
+```
+
+## 4. Goodness-of-fit plots
+
+```{r gof, fig.height = 4}
+gof <- nm_gof(file.path(ex, "run2.reg", "sdtab2"))
+names(gof$plots)
+gof$plots$dv_pred
+gof$plots$cwres_time
+```
+
+## 5. Comparing two models
+
+`nm_compare()` puts the BASE and FINAL runs side by side, subject by subject
+and observation by observation.
+
+```{r compare}
+cmp <- nm_compare(file.path(ex, "run1.reg"), file.path(ex, "run2.reg"),
+                  labels = c("BASE", "FINAL"))
+cmp
+```
+
+## 6. Visual predictive check
+
+The VPC needs two more NONMEM runs (the model re-run on the data, and the
+simulations). `nm_vpc_ctl()` writes and launches them, then `nm_vpc()` draws
+the VPC or the prediction-corrected VPC.
+
+```{r vpc, eval = FALSE}
+nm_vpc_ctl(run_name = "run2", analysis_dir = proj,
+           nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_sim = 500)
+nm_vpc(run_name = "run2", analysis_dir = proj,
+       col_names = c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED"),
+       type = 2)
+```
+
+## 7. Uncertainty
+
+`nm_profile()` (likelihood profiles) and `nm_bootstrap()` (case bootstrap)
+also run NONMEM and are not executed here.
+
+```{r uncertainty, eval = FALSE}
+prof <- nm_profile("C:/nm76g64/run/nmfe76.bat", file.path(proj, "run2.ctl"),
+                   param = "THETA(6)", from = 0.1, to = 1, by = 0.1)
+boot <- nm_bootstrap(file.path(proj, "run2.ctl"), "C:/nm76g64/run/nmfe76.bat",
+                     n = 500)
+```
+
+The covariate assessment based on the Wasserstein distance is described in
+`vignette("wasserstein", package = "nmtools")`.
