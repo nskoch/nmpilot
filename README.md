@@ -36,6 +36,7 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Compare two runs | `nm_compare()` (paired CWRES / NPDE, individual OFV) |
 | VPC and pc-VPC | `nm_vpc_ctl()`, `nm_vpc()` |
 | Parameter uncertainty | `nm_profile()` (likelihood profile), `nm_bootstrap()` (case bootstrap) |
+| Covariate assessment on the ETA distributions | `nm_wasserstein()` (Wasserstein distance, Simon et al. 2026) |
 | Export figures | `nm_export_plot()` |
 
 ## A typical workflow
@@ -100,6 +101,23 @@ labels (`CL = POPCL*EXP(eta_cl)`) are handled.
 ```r
 x <- nm_identify_parameters("run2.ctl")
 x$parameter_table
+```
+
+## Wasserstein-based covariate assessment
+
+`nm_wasserstein()` implements the method of Simon N, Hulot JS, von Fabeck K.
+Distribution-based covariate assessment using Wasserstein distance in
+population pharmacokinetic models. *Front Pharmacol.* 2026;17:1804989
+([doi:10.3389/fphar.2026.1804989](https://doi.org/10.3389/fphar.2026.1804989)).
+It compares the distribution of an ETA between groups of subjects defined by
+a covariate, for one or several runs, and reports a Wasserstein-based R2.
+
+```r
+w <- nm_wasserstein(c(BASE = "base.reg", FINAL = "final.reg"),
+                    covariates = c("CLCR", "CT01"), eta = "CL")
+w
+plot(w)
+plot(w, type = "r2w")
 ```
 
 ## License

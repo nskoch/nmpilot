@@ -31,7 +31,8 @@ Suggests:
     flextable,
     officer,
     patchwork,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    transport
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0
 RoxygenNote: 7.3.2
