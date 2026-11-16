@@ -1,3 +1,17 @@
+# nmtools 0.4.1
+
+* `nm_suggest_model()`: the residual error model is chosen on a common
+  structural fit of each interval (iteratively reweighted least squares
+  under a combined variance); the additive, proportional and combined
+  variance models are then compared by BIC on the same leverage-corrected
+  (PRESS) residuals, so that they are nested. Points of leverage above 0.7
+  and predictions below twice the LLOQ are left out, and the combined model
+  is kept only when its BIC is better by more than 10. On simulated rich
+  data (20 replicates per scenario), the error model is recovered in 60 to
+  100% of the datasets; better than 0.4.0 for Michaelis-Menten, additive and
+  combined error, lower for some proportional-error scenarios
+  (`inst/validation/validate_suggest_model.R`).
+
 # nmtools 0.4.0
 
 ## Data-driven suggestion of structural models

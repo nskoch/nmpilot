@@ -133,10 +133,15 @@ censoring penalty (M3-like). BIC weights averaged.
 \item Elimination: dose proportionality (power model on AUC, or on
 dose-normalised concentrations by time bin for sparse data) and
 curvature of the log-concentration decline (concave = saturable).
-\item Residual error: residuals of the best fit of each interval, variance
-models \code{a^2} (additive), \verb{b^2 f^2} (proportional) and \verb{a^2 + b^2 f^2}
-(combined) fitted by maximum likelihood and compared by BIC. The
-estimates give the initial SIGMA values (variances).
+\item Residual error: the best structural fit of each interval is refitted
+by iteratively reweighted least squares under a combined variance
+\verb{a^2 + b^2 f^2}; on these common, leverage-corrected (PRESS) residuals,
+the variance models \code{a^2} (additive), \verb{b^2 f^2} (proportional) and
+\verb{a^2 + b^2 f^2} (combined) are fitted by maximum likelihood and compared
+by BIC, the combined model being kept only when its BIC is better by
+more than 10. Points of leverage above 0.7 and predictions below twice
+the LLOQ are left out. The estimates give the initial SIGMA values
+(variances).
 \item IIV: variance of the log of the individual estimates of CL, central
 volume and absorption parameter (median per subject), given as CV\%.
 It includes the estimation noise of each individual value and tends to

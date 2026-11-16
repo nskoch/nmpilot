@@ -40,10 +40,15 @@
 #' 5. Elimination: dose proportionality (power model on AUC, or on
 #'    dose-normalised concentrations by time bin for sparse data) and
 #'    curvature of the log-concentration decline (concave = saturable).
-#' 6. Residual error: residuals of the best fit of each interval, variance
-#'    models `a^2` (additive), `b^2 f^2` (proportional) and `a^2 + b^2 f^2`
-#'    (combined) fitted by maximum likelihood and compared by BIC. The
-#'    estimates give the initial SIGMA values (variances).
+#' 6. Residual error: the best structural fit of each interval is refitted
+#'    by iteratively reweighted least squares under a combined variance
+#'    `a^2 + b^2 f^2`; on these common, leverage-corrected (PRESS) residuals,
+#'    the variance models `a^2` (additive), `b^2 f^2` (proportional) and
+#'    `a^2 + b^2 f^2` (combined) are fitted by maximum likelihood and compared
+#'    by BIC, the combined model being kept only when its BIC is better by
+#'    more than 10. Points of leverage above 0.7 and predictions below twice
+#'    the LLOQ are left out. The estimates give the initial SIGMA values
+#'    (variances).
 #' 7. IIV: variance of the log of the individual estimates of CL, central
 #'    volume and absorption parameter (median per subject), given as CV%.
 #'    It includes the estimation noise of each individual value and tends to
@@ -1438,31 +1443,56 @@ plot.nm_model_suggestion <- function(x, type = c("profiles", "support", "pooled"
       M <- solve(t(J) %*% (J * w))
       rowSums((J %*% M) * J) * w
     }, error = function(e) rep(NA_real_, length(fp)))
-    ok <- is.finite(h) & h < 0.95 & is.finite(fp) & fp > 0
+    # high-leverage points (last samples of a profile) carry little
+    # information on the residual error and 1/(1-h) would inflate them
+    ok <- is.finite(h) & h < 0.7 & is.finite(fp) & fp > 0
     list(y = fp[ok] + (y[ok] - fp[ok]) / (1 - h[ok]), f = fp[ok], np = length(par))
   }
+  # observations predicted below 2 x LLOQ are left out of the variance
+  # models: near the LLOQ, censoring keeps only the values pushed upwards by
+  # the error, which mimics an additive floor
+  f_min <- if (is.finite(lloq_dv)) 2 * lloq_dv else 0
   ml <- function(res, s2fun, start) {
     y <- unlist(lapply(res, `[[`, "y")); fp <- unlist(lapply(res, `[[`, "f"))
-    ok <- is.finite(fp) & fp > 0
+    ok <- is.finite(fp) & fp > 0 & fp >= f_min
     y <- y[ok]; fp <- fp[ok]
     nll <- function(p) { s2 <- s2fun(p, fp); 0.5 * sum(log(2 * pi * s2) + (y - fp)^2 / s2) }
     r <- tryCatch(stats::optim(start, nll, method = if (length(start) == 1) "BFGS" else "Nelder-Mead"),
                   error = function(e) list(par = start, value = nll(start)))
     list(par = r$par, value = r$value, n = length(y))
   }
-  # additive: unweighted refit; proportional: log-scale fit (as given)
+  # Starting weights: additive variance from an unweighted refit,
+  # proportional variance from the log-scale fits.
   r_add <- lapply(fits, refit, wfun = function(pr) 1)
   r_prop <- lapply(fits, function(f) press(f, f$par, f$y * f$dose, function(pr) 1 / pr^2))
-  m_add <- ml(r_add, function(p, f) rep(exp(2 * p[1]), length(f)), log(stats::sd(unlist(lapply(r_add, function(r) r$y - r$f)))))
-  m_prop <- ml(r_prop, function(p, f) exp(2 * p[1]) * f^2,
-               log(stats::sd(unlist(lapply(r_prop, function(r) (r$y - r$f) / r$f)))))
-  # combined: refit weighted by the first-stage variances, then ML
-  a1 <- exp(2 * m_add$par[1]); b1 <- exp(2 * m_prop$par[1])
-  r_comb <- lapply(fits, refit, wfun = function(pr) 1 / (a1 / 2 + b1 / 2 * pr^2))
-  m_comb <- ml(r_comb, function(p, f) exp(2 * p[1]) + exp(2 * p[2]) * f^2,
-               c(m_add$par[1] - log(2) / 2, m_prop$par[1] - log(2) / 2))
+  m_add0 <- ml(r_add, function(p, f) rep(exp(2 * p[1]), length(f)), log(stats::sd(unlist(lapply(r_add, function(r) r$y - r$f)))))
+  m_prop0 <- ml(r_prop, function(p, f) exp(2 * p[1]) * f^2,
+                log(stats::sd(unlist(lapply(r_prop, function(r) (r$y - r$f) / r$f)))))
+  a2 <- exp(2 * m_add0$par[1]) / 2; b2 <- exp(2 * m_prop0$par[1]) / 2
+  fmed <- stats::median(unlist(lapply(r_prop, `[[`, "f")))
+  # Common structural fit: iteratively reweighted least squares under the
+  # combined variance a2 + b2 f^2, so that the three variance models are
+  # compared on the same (leverage-corrected) residuals and are nested.
+  for (it in 1:3) {
+    res <- lapply(fits, refit, wfun = function(pr) 1 / (a2 + b2 * pr^2))
+    mc <- ml(res, function(p, f) exp(2 * p[1]) + exp(2 * p[2]) * f^2,
+             c(log(sqrt(a2)), log(sqrt(b2))))
+    a2 <- max(exp(2 * mc$par[1]), 1e-6 * fmed^2); b2 <- max(exp(2 * mc$par[2]), 1e-6)
+  }
+  res <- lapply(fits, refit, wfun = function(pr) 1 / (a2 + b2 * pr^2))
+  f_all <- unlist(lapply(res, `[[`, "f")); e_all <- unlist(lapply(res, function(r) r$y - r$f))
+  keep <- is.finite(f_all) & f_all >= f_min
+  e_all <- e_all[keep]; f_all <- f_all[keep]
+  m_add <- ml(res, function(p, f) rep(exp(2 * p[1]), length(f)), log(stats::sd(e_all)))
+  m_prop <- ml(res, function(p, f) exp(2 * p[1]) * f^2, log(stats::sd(e_all / f_all)))
+  m_comb <- ml(res, function(p, f) exp(2 * p[1]) + exp(2 * p[2]) * f^2, c(log(sqrt(a2)), log(sqrt(b2))))
+  # the combined model nests the two others: keep its -2LL at most theirs
+  m_comb$value <- min(m_comb$value, m_add$value, m_prop$value)
   n <- m_add$n
-  bic <- c(2 * m_add$value + log(n), 2 * m_prop$value + log(n), 2 * m_comb$value + 2 * log(n))
+  # the combined model must be strongly supported (BIC better by more than
+  # 10, Kass and Raftery 1995): misfit of individual profiles mimics an
+  # extra error component
+  bic <- c(2 * m_add$value + log(n), 2 * m_prop$value + log(n), 2 * m_comb$value + 2 * log(n) + 10)
   w <- exp(-0.5 * (bic - min(bic))); w <- w / sum(w)
   # degrees of freedom: individual parameters were estimated on the same data
   dfc <- 1
@@ -1480,7 +1510,7 @@ plot.nm_model_suggestion <- function(x, type = c("profiles", "support", "pooled"
                     cv_prop_pct = 100 * c(NA, sqrt(est$proportional["prop"]), sqrt(est$combined["prop"])),
                     bic = bic, weight = round(w, 3), row.names = NULL)
   list(support = stats::setNames(w, models), sigma = sigma, table = tab,
-       note = "SIGMA initial values come from the residuals of individual fits (extended least squares, leverage-corrected residuals): they include part of the structural misfit.")
+       note = "SIGMA initial values come from the residuals of individual fits (common reweighted fit, leverage-corrected residuals): they include part of the structural misfit.")
 }
 
 # ---------------------------------------------------------------------------
