@@ -34,7 +34,15 @@
 
   # Priority 2: generic "OBJECTIVE FUNCTION VALUE" (older NONMEM)
   idx <- grep("OBJECTIVE FUNCTION VALUE", x, fixed = TRUE)
-  if (length(idx) == 0) return(NA_real_)
+  if (length(idx) == 0) {
+    # Priority 3: "#OBJV:" line (the only OFV line of an evaluation run,
+    # MAXEVAL=0, which prints no "WITHOUT CONSTANT" line)
+    idx_ov <- grep("^\\s*#OBJV:", x)
+    if (length(idx_ov) == 0) return(NA_real_)
+    line <- gsub("\\*", " ", sub("^\\s*#OBJV:", "", x[idx_ov[length(idx_ov)]]))
+    num  <- regmatches(line, regexpr("-?[0-9]+\\.?[0-9]*([Ee][\\+\\-]?[0-9]+)?", line))
+    return(if (length(num) == 0) NA_real_ else round(as.numeric(num), 3))
+  }
   line <- x[idx[length(idx)]]
   num  <- regmatches(line, regexpr("-?[0-9]+\\.?[0-9]*([Ee][\\+\\-]?[0-9]+)?", line))
   if (length(num) == 0) NA_real_ else round(as.numeric(num), 3)
@@ -68,7 +76,20 @@
 
   # Minimization status
   min_idx <- grep("MINIMIZATION", x, fixed = TRUE)
-  if (length(min_idx) == 0) return(empty)
+  if (length(min_idx) == 0) {
+    # Evaluation run (MAXEVAL=0): no minimization, an OFV is printed
+    if (any(grepl("(EVALUATION)", x, fixed = TRUE)) && any(grepl("^\\s*#OBJV:", x))) {
+      return(data.frame(
+        minimization_status = "evaluation",
+        min_ok              = NA,
+        cov_ok              = NA,
+        run_ok              = TRUE,
+        cov_status          = "not_requested",
+        stringsAsFactors    = FALSE
+      ))
+    }
+    return(empty)
+  }
   min_line <- x[min_idx[1]]
 
   if (grepl("SUCCESSFUL", min_line, fixed = TRUE)) {
@@ -132,10 +153,29 @@
   )
 }
 
+# Internal helper: warn when the analysis directory is inside a folder kept in
+# sync by a cloud client (Dropbox, OneDrive, Google Drive, iCloud, Box). The
+# client can lock the files NM-TRAN and the compiler are writing ("the process
+# cannot access the file because it is being used by another process") and
+# make a run fail. Silenced by options(nmtools.warn_synced = FALSE).
+.nm_warn_synced_dir <- function(dir) {
+  if (isFALSE(getOption("nmtools.warn_synced", TRUE))) return(invisible(FALSE))
+  pat <- "(?i)(dropbox|onedrive|google ?drive|icloud ?drive|box ?sync|/box/|\\\\box\\\\|pcloud)"
+  hit <- grepl(pat, dir, perl = TRUE)
+  if (hit) warning(
+    "The analysis directory is inside a synchronised folder (", dir, "). ",
+    "The sync client can lock the files written by NM-TRAN and the compiler ",
+    "and make a run fail: prefer a local folder (e.g. under C:/nm76g64/run/), ",
+    "or pause the synchronisation. Silence with options(nmtools.warn_synced = FALSE).",
+    call. = FALSE)
+  invisible(hit)
+}
+
 # Internal helper: check if a run is in a terminal state
 .nm_is_run_terminal <- function(lst_file, accept_failed = TRUE) {
   if (!file.exists(lst_file)) return(FALSE)
   st <- .nm_lst_status(lst_file)
+  if (identical(st$minimization_status, "evaluation")) return(TRUE)
   if (is.na(st$min_ok)) return(FALSE)
   if (accept_failed) return(!is.na(st$minimization_status))
   isTRUE(st$run_ok)
@@ -234,7 +274,11 @@
 #' @param ctl_files Character vector of paths to `.ctl` files. May be absolute
 #'   paths or file names relative to `analysis_dir`.
 #' @param analysis_dir Root directory of the analysis. One run subdirectory
-#'   is created here for each run (see `run_subdir`).
+#'   is created here for each run (see `run_subdir`). A warning is issued
+#'   when it lies in a folder synchronised by a cloud client (Dropbox,
+#'   OneDrive, Google Drive, iCloud, Box): the client can lock the files
+#'   written by NM-TRAN and make a run fail (silence it with
+#'   `options(nmtools.warn_synced = FALSE)`).
 #' @param run_subdir Suffix of the run subdirectories: `".reg"` (default,
 #'   Wings-compatible layout `run001.reg/`), any other suffix (e.g. `".run"`),
 #'   or `""` to run in the folder of the control stream itself, without
@@ -261,8 +305,9 @@
 #'     \item{lst_exists}{Logical: does the `.lst` file exist after the run?}
 #'     \item{ofv}{Objective function value (OFV).}
 #'     \item{minimization_status}{Minimization status string: `"successful"`,
-#'       `"terminated"`, `"rounding_errors"`, `"min_success_cov_failed"`, or
-#'       `"unknown"`.}
+#'       `"terminated"`, `"rounding_errors"`, `"min_success_cov_failed"`,
+#'       `"evaluation"` (run without minimization, `MAXEVAL=0`; `min_ok` is
+#'       then `NA` and `run_ok` `TRUE`), or `"unknown"`.}
 #'     \item{min_ok}{Logical: did minimization succeed?}
 #'     \item{cov_ok}{Logical: did the covariance step succeed?}
 #'     \item{run_ok}{Logical: is the run globally acceptable
@@ -324,6 +369,7 @@ nm_run <- function(
   }
 
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
+  .nm_warn_synced_dir(analysis_dir)
   if (is.null(run_subdir)) run_subdir <- ""
   flat <- !nzchar(run_subdir)
 

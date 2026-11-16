@@ -23,6 +23,45 @@
 #'   runs. Default `c("ID", "TIME")`. Add `"OCC"` for BOV models, `"CMT"` for
 #'   multi-DV models.
 #'
+#' @param n_par Numbers of estimated parameters of the two runs (length 2).
+#'   Default: read from the `.ext` files (parameters not fixed).
+#' @param nested `TRUE` if one model is nested in the other: a likelihood
+#'   ratio test is added to the Vuong and Clarke tests.
+#' @param covariates Covariates (columns of the data set) against which the
+#'   per-subject delta iOFV is examined.
+#' @param data Data set (path or data.frame) holding the covariates. Default:
+#'   the `$DATA` file of run 1.
+#' @param n_boot Number of subject resamples for the bootstrap of the delta
+#'   iOFV.
+#' @param seed Seed of the bootstrap.
+#'
+#' @details
+#' **Tests on the individual contributions.** With `d_i = (iOFV_1,i -
+#' iOFV_2,i)/2`, the difference of the individual log-likelihoods, the Vuong
+#' (1989) statistic is `z = (sum(d_i) - c) / (sqrt(N) * sd(d_i))` and the
+#' Clarke (2007) test is a sign test on `d_i - c/N`, where `N` is the number
+#' of subjects and `c` the correction for the number of parameters: none,
+#' `k_2 - k_1` (AIC-like) or `(k_2 - k_1) log(N) / 2` (BIC-like). Both apply
+#' to non-nested models fitted to the same data; the subjects are the
+#' independent units. The individual contributions are those of the
+#' estimation method (FOCE: the iOFV of the `.phi` file).
+#'
+#' **Bootstrap.** The subjects are resampled with their delta iOFV, without
+#' re-estimation: the distribution measures how much the difference depends
+#' on a few subjects, conditionally on the estimates (optimistic for the
+#' larger model).
+#'
+#' **Influence.** `n_reverse` is the number of subjects with the largest
+#' contributions whose removal reverses the sign of dOFV (as `dOFV.vs.id` in
+#' xpose4).
+#'
+#' @references
+#' Vuong QH. Likelihood ratio tests for model selection and non-nested
+#' hypotheses. Econometrica 1989;57:307-33.
+#'
+#' Clarke KA. A simple distribution-free test for nonnested model selection.
+#' Political Analysis 2007;15:347-63.
+#'
 #' @return An object of class `nm_compare`, a list with:
 #'   \describe{
 #'     \item{`data_obs`}{Observation-level paired data.frame with `_1`/`_2`
@@ -33,8 +72,16 @@
 #'     \item{`metrics`}{Global metrics table (OFV, RMSE(CWRES), Mean |CWRES|,
 #'       proportions of outliers, NPDE moments). Wilcoxon paired p-value
 #'       stored as attribute `wilcox_absCWRES_p`.}
-#'     \item{`meta`}{Labels, global OFV, sample sizes, dataset compatibility
-#'       check.}
+#'     \item{`meta`}{Labels, global OFV, numbers of parameters, sample sizes,
+#'       dataset compatibility check.}
+#'     \item{`tests`}{Vuong, Clarke (and LRT) tests, subject bootstrap and
+#'       influence (`NULL` without `.phi` files).}
+#'     \item{`parameters`}{Estimates, SE, RSE and shrinkage of the two runs
+#'       matched by parameter name, with their ratio.}
+#'     \item{`etas`}{Paired EBEs of the ETAs present in both runs.}
+#'     \item{`covariate_tests`}{Delta iOFV versus each covariate.}
+#'     \item{`run_info`}{Run-level criteria (RSE, condition number,
+#'       shrinkage, status).}
 #'   }
 #'
 #' @examples
@@ -44,6 +91,8 @@
 #'   print(cmp)
 #'   plot(cmp)
 #'   plot(cmp, which = "iofv_caterpillar")
+#'   summary(cmp)
+#'   plot(cmp, which = c("gain_map", "overlay_gof"))
 #' }
 #'
 #' @seealso [nm_extract_runs()], [plot.nm_compare()], [print.nm_compare()]
@@ -54,7 +103,10 @@
 #' @export
 nm_compare <- function(run1, run2,
                        labels = c("Run 1", "Run 2"),
-                       join_keys = c("ID", "TIME")) {
+                       join_keys = c("ID", "TIME"),
+                       n_par = NULL, nested = FALSE,
+                       covariates = NULL, data = NULL,
+                       n_boot = 2000L, seed = 2026L) {
 
   stopifnot(length(labels) == 2L, is.character(join_keys))
 
@@ -91,13 +143,52 @@ nm_compare <- function(run1, run2,
   data_subj <- .nm_cmp_summarize_subj(data_obs, d1$phi, d2$phi)
   metrics   <- .nm_cmp_global_metrics(data_obs, d1$ofv, d2$ofv)
 
+  # Run-level information, parameters, ETAs
+  i1 <- .nm_cmp_runinfo(run1, d1$paths)
+  i2 <- .nm_cmp_runinfo(run2, d2$paths)
+  info_list <- lapply(list(i1, i2), function(i) {
+    if (is.null(i)) return(NULL)
+    pr <- i$params[i$params$type %in% c("THETA", "OMEGA", "SIGMA") & !i$params$fixed, , drop = FALSE]
+    list(n_par = i$run$n_par, cond = i$cond, max_eta_shrink = i$run$max_eta_shrink,
+         rse_max = if (nrow(pr) && any(is.finite(pr$rse_pct))) max(pr$rse_pct, na.rm = TRUE) else NA_real_,
+         min_status = i$run$min_status, cov_status = i$run$cov_status)
+  })
+  if (is.null(n_par)) {
+    n_par <- vapply(info_list, function(i) if (is.null(i) || is.null(i$n_par)) NA_real_ else as.numeric(i$n_par), 0)
+  }
+  stopifnot(length(n_par) == 2L)
+  ofv <- c(d1$ofv, d2$ofv)
+  if (any(!is.finite(ofv)) && !is.null(d1$phi) && !is.null(d2$phi) &&
+      all(c("OBJ") %in% intersect(names(d1$phi), names(d2$phi)))) {
+    ofv[!is.finite(ofv)] <- c(sum(d1$phi$OBJ), sum(d2$phi$OBJ))[!is.finite(ofv)]
+  }
+  tests <- if (all(c("iOFV_1", "iOFV_2") %in% names(data_subj)))
+    .nm_cmp_tests(data_subj, n_par, ofv, nrow(data_obs), nested, n_boot, seed, labels) else NULL
+  parameters <- .nm_cmp_params(i1$params, i2$params)
+  etas <- .nm_cmp_etas(d1$phi, d2$phi, i1$params, i2$params)
+  cov_tests <- cov_obj <- NULL
+  if (length(covariates)) {
+    cov <- .nm_w_covariates(data, if (is.null(i1)) NA else i1$ctl)
+    miss <- setdiff(covariates, names(cov))
+    if (length(miss)) stop("Covariate(s) not in the data: ", paste(miss, collapse = ", "), call. = FALSE)
+    cov_tests <- .nm_cmp_cov_tests(data_subj, cov, covariates)
+    cov_obj <- list(data = cov[, c("ID", covariates), drop = FALSE], names = covariates)
+  }
+
   out <- list(
     data_obs  = data_obs,
     data_subj = data_subj,
     metrics   = metrics,
+    tests     = tests,
+    parameters = parameters,
+    etas      = etas,
+    covariate_tests = cov_tests,
+    covariates = cov_obj,
+    run_info  = info_list,
     meta = list(
       labels        = labels,
-      ofv           = c(d1$ofv, d2$ofv),
+      ofv           = ofv,
+      n_par         = n_par,
       n_obs         = nrow(data_obs),
       n_subj        = nrow(data_subj),
       compatibility = check,
@@ -134,6 +225,31 @@ print.nm_compare <- function(x, ...) {
   if (!is.null(p)) {
     cat(sprintf("\nPaired Wilcoxon on |CWRES| : p = %.4g\n", p))
   }
+  if (!is.null(x$tests)) {
+    cat("\n--- Tests on individual contributions (iOFV) ---\n")
+    tt <- x$tests$table
+    tt$p <- format.pval(tt$p, digits = 3)
+    print(tt[, c("test", "correction", "statistic", "p", "favours")], row.names = FALSE)
+    b <- x$tests$bootstrap
+    cat(sprintf("\nSubject bootstrap (%d, no refit): dOFV 95%% CI [%.1f; %.1f], P(%s better) = %.3f\n",
+                b$n_boot, b$ci[1], b$ci[3], x$meta$labels[2], b$p_run2_better))
+    cat(sprintf("Subjects to remove to reverse dOFV: %s of %d\n",
+                format(x$tests$influence$n_reverse), x$tests$influence$n_subjects))
+  }
+  if (!is.null(x$covariate_tests)) {
+    cat("\n--- Delta iOFV versus covariates ---\n")
+    ct <- x$covariate_tests; ct$p <- signif(ct$p, 3); ct$p_adj <- signif(ct$p_adj, 3)
+    print(ct, row.names = FALSE)
+  }
+  if (!is.null(x$parameters)) {
+    cat("\n--- Parameters (matched by name) ---\n")
+    pp <- x$parameters[x$parameters$type %in% c("THETA", "OMEGA", "SIGMA"),
+                       c("type", "name", "value_1", "rse_pct_1", "value_2", "rse_pct_2", "ratio"), drop = FALSE]
+    num <- vapply(pp, is.numeric, logical(1)); pp[num] <- lapply(pp[num], signif, 4)
+    names(pp)[3:6] <- c(paste("est", x$meta$labels[1]), "RSE%", paste("est", x$meta$labels[2]), "RSE% ")
+    print(pp, row.names = FALSE)
+  }
+  cat("\nsummary() gives the decision criteria; plot() the paired diagnostics.\n")
   invisible(x)
 }
 
@@ -147,14 +263,21 @@ print.nm_compare <- function(x, ...) {
 #' @param x An `nm_compare` object.
 #' @param which Character. One or several of `"cwres_scatter"`,
 #'   `"npde_scatter"`, `"iofv_caterpillar"`, `"delta_density"`, `"qq_npde"`,
-#'   or `"all"` (default).
+#'   `"gain_map"` (Delta|CWRES| versus TIME and PRED, loess with a 95 %
+#'   subject-bootstrap band), `"overlay_gof"` (diagnostics of both runs
+#'   superimposed), `"bootstrap"` (subject bootstrap of dOFV),
+#'   `"iofv_covariate"` (delta iOFV versus the covariates),
+#'   `"parameters"` (estimates with 95 % Wald intervals), `"eta_scatter"`
+#'   (EBEs of the two runs), or `"all"` (default).
+#' @param n_band Number of subject resamples for the bands of `"gain_map"`
+#'   and `"overlay_gof"`.
 #' @param ... Unused.
 #'
 #' @return A `ggplot` object (single plot) or a list of `ggplot` objects
 #'   (multiple plots). Requires the `ggplot2` package.
 #'
 #' @export
-plot.nm_compare <- function(x, which = "all", ...) {
+plot.nm_compare <- function(x, which = "all", n_band = 200L, ...) {
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plot.nm_compare(). ",
@@ -162,7 +285,8 @@ plot.nm_compare <- function(x, which = "all", ...) {
   }
 
   all_plots <- c("cwres_scatter", "npde_scatter", "iofv_caterpillar",
-                 "delta_density", "qq_npde")
+                 "delta_density", "qq_npde", "gain_map", "overlay_gof",
+                 "bootstrap", "iofv_covariate", "parameters", "eta_scatter")
   if (identical(which, "all")) which <- all_plots
   which <- match.arg(which, all_plots, several.ok = TRUE)
 
@@ -266,6 +390,18 @@ plot.nm_compare <- function(x, which = "all", ...) {
       ) +
       ggplot2::theme_bw()
   }
+
+  if ("gain_map" %in% which) plots$gain_map <- .nm_cmp_plot_gain(x, n_band)
+  if ("overlay_gof" %in% which) plots$overlay_gof <- .nm_cmp_plot_overlay(x, n_band)
+  if ("bootstrap" %in% which) plots$bootstrap <- .nm_cmp_plot_bootstrap(x)
+  if ("iofv_covariate" %in% which) {
+    pc <- .nm_cmp_plot_cov(x)
+    if (inherits(pc, "ggplot")) plots$iofv_covariate <- pc
+    else if (length(pc)) plots[paste0("iofv_covariate_", names(pc))] <- pc
+  }
+  if ("parameters" %in% which) plots$parameters <- .nm_cmp_plot_params(x)
+  if ("eta_scatter" %in% which) plots$eta_scatter <- .nm_cmp_plot_etas(x)
+  plots <- Filter(Negate(is.null), plots)
 
   if (length(plots) == 1L) plots[[1]] else plots
 }

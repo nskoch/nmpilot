@@ -1,3 +1,56 @@
+# nmtools 0.5.0
+
+## Direct comparison of two models (`nm_compare()`)
+
+* Vuong (1989) and Clarke (2007) tests on the individual contributions to
+  the objective function (iOFV of the `.phi` files), for non-nested models
+  fitted to the same data, without correction and with AIC-like and
+  BIC-like corrections for the number of parameters (read from the `.ext`
+  files, or given with `n_par`). Likelihood ratio test when `nested = TRUE`.
+* Subject bootstrap of the delta iOFV (no re-estimation): confidence
+  interval of dOFV and probability that run 2 has a lower OFV (and AIC).
+  Influence: number of subjects, largest contributions first, whose removal
+  reverses the sign of dOFV.
+* Delta iOFV versus covariates (`covariates =`, Spearman or Kruskal-Wallis
+  with Bonferroni adjustment); parameters of the two runs matched by name
+  (estimate, SE, RSE, shrinkage, ratio) and paired EBEs.
+* New plots: `"gain_map"` (|CWRES_2| - |CWRES_1| versus TIME and PRED,
+  loess with a 95% subject-bootstrap band), `"overlay_gof"` (diagnostics of
+  both runs superimposed), `"bootstrap"`, `"iofv_covariate"`,
+  `"parameters"`, `"eta_scatter"`.
+* New `summary()` method: decision criteria (OFV, AIC, BIC, tests,
+  bootstrap, influence, residual metrics, maximum RSE, condition number from
+  the `.cor` file, maximum shrinkage, run status) with the run favoured by
+  each.
+
+## Improving a base model without iterative runs
+
+* New `nm_derivatives_ctl()`: writes an evaluation run of a base model
+  (final estimates fixed, `MAXEVAL=0`) that tabulates the derivatives of Y
+  with respect to the ETAs, the EPSs and their cross derivatives (verbatim
+  code at the end of `$ERROR`/`$PRED`, as PsN `linearize`). Checked with
+  NONMEM 7.6.
+* New `nm_optimize_base()`: level 1 from the outputs of the base run
+  (resmod-like models on CWRES, EBE shrinkage, skewness and correlations,
+  ETA-covariate screening); level 2 on the linearized model built from the
+  derivatives table, each candidate re-estimated in R: residual error models,
+  OMEGA blocks, removal of an ETA, inter-occasion variability, covariates on
+  the ETAs (univariate tests, forward inclusion and backward elimination),
+  then the combined proposal. The default objective (`objective = "focei"`)
+  is NONMEM's FOCE with interaction (modes of the full individual
+  objective, residual-variance term in the determinant) and reproduces the
+  OFV of the base run at its estimates; `objective = "fast"` is a quicker
+  approximation. `plot()` shows the dOFV of each candidate as better, no
+  significant change or worse.
+
+## Other changes
+
+* `nm_run()` reads the OFV and status of an evaluation run (`MAXEVAL=0`,
+  status `"evaluation"`), and warns when the analysis directory is inside a
+  folder synchronised by a cloud client (Dropbox, OneDrive, Google Drive,
+  iCloud, Box), whose client can lock files during compilation (silence with
+  `options(nmtools.warn_synced = FALSE)`).
+
 # nmtools 0.4.1
 
 * `nm_suggest_model()`: the residual error model is chosen on a common

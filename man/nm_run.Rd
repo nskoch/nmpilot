@@ -23,7 +23,11 @@ nm_run(
 paths or file names relative to \code{analysis_dir}.}
 
 \item{analysis_dir}{Root directory of the analysis. One run subdirectory
-is created here for each run (see \code{run_subdir}).}
+is created here for each run (see \code{run_subdir}). A warning is issued
+when it lies in a folder synchronised by a cloud client (Dropbox,
+OneDrive, Google Drive, iCloud, Box): the client can lock the files
+written by NM-TRAN and make a run fail (silence it with
+\code{options(nmtools.warn_synced = FALSE)}).}
 
 \item{skip_terminated}{Logical. If \code{TRUE} (default), runs whose \code{.lst} file
 already exists and reports a terminal state are skipped.}
@@ -56,8 +60,9 @@ columns:
 \item{lst_exists}{Logical: does the \code{.lst} file exist after the run?}
 \item{ofv}{Objective function value (OFV).}
 \item{minimization_status}{Minimization status string: \code{"successful"},
-\code{"terminated"}, \code{"rounding_errors"}, \code{"min_success_cov_failed"}, or
-\code{"unknown"}.}
+\code{"terminated"}, \code{"rounding_errors"}, \code{"min_success_cov_failed"},
+\code{"evaluation"} (run without minimization, \code{MAXEVAL=0}; \code{min_ok} is
+then \code{NA} and \code{run_ok} \code{TRUE}), or \code{"unknown"}.}
 \item{min_ok}{Logical: did minimization succeed?}
 \item{cov_ok}{Logical: did the covariance step succeed?}
 \item{run_ok}{Logical: is the run globally acceptable

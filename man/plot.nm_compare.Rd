@@ -4,14 +4,22 @@
 \alias{plot.nm_compare}
 \title{Diagnostic plots for \code{nm_compare} objects}
 \usage{
-\method{plot}{nm_compare}(x, which = "all", ...)
+\method{plot}{nm_compare}(x, which = "all", n_band = 200L, ...)
 }
 \arguments{
 \item{x}{An \code{nm_compare} object.}
 
 \item{which}{Character. One or several of \code{"cwres_scatter"},
 \code{"npde_scatter"}, \code{"iofv_caterpillar"}, \code{"delta_density"}, \code{"qq_npde"},
-or \code{"all"} (default).}
+\code{"gain_map"} (Delta|CWRES| versus TIME and PRED, loess with a 95 \%
+subject-bootstrap band), \code{"overlay_gof"} (diagnostics of both runs
+superimposed), \code{"bootstrap"} (subject bootstrap of dOFV),
+\code{"iofv_covariate"} (delta iOFV versus the covariates),
+\code{"parameters"} (estimates with 95 \% Wald intervals), \code{"eta_scatter"}
+(EBEs of the two runs), or \code{"all"} (default).}
+
+\item{n_band}{Number of subject resamples for the bands of \code{"gain_map"}
+and \code{"overlay_gof"}.}
 
 \item{...}{Unused.}
 }

@@ -99,3 +99,26 @@ test_that("nm_run refuses a Wings label control stream in the flat layout", {
   expect_error(nm_run(fake_nmfe(root), "w1.ctl", root, run_subdir = "", verbose = FALSE),
                "Wings label syntax")
 })
+
+test_that("OFV and status of an evaluation run (MAXEVAL=0) are read", {
+  lst <- tempfile(fileext = ".lst")
+  writeLines(c(
+    " ********************         FIRST ORDER CONDITIONAL ESTIMATION WITH INTERACTION (EVALUATION)       *******************",
+    " #OBJT:**************                       MINIMUM VALUE OF OBJECTIVE FUNCTION                      *******************",
+    "",
+    " #OBJV:********************************************         -1147.341       ********************************************",
+    " THETA - VECTOR OF FIXED EFFECTS PARAMETERS   *********"), lst)
+  expect_equal(nmtools:::.nm_lst_ofv(lst), -1147.341)
+  st <- nmtools:::.nm_lst_status(lst)
+  expect_equal(st$minimization_status, "evaluation")
+  expect_true(st$run_ok)
+  expect_true(nmtools:::.nm_is_run_terminal(lst))
+})
+
+test_that("a synchronised analysis folder triggers a warning", {
+  expect_warning(nmtools:::.nm_warn_synced_dir("D:/Dropbox/nm76g64/run/projet"), "synchronised")
+  expect_warning(nmtools:::.nm_warn_synced_dir("C:/Users/n/OneDrive - AP-HM/projet"), "synchronised")
+  expect_silent(nmtools:::.nm_warn_synced_dir("C:/nm76g64/run/projet"))
+  old <- options(nmtools.warn_synced = FALSE); on.exit(options(old))
+  expect_silent(nmtools:::.nm_warn_synced_dir("D:/Dropbox/projet"))
+})
