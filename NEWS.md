@@ -1,3 +1,85 @@
+# nmtools 0.7.0
+
+## Reading NONMEM outputs: several $EST and $PROB, IOV, $MIX, failed runs
+
+* With several `$EST` records (for example ITS > SAEM > IMP > BAYES > FOCEI),
+  the OFV, the minimisation status, the shrinkage and the covariance step are
+  now those of the last estimation step; they came from the first steps.
+  New column `est_methods` in `nm_extract_runs()` (e.g.
+  `"ITS > SAEM > IMP(eval) > BAYES > FOCEI"`) and `n_est`. EM and Bayesian
+  status lines ("STOCHASTIC PORTION WAS COMPLETED", "EXPECTATION ONLY PROCESS
+  COMPLETED", "OPTIMIZATION WAS NOT TESTED") are recognised.
+* The same rule is applied in `nm_run()`, `nm_profile()`, `nm_bootstrap()`,
+  `nm_jackknife()` (OFV, status and THETA of the last step) and `nm_compare()`
+  (OFV).
+* `nm_run()`: the covariance status is read from the status lines only; the
+  sentence "AFTER CHECKING THAT THE COVARIANCE STEP PRODUCES REASONABLE
+  OUTPUT", printed after "HOWEVER, PROBLEMS OCCURRED", made runs whose
+  covariance step had succeeded appear as `"min_success_cov_failed"`.
+* With several `$PROB`, the last problem that has an estimation is read (a
+  simulation problem after the estimation is skipped); new column
+  `n_problems`.
+* `nm_extract_runs()`: when the `.ext` is empty, has no final row, or gives an
+  OFV different from the `.lst` (an `.ext` left by another run with the same
+  name), the estimates and standard errors are read in the `.lst`, with a
+  warning and "EXT/LST MISMATCH" in `warnings`; new column `params_source`
+  (`"ext"`, `"lst"` or `"smr"`).
+* New column `run_state`: `"completed"`, `"interrupted"` (the output stops
+  before the end of the last step), `"terminated"` (PROGRAM TERMINATED) or
+  `"nmtran_error"`. A run that is not completed has `min_ok = FALSE`.
+* IOV: ETAs declared by `$OMEGA ... SAME` (also `BLOC(n)`, `SAME(k)`) are
+  marked in `$params` (new column `same`) and counted in `n_eta_same`.
+* `n_omega` and `n_sigma` now count the estimated elements only (not FIX, not
+  SAME, not the zeros outside the blocks): on the example project, 3 and 0
+  instead of 6 and 1. ETAs fixed to 0 are left out of `max_eta_shrink`.
+* `$MIX`: new columns `mix`, `n_subpop` and `mix_assign` (subjects per
+  subpopulation, from the `.phm`); new element `$mixture` (probability of each
+  subpopulation for each subject); mixing-proportion THETAs without another
+  name are named `MIX_P`; the shrinkage of an ETA is its smallest value over
+  the subpopulations (NONMEM prints 100 % in the subpopulations that do not
+  use it). `nm_filter_runs()` filters `$mixture` too.
+* Run files are matched without regard to case (NONMEM 7.1 wrote `RUN.EXT`
+  next to `run.lst`), and `.mod` control streams are recognised.
+* Checked on 11 real runs (NONMEM 7.1 to 7.4): chains of five `$EST`, SAEM >
+  IMP, ITS > FOCE, IOV, `$MIX` with `METHOD=1` and `CONDITIONAL`, empty
+  `.ext`, `.ext` from another run.
+
+# nmtools 0.6.0
+
+## Parallel NONMEM runs
+
+* New argument `n_cores` in `nm_run()`, `nm_profile()`, `nm_jackknife()`,
+  `nm_bootstrap()`, `nm_vpc_ctl()` and `nm_suggest_run()` (default 1: runs
+  one after the other, as before). With `n_cores > 1`, each run is started in
+  the background from its own directory (NM-TRAN writes its work files in the
+  current directory) and at most `n_cores` runs go on at the same time.
+  `n_cores = "auto"` uses the physical cores minus one; `n_cores = "ask"`
+  shows the cores and asks the number once per R session (the answer is kept
+  in `options(nmtools.n_cores)`; set it to `NULL` to ask again).
+* New `nm_cores()`: logical and physical cores of the computer, and the
+  number of runs `"auto"` would use.
+* Each parallel run writes the console output of nmfe to `<run>_nmtools.log`
+  (and `<run>_nmtools.err`). If R is interrupted, the runs already started go
+  on in the background and are listed.
+* `nm_run()`: with `n_cores > 1`, several control streams in a flat layout
+  (shared folder) are run one after the other, with a warning. `nm_jackknife()` now always runs
+  each jackknife data set in its own subdirectory `jk_run/<name>/`.
+  `nm_bootstrap()` uses working subdirectories `slot1`, `slot2`, ...
+* Checked with NONMEM 7.6 on Windows with 5 runs at a time: `nm_run()` (4
+  runs), `nm_profile()` (12 grid values), `nm_jackknife()` (60 runs) and
+  `nm_bootstrap()` (20 replicates), all successful. On Windows
+  the launcher calls nmfe without any redirection inside the batch file: a
+  `2>&1` there keeps the first `2>trash.tmp` of nmfe in force and the
+  compilation fails.
+
+## Display fixes
+
+* `nm_profile()`: the start message gives the initial value of the profiled
+  THETA and, when the `.ext` of the control stream exists, its final estimate
+  (it showed only the initial value, as "current value").
+* `print.nm_jackknife()`: the reference OFV is printed with three decimals
+  (it was rounded to four significant digits, e.g. -1224).
+
 # nmtools 0.5.0
 
 ## Direct comparison of two models (`nm_compare()`)

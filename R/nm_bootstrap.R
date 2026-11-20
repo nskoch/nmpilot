@@ -55,6 +55,17 @@
 #' @param resume         Skip replicates already in bootstrap_estimates.csv (default TRUE).
 #' @param run            FALSE = only build the optimised ctl + resample plan (dry run, no NONMEM).
 #' @param verbose        Progress messages (default TRUE).
+#' @param n_cores Number of replicates run at the same time (default 1). A
+#'   whole number,
+#'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
+#'   (interactive sessions: the cores are shown and the number is asked once per R
+#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   Each run is then started in the background in its own directory; if R
+#'   is interrupted, the runs already started go on in the background and a
+#'   later call with the same arguments picks up their results. In parallel, each run uses a
+#'   working subdirectory `slot<k>/` of `run_dir`; the estimates are appended
+#'   to `bootstrap_estimates.csv` as the replicates end (the file is sorted
+#'   by replicate when the result is assembled).
 #'
 #' @return An object of class "nm_bootstrap" (see print()/plot()).
 #' @export
@@ -77,7 +88,8 @@ nm_bootstrap <- function(ctl,
                          include_rounding = FALSE,
                          resume           = TRUE,
                          run              = TRUE,
-                         verbose          = TRUE) {
+                         verbose          = TRUE,
+                         n_cores          = 1L) {
 
   stopifnot(file.exists(ctl))
   n  <- as.integer(n)
@@ -154,6 +166,45 @@ nm_bootstrap <- function(ctl,
     prev <- utils::read.csv(est_file, check.names = FALSE)
     done <- prev$replicate
     if (verbose) message(sprintf("Resume: %d replicate(s) already done.", length(done)))
+  }
+
+  # --- Parallel loop: one working subdirectory per slot ---------------------
+  n_cores <- .nm_resolve_cores(n_cores)
+  if (n_cores > 1L) {
+    todo <- setdiff(seq_len(n), done)
+    slot_dir <- file.path(run_dir, paste0("slot", seq_len(n_cores)))
+    for (d in slot_dir) { dir.create(d, showWarnings = FALSE); file.copy(boot_ctl, d, overwrite = TRUE) }
+    if (verbose) message(sprintf("Running %d replicate(s), %d at a time.", length(todo), n_cores))
+    .nm_run_queue(as.list(todo), nmfe_path, n_cores, verbose = FALSE, label = "replicates",
+      prepare = function(b, slot) {
+        .nm_write_replicate(raw, plan[[b]], file.path(slot_dir[slot], boot_csv_name), sep = sep)
+        list(dir = slot_dir[slot], name = sub("\\.ctl$", "", boot_ctl_name))
+      },
+      finish = function(b, slot, st, secs) {
+        sd  <- slot_dir[slot]
+        lst <- file.path(sd, sub("\\.ctl$", ".lst", boot_ctl_name))
+        status <- .nm_min_status(if (file.exists(lst)) lst else NA_character_)
+        ext  <- file.path(sd, paste0(base, "_boot.ext"))
+        pars <- if (file.exists(ext)) .nm_ext_final(ext) else NULL
+        .nm_append_row(est_file,
+                       c(list(replicate = b, status = status, seconds = round(secs, 1)),
+                         as.list(pars)))
+        if (verbose) message(sprintf("  [%d/%d] %s (%.0fs)", b, n, status, secs))
+        if (keep_datasets)
+          file.copy(file.path(sd, boot_csv_name),
+                    file.path(run_dir, sprintf("%s_boot_%04d.csv", base, b)), overwrite = TRUE)
+        unlink(file.path(sd, boot_csv_name))
+        if (keep_outputs) {
+          for (f in list.files(sd, pattern = paste0("^", base, "_boot\\.(lst|ext)$")))
+            file.copy(file.path(sd, f), file.path(run_dir, sub("_boot\\.", sprintf("_boot_%04d.", b), f)),
+                      overwrite = TRUE)
+        }
+        .nm_clean_run_outputs(sd, base, keep_ext = FALSE)
+        unlink(file.path(sd, c(paste0(base, "_boot_nmtools.bat"), paste0(base, "_boot_nmtools.sh"),
+                               paste0(base, "_boot_nmtools.log"), paste0(base, "_boot_nmtools.err"),
+                               paste0(base, "_boot.nmtools_done"))))
+      })
+    done <- seq_len(n)   # nothing left for the sequential loop
   }
 
   # --- Main sequential loop ------------------------------------------------
@@ -363,10 +414,9 @@ nm_bootstrap <- function(ctl,
   txt <- toupper(paste(.nm_read_lines(lst_path), collapse = "\n"))
   if (grepl("AN ERROR WAS FOUND IN THE CONTROL", txt) ||
       grepl("AN ERROR WAS FOUND ON LINE", txt))    return("nmtran_error")
-  if (grepl("MINIMIZATION SUCCESSFUL", txt))        return("successful")
-  if (grepl("DUE TO ROUNDING ERRORS", txt))         return("rounding_errors")
-  if (grepl("MINIMIZATION TERMINATED", txt))        return("terminated")
-  if (grepl("OPTIMIZATION WAS COMPLETED", txt))     return("successful")   # EM/IMP methods
+  # status of the last estimation step (several $EST, EM/IMP methods)
+  code <- .nm_lst_step_status(.nm_read_lines(lst_path))$code
+  if (identical(code, "successful") || identical(code, "rounding_errors")) return(code)
   "terminated"
 }
 

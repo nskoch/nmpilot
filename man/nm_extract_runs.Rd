@@ -17,7 +17,10 @@ nm_extract_runs(path, runs = NULL, verbose = TRUE)
 An object of class \code{nm_runs} with:
 \itemize{
 \item \verb{$runs}: one row per run
-\item \verb{$params}: one row per parameter
+\item \verb{$params}: one row per parameter (\code{same = TRUE} for the OMEGA elements
+of an \verb{$OMEGA ... SAME} record)
+\item \verb{$mixture}: for \verb{$MIX} runs with a \code{.phm} file, one row per subject and
+subpopulation (\code{PMIX}, \code{assigned} = most probable subpopulation)
 \item \verb{$path}: the analysis directory
 \item \verb{$created}: time of extraction
 }
@@ -33,3 +36,24 @@ residual-error THETAs after their \verb{$THETA} comment label when it is a short
 name (\code{CL_WT}, \code{PROP}, \code{ADD}...). Other THETAs keep their NONMEM name
 (\code{THETA6}...).
 }
+\section{Several estimation steps, several problems, failed runs}{
+
+With several \verb{$EST} records, the OFV, the minimisation status, the
+shrinkage and the covariance step are those of the last estimation step
+(\code{est_methods} lists the steps, e.g. \code{"ITS > SAEM > IMP(eval) > FOCEI"}).
+With several \verb{$PROB}, the last problem that has an estimation is read
+(\code{n_problems}). The estimates are read in the \code{.ext}; when it is empty,
+has no final row, or reports an OFV different from the \code{.lst} (an \code{.ext}
+left by another run), they are read in the \code{.lst} (\code{params_source}) and
+a warning is given. \code{run_state} is \code{"completed"}, \code{"interrupted"} (the
+output stops before the end of the last step), \code{"terminated"} (PROGRAM
+TERMINATED) or \code{"nmtran_error"}. \code{n_omega} and \code{n_sigma} count the
+estimated elements only (not FIX, not SAME, not the zeros outside the
+blocks); \code{n_eta_same} counts the ETAs declared \code{SAME} (inter-occasion
+variability); ETAs fixed to 0 are left out of \code{max_eta_shrink}. For \verb{$MIX}
+runs, \code{n_subpop} is the number of subpopulations, the mixing-proportion
+THETAs are named \code{MIX_P} when they have no other name, the shrinkage of an
+ETA is its smallest value over the subpopulations, and \code{mix_assign} counts
+the subjects assigned to each subpopulation.
+}
+

@@ -184,6 +184,8 @@ NULL
 #'   estimation run is reused: \code{""} (flat) if its files were found
 #'   directly in \code{analysis_dir}, \code{".reg"} otherwise.
 #' @param verbose Passed to \code{\link{nm_run}} and used locally for messages.
+#' @param n_cores Passed to \code{\link{nm_run}}: 2 runs the \code{_orig} and
+#'   \code{_sim} control streams at the same time (default 1).
 #'
 #' @return A \code{data.frame} run log (from \code{\link{nm_run}}) with one
 #'   row per VPC run (\code{_orig} and \code{_sim}).
@@ -226,7 +228,8 @@ nm_vpc_ctl <- function(
     seed             = 12345,
     skip_terminated  = TRUE,
     run_subdir       = NULL,
-    verbose          = TRUE
+    verbose          = TRUE,
+    n_cores          = 1L
 ) {
 
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
@@ -271,6 +274,7 @@ nm_vpc_ctl <- function(
     analysis_dir    = analysis_dir,
     skip_terminated = skip_terminated,
     run_subdir      = run_subdir,
-    verbose         = verbose
+    verbose         = verbose,
+    n_cores         = n_cores
   )
 }

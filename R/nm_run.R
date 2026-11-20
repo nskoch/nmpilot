@@ -23,6 +23,8 @@
 .nm_lst_ofv <- function(lst_file) {
   x <- .nm_read_lst_lines(lst_file)
   if (length(x) == 0) return(NA_real_)
+  # several $EST / $PROB: OFV of the last estimation step
+  x <- .nm_lst_step_lines(x)
 
   # Priority 1: "WITHOUT CONSTANT" (reported value in modern NONMEM)
   idx_woc <- grep("OBJECTIVE FUNCTION VALUE WITHOUT CONSTANT", x, fixed = TRUE)
@@ -74,9 +76,11 @@
     ))
   }
 
-  # Minimization status
-  min_idx <- grep("MINIMIZATION", x, fixed = TRUE)
-  if (length(min_idx) == 0) {
+  # Minimization status of the last estimation step (several $EST: the
+  # earlier steps only prepare the last one; EM methods print
+  # "OPTIMIZATION/PORTION ... COMPLETED" instead of "MINIMIZATION")
+  stp <- .nm_lst_step_status(x)
+  if (is.na(stp$code)) {
     # Evaluation run (MAXEVAL=0): no minimization, an OFV is printed
     if (any(grepl("(EVALUATION)", x, fixed = TRUE)) && any(grepl("^\\s*#OBJV:", x))) {
       return(data.frame(
@@ -90,24 +94,14 @@
     }
     return(empty)
   }
-  min_line <- x[min_idx[1]]
-
-  if (grepl("SUCCESSFUL", min_line, fixed = TRUE)) {
-    min_status <- "successful"
-    min_ok     <- TRUE
-  } else if (grepl("TERMINATED", min_line, fixed = TRUE)) {
-    min_status <- "terminated"
-    min_ok     <- FALSE
-  } else if (grepl("ROUNDING ERRORS", min_line, fixed = TRUE)) {
-    min_status <- "rounding_errors"
-    min_ok     <- FALSE
-  } else {
-    min_status <- "unknown"
-    min_ok     <- FALSE
-  }
+  min_status <- stp$code
+  min_ok <- switch(stp$code, successful = TRUE, not_tested = NA, FALSE)
 
   # Covariance step
-  cov_idx <- grep("COVARIANCE STEP", x, fixed = TRUE)
+  # only the status lines ("COVARIANCE STEP OMITTED: NO", "... ABORTED"...):
+  # the sentence "AFTER CHECKING THAT THE COVARIANCE STEP PRODUCES REASONABLE
+  # OUTPUT" printed after "HOWEVER, PROBLEMS OCCURRED" is not one
+  cov_idx <- grep("^\\s*0?\\s*COVARIANCE STEP\\s+(OMITTED|ABORTED|SUCCESSFUL|WAS)", x)
   if (length(cov_idx) == 0) {
     cov_ok     <- NA
     cov_status <- "not_requested"
@@ -291,6 +285,15 @@
 #'   (not re-launched). If `FALSE`, only runs with `run_ok = TRUE` are skipped.
 #' @param overwrite_ctl Logical. If `TRUE` (default), the `.ctl` file is
 #'   overwritten in the `.reg` directory if already present.
+#' @param n_cores Number of runs launched at the same time (default 1: one
+#'   after the other, NONMEM output shown in the console). A whole number,
+#'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
+#'   (interactive sessions: the cores are shown and the number is asked once per R
+#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again). In
+#'   parallel, each run is started in the background from its run directory;
+#'   the console output of nmfe goes to `<run>_nmtools.log`. Runs written in
+#'   the same folder (`run_subdir = ""`) are always run one after the other.
+#'   If R is interrupted, the runs already started go on in the background.
 #' @param verbose Logical. If `TRUE` (default), progress messages are printed
 #'   to the console.
 #'
@@ -353,7 +356,8 @@ nm_run <- function(
     accept_failed   = TRUE,
     overwrite_ctl   = TRUE,
     run_subdir      = ".reg",
-    verbose         = TRUE
+    verbose         = TRUE,
+    n_cores         = 1L
 ) {
 
   # --- Initial checks ---------------------------------------------------------
@@ -372,6 +376,13 @@ nm_run <- function(
   .nm_warn_synced_dir(analysis_dir)
   if (is.null(run_subdir)) run_subdir <- ""
   flat <- !nzchar(run_subdir)
+  n_cores <- .nm_resolve_cores(n_cores)
+  if (n_cores > 1L && flat && length(ctl_files) > 1L) {
+    warning("run_subdir = \"\": the runs share a folder and cannot run at the same time; ",
+            "they are run one after the other.", call. = FALSE)
+    n_cores <- 1L
+  }
+  jobs <- list()   # runs prepared for the parallel queue
 
   # --- Loop over runs ---------------------------------------------------------
 
@@ -443,6 +454,11 @@ nm_run <- function(
                   basename(lst_dest), "   (in ", reg_dir, ")")
 
     if (verbose) message("    Command: ", cmd)
+    if (n_cores > 1L) {
+      # launched later by the parallel queue
+      jobs[[length(jobs) + 1L]] <<- list(run = run_name, dir = reg_dir)
+      return(.nm_run_log_row(run_name, reg_dir, "launched", NA, lst_file))
+    }
     # nmfe is run from inside the .reg directory: NM-TRAN writes its work
     # files in the current directory.
     exit_status <- .nm_launch(nmfe_path, reg_dir, run_name)
@@ -450,6 +466,20 @@ nm_run <- function(
 
     .nm_run_log_row(run_name, reg_dir, "launched", exit_status, lst_file)
   })
+
+  # Parallel launch of the prepared runs, then log rows rebuilt from the .lst
+  if (n_cores > 1L && length(jobs)) {
+    if (verbose) message(sprintf(">>> Launching %d run(s), %d at a time", length(jobs), n_cores))
+    st <- .nm_run_queue(jobs, nmfe_path, n_cores,
+                        prepare = function(job, slot) list(dir = job$dir, name = job$run),
+                        verbose = verbose)
+    for (k in seq_along(jobs)) {
+      i <- which(vapply(results, function(r) r$run == jobs[[k]]$run &&
+                          r$action == "launched", logical(1)))[1]
+      results[[i]] <- .nm_run_log_row(jobs[[k]]$run, jobs[[k]]$dir, "launched", st[k],
+                                      file.path(jobs[[k]]$dir, paste0(jobs[[k]]$run, ".lst")))
+    }
+  }
 
   # Assemble log
   do.call(rbind, results)

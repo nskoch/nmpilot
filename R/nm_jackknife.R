@@ -24,6 +24,8 @@
 
 # THETA estimates (se = FALSE) or their standard errors (se = TRUE) from a .lst.
 .nm_jk_theta_lst <- function(lst_lines, se = FALSE) {
+  # several $EST: estimates of the last estimation step
+  lst_lines <- .nm_lst_step_lines(lst_lines)
   if (se) {
     h0 <- grep("STANDARD ERROR OF ESTIMATE", lst_lines)
     if (length(h0) == 0) return(numeric(0))
@@ -105,7 +107,8 @@
 #'   none.
 #' @param sep Field separator of the data file (default `","`).
 #' @param output_dir Working directory (default `"<ctl_dir>/<run>_jackknife"`).
-#'   Holds `jk_data/`, `jk_ctl/`, `jk_run/`, `figures/` and the two CSV files.
+#'   Holds `jk_data/`, `jk_ctl/`, `jk_run/` (one subdirectory per run),
+#'   `figures/` and the two CSV files.
 #' @param overwrite_existing_runs `FALSE` (default): skip the runs already
 #'   minimised (resume).
 #' @param strip_tables Remove `$TABLE` from the jackknife control streams
@@ -120,6 +123,14 @@
 #' @param run `FALSE`: only write the data sets and control streams (no
 #'   NONMEM).
 #' @param verbose Progress messages (default `TRUE`).
+#' @param n_cores Number of jackknife runs at the same time (default 1). A
+#'   whole number,
+#'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
+#'   (interactive sessions: the cores are shown and the number is asked once per R
+#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   Each run is then started in the background in its own directory; if R
+#'   is interrupted, the runs already started go on in the background and a
+#'   later call with the same arguments picks up their results.
 #'
 #' @return An object of class `nm_jackknife`: the reference OFV, THETA and SE,
 #'   `all_runs` (every replicate, including the failed ones), `summary`
@@ -152,7 +163,8 @@ nm_jackknife <- function(ctl,
                          dtheta_threshold        = 0.01,
                          save_figures            = TRUE,
                          run                     = TRUE,
-                         verbose                 = TRUE) {
+                         verbose                 = TRUE,
+                         n_cores                 = 1L) {
 
   say <- function(...) if (isTRUE(verbose)) message(...)
 
@@ -239,27 +251,44 @@ nm_jackknife <- function(ctl,
     ref_se <- rep(NA_real_, k_theta)
   }
 
-  # --- NONMEM runs (sequential, resume-aware) --------------------------------
-  for (k in seq_len(N)) {
+  # --- NONMEM runs (resume-aware), each in its own subdirectory of jk_run/ ---
+  n_cores <- .nm_resolve_cores(n_cores)
+  prep_run <- function(k) {
     name <- names_jk[k]
-    lst_file <- file.path(jk_run_dir, paste0(name, ".lst"))
+    rdir <- file.path(jk_run_dir, name)
+    lst_file <- file.path(rdir, paste0(name, ".lst"))
     if (!overwrite_existing_runs && file.exists(lst_file) &&
         isTRUE(.nm_parse_status(lst_file)$min_ok)) {
       say("Skipping (already minimised): ", name)
-      next
+      return(NULL)
     }
-    file.copy(file.path(jk_ctl_dir,  paste0(name, ".ctl")), jk_run_dir, overwrite = TRUE)
-    file.copy(file.path(jk_data_dir, paste0(name, ".csv")), jk_run_dir, overwrite = TRUE)
-    say(sprintf("Running %s (%d/%d)", name, k, N))
-    status <- .nm_launch(nmfe_path, jk_run_dir, name)
+    dir.create(rdir, showWarnings = FALSE)
+    file.copy(file.path(jk_ctl_dir,  paste0(name, ".ctl")), rdir, overwrite = TRUE)
+    file.copy(file.path(jk_data_dir, paste0(name, ".csv")), rdir, overwrite = TRUE)
+    list(dir = rdir, name = name)
+  }
+  warn_status <- function(status, name)
     if (!identical(as.integer(status), 0L))
       warning("NONMEM returned a non-zero exit status (", status, ") for ", name, ".",
               call. = FALSE)
+  if (n_cores > 1L) {
+    say(sprintf("Running %d jackknife runs, %d at a time", N, n_cores))
+    .nm_run_queue(as.list(seq_len(N)), nmfe_path, n_cores, verbose = verbose,
+                  label = "jackknife runs",
+                  prepare = function(k, slot) prep_run(k),
+                  finish = function(k, slot, st, secs) warn_status(st, names_jk[k]))
+  } else {
+    for (k in seq_len(N)) {
+      spec <- prep_run(k)
+      if (is.null(spec)) next
+      say(sprintf("Running %s (%d/%d)", spec$name, k, N))
+      warn_status(.nm_launch(nmfe_path, spec$dir, spec$name), spec$name)
+    }
   }
 
   # --- Results ---------------------------------------------------------------
   rows <- lapply(seq_len(N), function(k) {
-    f <- file.path(jk_run_dir, paste0(names_jk[k], ".lst"))
+    f <- file.path(jk_run_dir, names_jk[k], paste0(names_jk[k], ".lst"))
     if (!file.exists(f)) {
       st <- data.frame(min_ok = FALSE, cov_ok = FALSE, cov_warning = FALSE, nmtran_error = NA)
       ofv <- NA_real_; th <- numeric(0)
@@ -333,7 +362,8 @@ print.nm_jackknife <- function(x, digits = 4, ...) {
     cat("  (dry run: data sets and control streams only)\n")
     return(invisible(x))
   }
-  cat(sprintf("  ref OFV   : %s\n", signif(x$ref_ofv, digits)))
+  # OFV: three decimals, as NONMEM prints it (signif() gave -1224)
+  cat(sprintf("  ref OFV   : %.3f\n", x$ref_ofv))
   cat(sprintf("  runs used : %d (of %d)\n", nrow(x$summary), nrow(x$all_runs)))
   top <- utils::head(x$summary[, c("rank", "id_removed", "dOFV", "abs_dOFV",
                                    "dtheta_norm", "dtheta_max")], 10)

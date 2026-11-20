@@ -44,6 +44,8 @@
 #'   has terminated (otherwise [nm_run()] skips it and its old results are
 #'   read).
 #' @param verbose Print progress messages.
+#' @param n_cores Number of candidates run at the same time, passed to
+#'   [nm_run()] (default 1).
 #' @param ... Further arguments passed to [nm_write_ctl()] (e.g. `method`).
 #' @return An object of class `nm_suggest_run`: a data.frame with one row
 #'   per candidate (`candidate`, `model`, `score`, `rank_score`, `ctl`,
@@ -62,7 +64,7 @@
 #' @export
 nm_suggest_run <- function(x, analysis_dir, nmfe_path = NULL, candidates = 1:3,
                            prefix = "sugg", data = NULL, run = TRUE,
-                           overwrite = FALSE, verbose = TRUE, ...) {
+                           overwrite = FALSE, verbose = TRUE, n_cores = 1L, ...) {
   if (!inherits(x, "nm_model_suggestion")) stop("`x` must be an nm_model_suggestion object.")
   if (!dir.exists(analysis_dir)) stop("`analysis_dir` does not exist: ", analysis_dir)
   candidates <- as.integer(candidates)
@@ -108,7 +110,7 @@ nm_suggest_run <- function(x, analysis_dir, nmfe_path = NULL, candidates = 1:3,
     # with overwrite, the control streams have just been rewritten: previous
     # results of the same runs must not be reused
     log <- nm_run(nmfe_path, ctl_files, analysis_dir, skip_terminated = !overwrite,
-                  verbose = verbose)
+                  verbose = verbose, n_cores = n_cores)
     m <- match(tools::file_path_sans_ext(basename(ctl_files)), log$run)
     out$ofv <- log$ofv[m]
     out$min_ok <- log$min_ok[m]

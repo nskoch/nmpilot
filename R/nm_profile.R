@@ -47,7 +47,7 @@
 #' OFV from #OBJV (WITHOUT the additive constant N*LOG(2PI))
 #' @noRd
 .nm_extract_ofv <- function(lst) {
-  lines <- readLines(lst, warn = FALSE)
+  lines <- .nm_lst_step_lines(readLines(lst, warn = FALSE))
   idx <- grep("#OBJV", lines)
   if (length(idx) == 0) return(NA_real_)
   .nm_first_num(lines[idx[length(idx)]])
@@ -63,7 +63,8 @@
   txt <- paste(readLines(lst, warn = FALSE), collapse = "\n")
 
   nmtran_err <- grepl("AN ERROR WAS FOUND IN THE CONTROL STATEMENTS", txt, ignore.case = TRUE)
-  min_ok     <- grepl("MINIMIZATION SUCCESSFUL", txt)
+  # status of the last estimation step (several $EST, EM methods)
+  min_ok     <- identical(.nm_lst_step_status(readLines(lst, warn = FALSE))$code, "successful")
 
   cov_omitted   <- grepl("COVARIANCE STEP OMITTED:\\s*YES", txt, ignore.case = TRUE)
   cov_requested <- grepl("COVARIANCE STEP OMITTED:\\s*NO", txt, ignore.case = TRUE) |
@@ -270,6 +271,14 @@
 #' @param run Logical; if `FALSE`, generate the control files without launching
 #'   NONMEM.
 #' @param quiet Logical; suppress progress messages.
+#' @param n_cores Number of grid values run at the same time (default 1). A
+#'   whole number,
+#'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
+#'   (interactive sessions: the cores are shown and the number is asked once per R
+#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   Each run is then started in the background in its own directory; if R
+#'   is interrupted, the runs already started go on in the background and a
+#'   later call with the same arguments picks up their results.
 #'
 #' @return An object of class `nm_profile`: a list with `results` (a data frame
 #'   of `run`, `value`, `ofv`, `dOFV`, `min_ok`, `cov_ok`, `cov_warning`, `dir`,
@@ -299,7 +308,8 @@ nm_profile <- function(nmfe_path, ctl_path, param, from, to, by,
                        ci_threshold = 3.84,
                        digits       = NULL,
                        run          = TRUE,
-                       quiet        = FALSE) {
+                       quiet        = FALSE,
+                       n_cores      = 1L) {
 
   say <- function(...) if (!quiet) message(...)
 
@@ -335,9 +345,20 @@ nm_profile <- function(nmfe_path, ctl_path, param, from, to, by,
   .nm_ensure_dir(output_dir)
   runs_dir <- .nm_ensure_dir(file.path(output_dir, "runs"))
 
+  # final estimate from the .ext of the control stream, if it was already run
+  est <- NA_real_
+  ext <- sub("\\.[^./]*$", ".ext", ctl_path)
+  if (file.exists(ext)) {
+    e <- tryCatch(.nm_parse_ext(ext), error = function(e) NULL)
+    if (!is.null(e) && isTRUE(e$final_row_available)) {
+      v <- e$raw$value[e$raw$raw_name == paste0("THETA", target$theta_index)]
+      if (length(v)) est <- v[1]
+    }
+  }
   say("Profiling THETA(", target$theta_index, ")",
       if (nzchar(target$label)) paste0(" [", target$label, "]") else "",
-      "  current value = ", signif(target$value, 4),
+      "  initial value = ", signif(target$value, 4),
+      if (!is.na(est)) paste0(", final estimate = ", signif(est, 4)) else "",
       if (isTRUE(target$fixed)) "  (was FIXED)" else "")
   say("Grid: ", length(vals), " values from ", .nm_fmt_val(min(vals), digits),
       " to ", .nm_fmt_val(max(vals), digits), " by ", by)
@@ -356,7 +377,21 @@ nm_profile <- function(nmfe_path, ctl_path, param, from, to, by,
   }
   say(nrow(runs), " control files generated in ", runs_dir)
 
-  if (run) {
+  if (run && (n_cores <- .nm_resolve_cores(n_cores)) > 1L) {
+    todo <- lapply(seq_len(nrow(runs)), function(i) i)
+    .nm_run_queue(todo, nmfe_path, n_cores, verbose = !quiet, label = "grid values",
+      prepare = function(i, slot) {
+        lst_i <- file.path(runs$dir[i], paste0(runs$run[i], ".lst"))
+        if (!overwrite && file.exists(lst_i) && isTRUE(.nm_parse_status(lst_i)$min_ok)) {
+          say("[", i, "/", nrow(runs), "] skip (done): ", runs$run[i]); return(NULL)
+        }
+        list(dir = runs$dir[i], name = runs$run[i])
+      },
+      finish = function(i, slot, st, secs) {
+        if (!identical(as.integer(st), 0L))
+          warning("Non-zero exit status (", st, ") for ", runs$run[i])
+      })
+  } else if (run) {
     for (i in seq_len(nrow(runs))) {
       lst_i <- file.path(runs$dir[i], paste0(runs$run[i], ".lst"))
       if (!overwrite && file.exists(lst_i) && isTRUE(.nm_parse_status(lst_i)$min_ok)) {

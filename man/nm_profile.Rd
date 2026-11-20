@@ -20,7 +20,8 @@ nm_profile(
   ci_threshold = 3.84,
   digits = NULL,
   run = TRUE,
-  quiet = FALSE
+  quiet = FALSE,
+  n_cores = 1L
 )
 
 \method{print}{nm_profile}(x, ...)
@@ -58,6 +59,15 @@ derived from \code{by} when \code{NULL}.}
 NONMEM.}
 
 \item{quiet}{Logical; suppress progress messages.}
+
+\item{n_cores}{Number of grid values run at the same time (default 1). A
+whole number,
+\code{"auto"} (physical cores minus one, see \code{\link[=nm_cores]{nm_cores()}}) or \code{"ask"}
+(interactive sessions: the cores are shown and the number is asked once per R
+session, then reused; \code{options(nmtools.n_cores = NULL)} asks again).
+Each run is then started in the background in its own directory; if R
+is interrupted, the runs already started go on in the background and a
+later call with the same arguments picks up their results.}
 
 \item{x}{An \code{nm_profile} object.}
 

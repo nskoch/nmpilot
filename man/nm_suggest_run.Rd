@@ -15,6 +15,7 @@ nm_suggest_run(
   run = TRUE,
   overwrite = FALSE,
   verbose = TRUE,
+  n_cores = 1L,
   ...
 )
 
@@ -45,6 +46,9 @@ has terminated (otherwise \code{\link[=nm_run]{nm_run()}} skips it and its old r
 read).}
 
 \item{verbose}{Print progress messages.}
+
+\item{n_cores}{Number of candidates run at the same time, passed to
+\code{\link[=nm_run]{nm_run()}} (default 1).}
 
 \item{...}{Further arguments passed to \code{\link[=nm_write_ctl]{nm_write_ctl()}} (e.g. \code{method}).}
 }

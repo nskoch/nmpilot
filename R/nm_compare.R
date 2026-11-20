@@ -477,7 +477,8 @@ plot.nm_compare <- function(x, which = "all", n_band = 200L, ...) {
 #' @keywords internal
 #' @noRd
 .nm_cmp_extract_ofv <- function(lst_file) {
-  lines <- readLines(lst_file, warn = FALSE)
+  # several $EST / $PROB: OFV of the last estimation step
+  lines <- .nm_lst_step_lines(readLines(lst_file, warn = FALSE))
   idx   <- grep("#OBJV", lines)
   if (!length(idx)) return(NA_real_)
   last  <- lines[idx[length(idx)]]

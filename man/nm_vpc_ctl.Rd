@@ -12,7 +12,8 @@ nm_vpc_ctl(
   seed = 12345,
   skip_terminated = TRUE,
   run_subdir = NULL,
-  verbose = TRUE
+  verbose = TRUE,
+  n_cores = 1L
 )
 }
 \arguments{
@@ -40,6 +41,9 @@ estimation run is reused: \code{""} (flat) if its files were found
 directly in \code{analysis_dir}, \code{".reg"} otherwise.}
 
 \item{verbose}{Passed to \code{\link{nm_run}} and used locally for messages.}
+
+\item{n_cores}{Passed to \code{\link{nm_run}}: 2 runs the \code{_orig} and
+\code{_sim} control streams at the same time (default 1).}
 }
 \value{
 A \code{data.frame} run log (from \code{\link{nm_run}}) with one

@@ -64,9 +64,31 @@
 #'
 #' @return An object of class `nm_runs` with:
 #'   - `$runs`: one row per run
-#'   - `$params`: one row per parameter
+#'   - `$params`: one row per parameter (`same = TRUE` for the OMEGA elements
+#'     of an `$OMEGA ... SAME` record)
+#'   - `$mixture`: for `$MIX` runs with a `.phm` file, one row per subject and
+#'     subpopulation (`PMIX`, `assigned` = most probable subpopulation)
 #'   - `$path`: the analysis directory
 #'   - `$created`: time of extraction
+#'
+#' @section Several estimation steps, several problems, failed runs:
+#' With several `$EST` records, the OFV, the minimisation status, the
+#' shrinkage and the covariance step are those of the last estimation step
+#' (`est_methods` lists the steps, e.g. `"ITS > SAEM > IMP(eval) > FOCEI"`).
+#' With several `$PROB`, the last problem that has an estimation is read
+#' (`n_problems`). The estimates are read in the `.ext`; when it is empty,
+#' has no final row, or reports an OFV different from the `.lst` (an `.ext`
+#' left by another run), they are read in the `.lst` (`params_source`) and
+#' a warning is given. `run_state` is `"completed"`, `"interrupted"` (the
+#' output stops before the end of the last step), `"terminated"` (PROGRAM
+#' TERMINATED) or `"nmtran_error"`. `n_omega` and `n_sigma` count the
+#' estimated elements only (not FIX, not SAME, not the zeros outside the
+#' blocks); `n_eta_same` counts the ETAs declared `SAME` (inter-occasion
+#' variability); ETAs fixed to 0 are left out of `max_eta_shrink`. For `$MIX`
+#' runs, `n_subpop` is the number of subpopulations, the mixing-proportion
+#' THETAs are named `MIX_P` when they have no other name, the shrinkage of an
+#' ETA is its smallest value over the subpopulations, and `mix_assign` counts
+#' the subjects assigned to each subpopulation.
 #'
 #' @details
 #' When the control stream of a run is found, parameters are named from the
@@ -88,14 +110,15 @@ nm_extract_runs <- function(path, runs = NULL, verbose = TRUE) {
 
   parsed <- purrr::pmap(
     rt,
-    function(run, dir, ctl, smr, lst, ext, shk) {
+    function(run, dir, ctl, smr, lst, ext, shk, phm) {
       if (isTRUE(verbose)) message("  * run : ", run)
-      .nm_extract_one(run, dir, ctl, smr, lst, ext, shk)
+      .nm_extract_one(run, dir, ctl, smr, lst, ext, shk, phm)
     }
   )
 
   runs_df <- purrr::map_dfr(parsed, "run")
   params_df <- purrr::map_dfr(parsed, "params")
+  mixture_df <- purrr::map_dfr(parsed, "mixture")
 
   safe_min <- function(x) {
     if (!length(x) || all(is.na(x))) return(NA_real_)
@@ -134,6 +157,7 @@ nm_extract_runs <- function(path, runs = NULL, verbose = TRUE) {
     list(
       runs = runs_df,
       params = params_df,
+      mixture = mixture_df,
       path = path,
       created = Sys.time()
     ),
@@ -253,6 +277,8 @@ nm_filter_runs <- function(
   out <- x
   out$runs <- tibble::as_tibble(runs_df)
   out$params <- tibble::as_tibble(params_df)
+  if (!is.null(x$mixture) && "run" %in% names(x$mixture))
+    out$mixture <- x$mixture[x$mixture$run %in% kept_runs, , drop = FALSE]
   attr(out, "run_filter") <- run_filter
   out
 }
@@ -428,7 +454,7 @@ print.nm_runs <- function(x, ...) {
   cols <- intersect(
     c(
       "run", "ofv", "dOFV", "rank_ofv",
-      "min_status", "cov_status",
+      "min_status", "cov_status", "run_state",
       "estimation_available", "ext_available",
       "n_par", "aic", "bic",
       "max_eta_shrink", "warnings"
@@ -472,7 +498,8 @@ print.nm_runs <- function(x, ...) {
     rse_pct = numeric(),
     se = numeric(),
     shrinkage = numeric(),
-    source = character()
+    source = character(),
+    same = logical()
   )
 }
 
@@ -488,11 +515,12 @@ print.nm_runs <- function(x, ...) {
 
   rows <- purrr::map(cand, function(d) {
 
-    ctl <- list.files(d, pattern = "(?i)\\.ctl$", full.names = TRUE)
+    ctl <- list.files(d, pattern = "(?i)\\.(ctl|mod)$", full.names = TRUE)
     lst <- list.files(d, pattern = "(?i)\\.lst$", full.names = TRUE)
     smr <- list.files(d, pattern = "(?i)\\.smr$", full.names = TRUE)
     ext <- list.files(d, pattern = "(?i)\\.ext$", full.names = TRUE)
     shk <- list.files(d, pattern = "(?i)\\.shk$", full.names = TRUE)
+    phm <- list.files(d, pattern = "(?i)\\.phm$", full.names = TRUE)
 
     if (!length(lst) && !length(smr) && !length(ext)) return(NULL)
 
@@ -500,12 +528,19 @@ print.nm_runs <- function(x, ...) {
     primary <- if (length(ext)) ext[1] else if (length(smr)) smr[1] else lst[1]
     stem <- tools::file_path_sans_ext(basename(primary))
 
-    # If several files exist, prefer the one with the same stem.
+    # If several files exist, prefer the one with the same stem; the case of
+    # the name is ignored (NONMEM 7.1 wrote RUN.EXT next to run.lst).
     pick <- function(files) {
       if (!length(files)) return(NA_character_)
       stems <- tools::file_path_sans_ext(basename(files))
-      hit <- which(stems == stem)
+      hit <- which(tolower(stems) == tolower(stem))
       if (length(hit)) files[hit[1]] else files[1]
+    }
+    # run name as written in the control stream or the .lst
+    for (f in c(pick(ctl), pick(lst))) {
+      if (!is.na(f) && tolower(tools::file_path_sans_ext(basename(f))) == tolower(stem)) {
+        stem <- tools::file_path_sans_ext(basename(f)); break
+      }
     }
 
     tibble::tibble(
@@ -515,7 +550,8 @@ print.nm_runs <- function(x, ...) {
       smr = pick(smr),
       lst = pick(lst),
       ext = pick(ext),
-      shk = pick(shk)
+      shk = pick(shk),
+      phm = pick(phm)
     )
   })
 
@@ -525,7 +561,7 @@ print.nm_runs <- function(x, ...) {
     return(tibble::tibble(
       run = character(), dir = character(),
       ctl = character(), smr = character(), lst = character(),
-      ext = character(), shk = character()
+      ext = character(), shk = character(), phm = character()
     ))
   }
 
@@ -999,8 +1035,14 @@ print.nm_runs <- function(x, ...) {
 
 .nm_parse_lst <- function(path) {
 
-  L <- .nm_read_lines_latin1(path)
-  if (is.null(L)) return(NULL)
+  L_all <- .nm_read_lines_latin1(path)
+  if (is.null(L_all)) return(NULL)
+
+  # Several $PROB and several $EST: the OFV, the status, the shrinkage and
+  # the covariance step are those of the last estimation step of the last
+  # problem with an estimation (earlier steps only prepare it).
+  st <- .nm_lst_structure(L_all)
+  L  <- st$L_step
 
   # OFV
   ofv <- NA_real_
@@ -1044,11 +1086,13 @@ print.nm_runs <- function(x, ...) {
   # Minimisation status
   spat <- paste0(
     "(?i)MINIMIZATION (SUCCESSFUL|TERMINATED|ABORTED)",
-    "|OPTIMIZATION WAS (COMPLETED|NOT COMPLETED)",
-    "|REDUCED STOCHASTIC"
+    "|OPTIMIZATION (WAS )?(COMPLETED|NOT COMPLETED|NOT TESTED)",
+    "|(STOCHASTIC|STATISTICAL|BURN-IN) PORTION (WAS )?(COMPLETED|NOT COMPLETED)",
+    "|EXPECTATION ONLY PROCESS (WAS )?COMPLETED"
   )
 
-  si <- stringr::str_which(L, spat)
+  # last status line of the step (SAEM prints two: stochastic, then reduced)
+  si <- rev(stringr::str_which(L, spat))
 
   min_status <- NA_character_
   min_ok <- NA
@@ -1057,7 +1101,8 @@ print.nm_runs <- function(x, ...) {
   if (length(si)) {
     ln <- L[si[1]]
     min_status <- stringr::str_trim(stringr::str_remove(ln, "^[01+]"))
-    min_ok <- stringr::str_detect(ln, "(?i)SUCCESSFUL|COMPLETED") &&
+    min_ok <- if (stringr::str_detect(ln, "(?i)NOT TESTED")) NA else
+      stringr::str_detect(ln, "(?i)SUCCESSFUL|COMPLETED") &&
       !stringr::str_detect(ln, "(?i)NOT COMPLETED")
 
     stop_pat <- "(?i)^\\s*(NO\\. OF|REFERENCE|ITERATION|MONITORING|OBJECTIVE|#|\\$)"
@@ -1095,6 +1140,8 @@ print.nm_runs <- function(x, ...) {
     function(p) any(stringr::str_detect(L, p)),
     logical(1)
   )]
+  if (!"PROGRAM TERMINATED" %in% w && any(stringr::str_detect(L_all, flags[["PROGRAM TERMINATED"]])))
+    w <- c(w, "PROGRAM TERMINATED")
   warnings <- if (length(w)) paste(w, collapse = " | ") else ""
 
   # Covariance step status.
@@ -1102,6 +1149,8 @@ print.nm_runs <- function(x, ...) {
   #   - if $COV is not requested, covariance is not mentioned at all;
   #   - "COVARIANCE STEP OMITTED: NO" means the step was requested;
   #   - "STANDARD ERROR OF ESTIMATE" confirms that it completed.
+  # (aborted/completed: last step; requested/omitted: problem header)
+  Lp <- st$L_problem
   cov_status <- dplyr::case_when(
     any(stringr::str_detect(
       L,
@@ -1114,12 +1163,12 @@ print.nm_runs <- function(x, ...) {
     )) ~ "COMPLETED",
 
     any(stringr::str_detect(
-      L,
+      Lp,
       "(?i)COVARIANCE STEP OMITTED:\\s*NO"
     )) ~ "REQUESTED",
 
     any(stringr::str_detect(
-      L,
+      Lp,
       "(?i)COVARIANCE STEP OMITTED:\\s*YES"
     )) ~ "OMITTED",
 
@@ -1134,7 +1183,12 @@ print.nm_runs <- function(x, ...) {
     warnings = warnings,
     cov_status = cov_status,
     eta_shrink = .nm_lst_shrink(L, "ETA.?SHRINK"),
-    eps_shrink = .nm_lst_shrink(L, "EPS.?SHRINK")
+    eps_shrink = .nm_lst_shrink(L, "EPS.?SHRINK"),
+    n_problems = st$n_problems,
+    n_est = st$n_est,
+    est_methods = if (st$n_est) paste(vapply(st$methods, .nm_est_code, ""), collapse = " > ") else NA_character_,
+    run_state = .nm_lst_run_state(L_all, st, ofv),
+    estimates = .nm_lst_estimates(L, ofv)
   )
 }
 
@@ -1143,16 +1197,29 @@ print.nm_runs <- function(x, ...) {
   idx <- stringr::str_which(L, paste0("(?i)", key))
   if (!length(idx)) return(numeric(0))
 
-  nums <- unlist(lapply(idx, function(i) {
-    suppressWarnings(as.numeric(
+  num_of <- function(i) {
+    v <- suppressWarnings(as.numeric(
       stringr::str_extract_all(
         L[i],
         "-?\\d+\\.?\\d+([eE][+-]?\\d+)?"
       )[[1]]
     ))
-  }))
-
-  nums[!is.na(nums)]
+    v[!is.na(v)]
+  }
+  # One line per label (ETASHRINKSD, ETASHRINKVR, ETAshrink...). With $MIX,
+  # NONMEM prints the same label once per subpopulation, with 100 % for the
+  # ETAs a subpopulation does not use: the smallest value is kept.
+  lab <- toupper(stringr::str_extract(L[idx], "(?i)[A-Z]*SHRINK[A-Z]*"))
+  first <- idx[lab == lab[1]]
+  vals <- lapply(first, num_of)
+  if (length(vals) > 1L && length(unique(lengths(vals))) == 1L) {
+    out <- do.call(pmin, vals)
+  } else {
+    out <- vals[[1]]
+  }
+  # the other labels follow, as before (first values = first label)
+  rest <- unlist(lapply(idx[lab != lab[1]], num_of))
+  c(out, rest)
 }
 
 
@@ -1191,7 +1258,7 @@ print.nm_runs <- function(x, ...) {
 # 10. SINGLE-RUN EXTRACTION
 # =============================================================================
 
-.nm_extract_one <- function(run, dir, ctl, smr, lst, ext, shk) {
+.nm_extract_one <- function(run, dir, ctl, smr, lst, ext, shk, phm = NA_character_) {
 
   ctl_available <- !is.na(ctl) && file.exists(ctl)
 
@@ -1203,6 +1270,25 @@ print.nm_runs <- function(x, ...) {
   e <- if (ext_available) .nm_parse_ext(ext) else NULL
   s <- if (smr_available) .nm_parse_smr(smr) else NULL
   l <- if (lst_available) .nm_parse_lst(lst) else NULL
+
+  # .ext and .lst must describe the same run: an .ext left by another run
+  # with the same name (or rewritten by an evaluation run) is not used.
+  ext_lst_mismatch <- FALSE
+  if (!is.null(e) && !is.null(l) && is.finite(e$ofv %||% NA_real_) && is.finite(l$ofv %||% NA_real_) &&
+      abs(e$ofv - l$ofv) > max(0.01, 1e-6 * abs(l$ofv))) {
+    ext_lst_mismatch <- TRUE
+    warning(sprintf("Run %s: the OFV of the .ext (%s) differs from the .lst (%s); the .lst is used.",
+                    run, format(e$ofv, digits = 10), format(l$ofv, digits = 10)), call. = FALSE)
+  }
+  # Empty .ext (or no final row) or mismatch: estimates printed in the .lst.
+  params_source <- "ext"
+  if ((is.null(e) || ext_lst_mismatch || !isTRUE(e$final_row_available)) &&
+      !is.null(l$estimates)) {
+    e <- l$estimates
+    params_source <- "lst"
+  } else if (is.null(e)) {
+    params_source <- if (!is.null(s) && nrow(s$params)) "smr" else NA_character_
+  }
 
   # Semantic identification from the .ctl (nm_identify_parameters()).
   # If parsing fails, names fall back to the .smr / NONMEM defaults.
@@ -1219,6 +1305,8 @@ print.nm_runs <- function(x, ...) {
     params <- .nm_ext_params(e, names_smr = s$names %||% NULL,
                              semantic_map = semantic_map,
                              residual_map = residual_map)
+    if (identical(params_source, "lst") && nrow(params))
+      params$source <- sub("ext", "lst", params$source)
   } else if (!is.null(s) && nrow(s$params)) {
     # Wings fallback when EXT is missing or unusable.
     params <- s$params %>%
@@ -1260,6 +1348,34 @@ print.nm_runs <- function(x, ...) {
     }
   }
 
+  # IOV: ETAs declared by $OMEGA ... SAME (copies of the previous block,
+  # not estimated); $MIX: subpopulations and mixing-proportion THETAs.
+  ctl_lines <- if (ctl_available) tryCatch(readLines(ctl, warn = FALSE), error = function(e) character(0)) else character(0)
+  same <- if (length(ctl_lines)) .nm_ctl_same_etas(ctl_lines) else list(etas = integer(0), n_records = 0L)
+  mixc <- if (length(ctl_lines)) .nm_ctl_mixture(ctl_lines) else list(mix = FALSE, n_subpop = NA_integer_, p_theta = integer(0))
+  params$same <- rep(FALSE, nrow(params))
+  if (nrow(params) && length(same$etas)) {
+    rc <- regmatches(params$raw_name, regexec("^OMEGA\\(([0-9]+),([0-9]+)\\)$", params$raw_name))
+    ii <- vapply(rc, function(m) if (length(m) == 3) as.integer(m[2]) else NA_integer_, integer(1))
+    jj <- vapply(rc, function(m) if (length(m) == 3) as.integer(m[3]) else NA_integer_, integer(1))
+    hit <- !is.na(ii) & ii %in% same$etas & jj %in% same$etas
+    params$same[hit] <- TRUE
+    params$fixed[hit] <- TRUE
+  }
+  if (nrow(params) && isTRUE(mixc$mix) && length(mixc$p_theta)) {
+    k <- which(params$type == "THETA" & params$index %in% mixc$p_theta &
+                 params$name == paste0("THETA", params$index))
+    if (length(k))
+      params$name[k] <- if (length(k) == 1L) "MIX_P" else paste0("MIX_P", seq_along(k))
+  }
+  phm_d <- if (!is.na(phm) && file.exists(phm)) .nm_parse_phm(phm) else NULL
+  mix_assign <- NA_character_
+  if (!is.null(phm_d)) {
+    tab <- table(phm_d$SUBPOP[phm_d$assigned])
+    mix_assign <- paste(sprintf("%s:%d", names(tab), as.integer(tab)), collapse = " | ")
+    phm_d <- dplyr::mutate(phm_d, run = run, .before = 1)
+  }
+
   params <- dplyr::mutate(params, run = run, .before = 1)
 
   # OFV: EXT first, LST as check/fallback, SMR as last fallback.
@@ -1267,8 +1383,9 @@ print.nm_runs <- function(x, ...) {
   lst_ofv <- l$ofv %||% NA_real_
   smr_ofv <- s$ofv %||% NA_real_
 
-  ofv <- if (!is.na(ext_ofv)) ext_ofv
+  ofv <- if (!is.na(ext_ofv) && !ext_lst_mismatch) ext_ofv
   else if (!is.na(lst_ofv)) lst_ofv
+  else if (!is.na(ext_ofv)) ext_ofv
   else smr_ofv
 
   ofv_diff_ext_lst <- if (
@@ -1280,6 +1397,13 @@ print.nm_runs <- function(x, ...) {
   min_ok <- l$min_ok %||% NA
   status_comment <- l$status_comment %||% NA_character_
   warnings <- l$warnings %||% NA_character_
+  if (ext_lst_mismatch)
+    warnings <- paste(c(if (!is.na(warnings) && nzchar(warnings)) warnings, "EXT/LST MISMATCH"), collapse = " | ")
+  run_state <- l$run_state %||% (if (!is.null(e) && isTRUE(e$final_row_available)) "completed" else NA_character_)
+  if (!is.na(run_state) && run_state != "completed") {
+    min_ok <- FALSE
+    if (is.na(min_status)) min_status <- toupper(run_state)
+  }
   cov_status <- l$cov_status %||% NA_character_
   cov_ok <- !is.na(cov_status) && cov_status == "COMPLETED"
 
@@ -1290,8 +1414,9 @@ print.nm_runs <- function(x, ...) {
   raw_types <- c("THETA", "OMEGA", "OMEGA_COV", "SIGMA", "SIGMA_COV")
 
   n_theta <- sum(params$type == "THETA")
-  n_omega <- sum(params$type %in% c("OMEGA", "OMEGA_COV"))
-  n_sigma <- sum(params$type %in% c("SIGMA", "SIGMA_COV"))
+  # estimated elements only (not FIX, not SAME, not structural zeros)
+  n_omega <- sum(params$type %in% c("OMEGA", "OMEGA_COV") & !params$fixed, na.rm = TRUE)
+  n_sigma <- sum(params$type %in% c("SIGMA", "SIGMA_COV") & !params$fixed, na.rm = TRUE)
   n_eta <- sum(params$type == "ETA_SD")
   n_eps <- sum(params$type == "EPS_SD")
 
@@ -1316,8 +1441,11 @@ print.nm_runs <- function(x, ...) {
     ofv + n_par * log(n_obs)
   } else NA_real_
 
-  max_shr <- if (any(!is.na(params$shrinkage))) {
-    max(params$shrinkage, na.rm = TRUE)
+  # ETAs fixed to 0 have no information (shrinkage 100 %): left out
+  shr <- params$shrinkage
+  shr[params$type == "ETA_SD" & params$fixed & params$value == 0] <- NA_real_
+  max_shr <- if (any(!is.na(shr))) {
+    max(shr, na.rm = TRUE)
   } else NA_real_
 
   # RSE > 50% on estimated raw NONMEM parameters only.
@@ -1339,6 +1467,15 @@ print.nm_runs <- function(x, ...) {
     warnings = warnings,
     cov_status = cov_status,
     cov_ok = cov_ok,
+    run_state = run_state,
+    n_problems = l$n_problems %||% NA_integer_,
+    n_est = l$n_est %||% NA_integer_,
+    est_methods = l$est_methods %||% NA_character_,
+    params_source = params_source,
+    n_eta_same = sum(same$etas <= n_eta),
+    mix = isTRUE(mixc$mix),
+    n_subpop = mixc$n_subpop,
+    mix_assign = mix_assign,
 
     ctl_available = ctl_available,
     semantic_identification = !is.null(semantic),
@@ -1367,5 +1504,5 @@ print.nm_runs <- function(x, ...) {
     dir = dir
   )
 
-  list(run = run_row, params = params)
+  list(run = run_row, params = params, mixture = phm_d)
 }

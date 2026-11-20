@@ -24,7 +24,8 @@ nm_bootstrap(
   include_rounding = FALSE,
   resume = TRUE,
   run = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  n_cores = 1L
 )
 }
 \arguments{
@@ -68,6 +69,18 @@ IGNORE in $DATA ("@", "#", a letter...); "" = none.}
 \item{run}{FALSE = only build the optimised ctl + resample plan (dry run, no NONMEM).}
 
 \item{verbose}{Progress messages (default TRUE).}
+
+\item{n_cores}{Number of replicates run at the same time (default 1). A
+whole number,
+\code{"auto"} (physical cores minus one, see \code{\link[=nm_cores]{nm_cores()}}) or \code{"ask"}
+(interactive sessions: the cores are shown and the number is asked once per R
+session, then reused; \code{options(nmtools.n_cores = NULL)} asks again).
+Each run is then started in the background in its own directory; if R
+is interrupted, the runs already started go on in the background and a
+later call with the same arguments picks up their results. In parallel, each run uses a
+working subdirectory \verb{slot<k>/} of \code{run_dir}; the estimates are appended
+to \code{bootstrap_estimates.csv} as the replicates end (the file is sorted
+by replicate when the result is assembled).}
 }
 \value{
 An object of class "nm_bootstrap" (see print()/plot()).

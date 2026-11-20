@@ -12,7 +12,8 @@ nm_run(
   accept_failed = TRUE,
   overwrite_ctl = TRUE,
   run_subdir = ".reg",
-  verbose = TRUE
+  verbose = TRUE,
+  n_cores = 1L
 )
 }
 \arguments{
@@ -47,6 +48,16 @@ syntax need a subdirectory, because the converted copy is written there.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), progress messages are printed
 to the console.}
+
+\item{n_cores}{Number of runs launched at the same time (default 1: one
+after the other, NONMEM output shown in the console). A whole number,
+\code{"auto"} (physical cores minus one, see \code{\link[=nm_cores]{nm_cores()}}) or \code{"ask"}
+(interactive sessions: the cores are shown and the number is asked once per R
+session, then reused; \code{options(nmtools.n_cores = NULL)} asks again). In
+parallel, each run is started in the background from its run directory;
+the console output of nmfe goes to \verb{<run>_nmtools.log}. Runs written in
+the same folder (\code{run_subdir = ""}) are always run one after the other.
+If R is interrupted, the runs already started go on in the background.}
 }
 \value{
 A \code{data.frame} (run log) with one row per run and the following

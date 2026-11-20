@@ -20,7 +20,8 @@ nm_jackknife(
   dtheta_threshold = 0.01,
   save_figures = TRUE,
   run = TRUE,
-  verbose = TRUE
+  verbose = TRUE,
+  n_cores = 1L
 )
 
 \method{print}{nm_jackknife}(x, digits = 4, ...)
@@ -45,7 +46,8 @@ none.}
 \item{sep}{Field separator of the data file (default \code{","}).}
 
 \item{output_dir}{Working directory (default \code{"<ctl_dir>/<run>_jackknife"}).
-Holds \verb{jk_data/}, \verb{jk_ctl/}, \verb{jk_run/}, \verb{figures/} and the two CSV files.}
+Holds \verb{jk_data/}, \verb{jk_ctl/}, \verb{jk_run/} (one subdirectory per run),
+\verb{figures/} and the two CSV files.}
 
 \item{overwrite_existing_runs}{\code{FALSE} (default): skip the runs already
 minimised (resume).}
@@ -67,6 +69,15 @@ minimised (resume).}
 NONMEM).}
 
 \item{verbose}{Progress messages (default \code{TRUE}).}
+
+\item{n_cores}{Number of jackknife runs at the same time (default 1). A
+whole number,
+\code{"auto"} (physical cores minus one, see \code{\link[=nm_cores]{nm_cores()}}) or \code{"ask"}
+(interactive sessions: the cores are shown and the number is asked once per R
+session, then reused; \code{options(nmtools.n_cores = NULL)} asks again).
+Each run is then started in the background in its own directory; if R
+is interrupted, the runs already started go on in the background and a
+later call with the same arguments picks up their results.}
 
 \item{x}{An \code{nm_jackknife} object.}
 
