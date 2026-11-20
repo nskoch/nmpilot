@@ -1,7 +1,7 @@
 # nmtools
 
 <!-- badges: start -->
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24244340.svg)](https://doi.org/10.5281/zenodo.24244340)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24406632.svg)](https://doi.org/10.5281/zenodo.24406632)
 <!-- badges: end -->
 
 **nmtools** is an R package that drives a population pharmacokinetic (popPK)
@@ -12,7 +12,7 @@ streams or in run subdirectories, and the Wings conventions (`.reg` run
 directories, `.smr` files, extended control streams with parameter labels)
 are also read, so that projects started with Wings can be continued.
 
-> **Status:** version 0.3, under active development. The interface may still
+> **Status:** version 0.7.1, under active development. The interface may still
 > change. Bug reports and suggestions are welcome in the
 > [issues](https://github.com/nskoch/nmtools/issues).
 
@@ -28,7 +28,8 @@ remotes::install_github("nskoch/nmtools", build_vignettes = TRUE)
 
 Running models requires a working NONMEM installation. The package is
 developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
-`nmfe76.bat`). Reading outputs, diagnostics and plots work without NONMEM.
+`nmfe76.bat`); Linux and macOS are not tested yet. Reading outputs,
+diagnostics and plots work without NONMEM, on outputs of NONMEM 7.1 to 7.6.
 
 ## What the package covers
 
@@ -37,13 +38,14 @@ developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
 | Read and explore the data set | `nm_read_csv()`, `nm_data_previsual()`, `nm_plot_dv()`, `nm_summary()`, `nm_add_rate()`, `nm_export_data()` |
 | Suggest a structural model before any run | `nm_suggest_model()` (compartments, input, elimination, error model, initial values, hard-to-estimate parameters, alerts), `nm_suggest_design()` (expected RSE and shrinkage), `nm_suggest_run()` (run and rank the candidates), `nm_suggest_covariates()` (covariate screening on individual estimates) |
 | Write a control stream | `nm_write_ctl()` (compartmental PK model), `nm_ctl_mu()` (MU referencing), `nm_ctl_iov()` (inter-occasion variability), `nm_ctl_m3()` (M3 method for BQL data), `nm_ctl_check()` (static check) |
-| Run NONMEM | `nm_run()`, `nm_convert_ctl()` (Wings extended control stream to standard NONMEM) |
-| Read the results of one or several runs | `nm_extract_runs()`, `nm_filter_runs()`, `nm_compare_runs()`, `nm_extract_run_table()` (Word table) |
+| Run NONMEM | `nm_run()` (`n_cores`: several runs at the same time), `nm_cores()`, `nm_convert_ctl()` (Wings extended control stream to standard NONMEM) |
+| Read the results of one or several runs | `nm_extract_runs()` (also several `$EST` or `$PROB`, IOV, `$MIX`, failed or interrupted runs), `nm_filter_runs()`, `nm_compare_runs()`, `nm_extract_run_table()` (Word table) |
 | Identify what each THETA / ETA means | `nm_identify_parameters()`, `nm_identify_directory()` |
 | Goodness-of-fit diagnostics | `nm_gof()` |
-| Compare two runs | `nm_compare()` (paired CWRES / NPDE, individual OFV) |
+| Compare two runs | `nm_compare()` (paired CWRES / NPDE, individual OFV; Vuong and Clarke tests for non-nested models, bootstrap, gain map, overlaid diagnostics) |
+| Improve a base model from one evaluation run | `nm_optimize_base()` (residual error, random effects and covariates ranked on a linearised model), `nm_derivatives_ctl()` |
 | VPC and pc-VPC | `nm_vpc_ctl()`, `nm_vpc()` |
-| Parameter uncertainty | `nm_profile()` (likelihood profile), `nm_bootstrap()` (case bootstrap) |
+| Parameter uncertainty | `nm_profile()` (likelihood profile), `nm_bootstrap()` (case bootstrap); both accept `n_cores` |
 | Influential subjects | `nm_jackknife()` (leave-one-subject-out jackknife: OFV change and THETA shifts) |
 | Covariate assessment on the ETA distributions | `nm_wasserstein()` (Wasserstein distance, Simon et al. 2026) |
 | Export figures | `nm_export_plot()` |
@@ -143,6 +145,23 @@ folder that holds it. Control streams
 in Wings label syntax are converted automatically by `nm_run()` (this needs a
 run subdirectory) or by `nm_convert_ctl()`.
 
+## Several NONMEM runs at the same time
+
+`nm_run()`, `nm_profile()`, `nm_jackknife()`, `nm_bootstrap()`,
+`nm_vpc_ctl()` and `nm_suggest_run()` take an `n_cores` argument (default 1:
+one run after the other). Each run is then started in the background from
+its own folder, at most `n_cores` at a time. `n_cores = "auto"` uses the
+physical cores minus one; `n_cores = "ask"` shows the cores and asks the
+number once per R session.
+
+```r
+nm_cores()          # logical and physical cores
+log <- nm_run("C:/nm76g64/run/nmfe76.bat", sprintf("run%d.ctl", 1:4),
+              "C:/nm76g64/run/study", n_cores = 4)
+jk  <- nm_jackknife("C:/nm76g64/run/study/run2.reg/run2.ctl",
+                    nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_cores = "auto")
+```
+
 ## Writing control streams
 
 `nm_write_ctl()` writes a complete control stream for a 1- to 3-compartment
@@ -230,7 +249,10 @@ citation("nmtools")
 ```
 
 gives the reference of the package and, for `nm_jackknife()` and
-`nm_wasserstein()`, the reference of the original method.
+`nm_wasserstein()`, the reference of the original method. Each release is
+archived on Zenodo with its own DOI; the DOI badge above points to v0.7.1.
+The releases v0.6.0 and v0.7.0 were made by mistake on the commit of
+version 0.5.0 and hold its code: use v0.7.1 or later.
 
 ## License
 
