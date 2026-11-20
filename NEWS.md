@@ -1,3 +1,11 @@
+# nmtools 0.7.1
+
+* No change in the code. This release is the first to contain the work of
+  versions 0.6.0 (parallel NONMEM runs) and 0.7.0 (reading NONMEM outputs),
+  described below. By mistake, the GitHub releases v0.6.0 and v0.7.0 (and
+  their Zenodo archives) were made on the commit of version 0.5.0: they hold
+  the code of 0.5.0. Use 0.7.1 or later.
+
 # nmtools 0.7.0
 
 ## Reading NONMEM outputs: several $EST and $PROB, IOV, $MIX, failed runs
