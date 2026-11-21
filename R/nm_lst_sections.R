@@ -4,9 +4,16 @@
 # Internal helpers used by nm_extract_runs().
 # =============================================================================
 
-# Line numbers of the "PROBLEM NO.:" headers of a .lst.
+# Line numbers of the "PROBLEM NO.:" headers of a .lst. With SUBPROBLEMS
+# (e.g. $SIMULATION ... SUBPROBLEMS=500), NONMEM repeats the header
+# "PROBLEM NO.: 1  SUBPROBLEM NO.: k" for each subproblem: only the first
+# header of each problem number is kept, so that subproblems are not counted
+# as problems.
 .nm_lst_problem_starts <- function(L) {
-  grep("^\\s*PROBLEM NO\\.:\\s*[0-9]+", L)
+  i <- grep("^\\s*PROBLEM NO\\.:\\s*[0-9]+", L)
+  if (length(i) < 2L) return(i)
+  num <- as.integer(sub("^\\s*PROBLEM NO\\.:\\s*([0-9]+).*$", "\\1", L[i]))
+  i[c(TRUE, num[-1] != num[-length(num)])]
 }
 
 # Structure of a .lst: problems, estimation steps ($EST) and the part of the
@@ -65,7 +72,9 @@
 #   "terminated"   : NONMEM stopped (PROGRAM TERMINATED) before the end of
 #                    the last estimation step;
 #   "interrupted"  : the output stops before the end of the last estimation
-#                    step (run killed, disk full, still running...).
+#                    step (run killed, disk full, still running...);
+#   "simulation"   : simulation-only run ($SIMULATION ONLYSIM) that finished
+#                    (no estimation step, no objective function).
 .nm_lst_run_state <- function(L, st, ofv) {
   if (!length(L)) return("interrupted")
   # NM-TRAN messages come before the first problem header
@@ -77,6 +86,11 @@
                        st$L_step, ignore.case = TRUE))
   if (!length(grep("^\\s*#METH:", L)) && !length(ps) && nmtran_err) return("nmtran_error")
   if (nmtran_err && !has_obj) return("nmtran_error")
+  # simulation-only run ($SIMULATION ONLYSIM): no estimation step at all, the
+  # simulation was performed and NONMEM printed its final lines
+  if (!length(grep("^\\s*#METH:", L)) &&
+      any(grepl("SIMULATION STEP PERFORMED", L, fixed = TRUE)) &&
+      any(grepl("^\\s*(#CPUT:|Stop Time:)", L))) return("simulation")
   if (has_obj && is.finite(ofv)) return("completed")
   if (any(grepl("PROGRAM TERMINATED", st$L_step, ignore.case = TRUE))) return("terminated")
   "interrupted"

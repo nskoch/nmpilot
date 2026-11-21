@@ -15,12 +15,24 @@
   blocks of the `_orig` and `_sim` control streams, which NM-TRAN refuses
   (error 52, "THIS OPTION HAS ALREADY BEEN SPECIFIED"): `FIX` is now written
   once, on the `BLOCK(n)` line. Found with NONMEM 7.6 on the example project.
+* `nm_vpc()`: when a time bin between two others was empty, the bins after
+  it were drawn at the wrong time (the midpoint of a bin was looked up by
+  position instead of by bin number) and the last bin was dropped, with the
+  warning "Removed 1 row containing missing values (geom_line)". On the
+  example project with automatic bins, the statistics of the 12 h bin were
+  drawn at 24 h and the 24 h bin was missing. Fixed.
 * `nm_run()` (and the functions that launch runs through it, such as
   `nm_vpc_ctl()`): a simulation-only run (`$SIMULATION ONLYSIM`, e.g. the
   `_sim` run of a VPC) that finished is now reported with
   `minimization_status = "simulation"` and `run_ok = TRUE`, and is skipped
   as done by `skip_terminated = TRUE`. It was reported with `NA` and
   relaunched at each call.
+* `nm_extract_runs()`: a simulation-only run (`$SIMULATION ONLYSIM`) that
+  finished is now reported with `run_state = "simulation"`,
+  `min_status = "SIMULATION"` and `min_ok = NA`; it was reported as
+  `"interrupted"` with `min_ok = FALSE`. The subproblems of a run
+  (`SUBPROBLEMS=n`) are no longer counted as problems in `n_problems` (the
+  `_sim` run of a 500-replicate VPC had `n_problems = 501`).
 * The entries below, up to 0.7.1, were released under the name nmtools.
 
 # nmpilot 0.7.1

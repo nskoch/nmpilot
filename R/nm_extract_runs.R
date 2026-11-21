@@ -81,7 +81,9 @@
 #' left by another run), they are read in the `.lst` (`params_source`) and
 #' a warning is given. `run_state` is `"completed"`, `"interrupted"` (the
 #' output stops before the end of the last step), `"terminated"` (PROGRAM
-#' TERMINATED) or `"nmtran_error"`. `n_omega` and `n_sigma` count the
+#' TERMINATED), `"nmtran_error"` or `"simulation"` (simulation-only run,
+#' `$SIMULATION ONLYSIM`, finished: no OFV, `min_ok` is `NA`; subproblems
+#' are not counted in `n_problems`). `n_omega` and `n_sigma` count the
 #' estimated elements only (not FIX, not SAME, not the zeros outside the
 #' blocks); `n_eta_same` counts the ETAs declared `SAME` (inter-occasion
 #' variability); ETAs fixed to 0 are left out of `max_eta_shrink`. For `$MIX`
@@ -1400,7 +1402,11 @@ print.nm_runs <- function(x, ...) {
   if (ext_lst_mismatch)
     warnings <- paste(c(if (!is.na(warnings) && nzchar(warnings)) warnings, "EXT/LST MISMATCH"), collapse = " | ")
   run_state <- l$run_state %||% (if (!is.null(e) && isTRUE(e$final_row_available)) "completed" else NA_character_)
-  if (!is.na(run_state) && run_state != "completed") {
+  if (identical(run_state, "simulation")) {
+    # nothing was minimised: neither a success nor a failure
+    min_ok <- NA
+    if (is.na(min_status)) min_status <- "SIMULATION"
+  } else if (!is.na(run_state) && run_state != "completed") {
     min_ok <- FALSE
     if (is.na(min_status)) min_status <- toupper(run_state)
   }

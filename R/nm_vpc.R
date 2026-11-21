@@ -67,9 +67,11 @@ NULL
 .nm_vpc_assign_bins <- function(df, breaks, time_col = "TIME") {
   df$TTIME <- cut(df[[time_col]], breaks = breaks,
                   include.lowest = TRUE, labels = FALSE)
-  # Bin midpoint = median observed TIME per bin
+  # Bin midpoint = median observed TIME per bin. tapply() returns only the
+  # non-empty bins: look the midpoint up by bin name, not by position (with
+  # an empty bin, positions shift and the last bins get wrong times or NA).
   bin_mids <- tapply(df[[time_col]], df$TTIME, median, na.rm = TRUE)
-  df$MED_T <- bin_mids[df$TTIME]
+  df$MED_T <- as.vector(bin_mids[as.character(df$TTIME)])
   df
 }
 

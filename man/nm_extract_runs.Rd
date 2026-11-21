@@ -47,7 +47,9 @@ has no final row, or reports an OFV different from the \code{.lst} (an \code{.ex
 left by another run), they are read in the \code{.lst} (\code{params_source}) and
 a warning is given. \code{run_state} is \code{"completed"}, \code{"interrupted"} (the
 output stops before the end of the last step), \code{"terminated"} (PROGRAM
-TERMINATED) or \code{"nmtran_error"}. \code{n_omega} and \code{n_sigma} count the
+TERMINATED), \code{"nmtran_error"} or \code{"simulation"} (simulation-only run,
+\verb{$SIMULATION ONLYSIM}, finished: no OFV, \code{min_ok} is \code{NA}; subproblems
+are not counted in \code{n_problems}). \code{n_omega} and \code{n_sigma} count the
 estimated elements only (not FIX, not SAME, not the zeros outside the
 blocks); \code{n_eta_same} counts the ETAs declared \code{SAME} (inter-occasion
 variability); ETAs fixed to 0 are left out of \code{max_eta_shrink}. For \verb{$MIX}

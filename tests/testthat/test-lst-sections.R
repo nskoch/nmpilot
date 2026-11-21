@@ -79,6 +79,34 @@ test_that("interrupted, terminated and NM-TRAN failed runs are recognised", {
   expect_equal(row_of(r, "nmtran")$min_status, "NMTRAN_ERROR")
 })
 
+test_that("a simulation-only run with subproblems is read as one finished simulation", {
+  sub <- function(k) c(paste0(" PROBLEM NO.:           1      SUBPROBLEM NO.:", sprintf("%10d", k)),
+                       "", " SIMULATION STEP PERFORMED", " ESTIMATION STEP OMITTED:                 YES")
+  head <- c("$PROBLEM sim", "$SIMULATION (12345) ONLYSIM SUBPROBLEMS=3", "",
+            "1NONLINEAR MIXED EFFECTS MODEL PROGRAM (NONMEM) VERSION 7.6.0",
+            " PROBLEM NO.:         1", " sim")
+  done <- c(head, sub(1), sub(2), sub(3), " #CPUT: Total CPU Time in Seconds,        9.953", "Stop Time: ")
+  # subproblem headers are not problems
+  expect_length(.nm_lst_problem_starts(done), 1L)
+  expect_equal(.nm_lst_structure(done)$n_problems, 1L)
+  root <- tempfile()
+  make_run(root, "simdone", lst = done)
+  make_run(root, "simcut", lst = c(head, sub(1), sub(2)))
+  r <- suppressWarnings(nm_extract_runs(root, verbose = FALSE))
+  x <- row_of(r, "simdone")
+  expect_equal(x$run_state, "simulation")
+  expect_equal(x$min_status, "SIMULATION")
+  expect_true(is.na(x$min_ok))
+  expect_true(is.na(x$ofv))
+  expect_equal(x$n_problems, 1L)
+  # output cut before NONMEM's final lines: interrupted
+  expect_equal(row_of(r, "simcut")$run_state, "interrupted")
+  expect_false(row_of(r, "simcut")$min_ok)
+  # two real problems are still two problems
+  two <- c(" PROBLEM NO.:         1", "a", " PROBLEM NO.:         2", "b")
+  expect_length(.nm_lst_problem_starts(two), 2L)
+})
+
 test_that("the run name ignores the case of RUN.EXT (NONMEM 7.1)", {
   root <- tempfile(); make_run(root, "caseA", lst = ex_lst(), ext = ex_ext(), ext_name = "CASEA.EXT")
   r <- nm_extract_runs(root, verbose = FALSE)

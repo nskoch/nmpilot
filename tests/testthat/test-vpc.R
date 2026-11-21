@@ -124,3 +124,22 @@ test_that(".nm_vpc_write_matrix writes FIX once per BLOCK", {
   expect_equal(sum(grepl("FIX", m)), 1L)
   expect_equal(trimws(m[2:4]), c("0.068259", "0 0.0423479", "0 0 0.172495"))
 })
+
+test_that("bin midpoints stay right when a bin between two others is empty", {
+  # breaks 0-2-4-...-24: bins 5 and 7 to 11 are empty, as in the example project
+  df <- data.frame(TIME = c(0.5, 1, 2, 3, 4, 6, 8, 12, 24))
+  b <- .nm_vpc_assign_bins(df, seq(0, 24, by = 2))
+  expect_equal(b$TTIME, c(1, 1, 1, 2, 2, 3, 4, 6, 12))
+  expect_equal(b$MED_T, c(1, 1, 1, 3.5, 3.5, 6, 8, 12, 24))
+  expect_false(anyNA(b$MED_T))
+})
+
+test_that("nm_vpc draws no line with missing points when a bin is empty", {
+  root <- vpc_root()
+  # breaks 0-2-...-12: the bins 4-6 and 8-10 are empty
+  g <- suppressMessages(nm_vpc("run1", root, vpc_cols, show_hist = FALSE,
+                               bin_method = 1, TTIME_seq_manual = seq(0, 12, by = 2)))
+  expect_no_warning(ggplot2::ggplot_build(g))
+  obs_lines <- g$layers[vapply(g$layers, function(l) inherits(l$geom, "GeomLine"), TRUE)]
+  expect_equal(sort(unique(obs_lines[[1]]$data$MED_T)), c(1, 4, 8, 12))
+})
