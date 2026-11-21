@@ -11,6 +11,10 @@
   `.sh`), `<run>_nmpilot.log`, `<run>_nmpilot.err` and `<run>.nmpilot_done`.
   Files left by earlier versions (`*_nmtools.*`, `*.nmtools_done`) are not
   used and can be deleted.
+* `nm_vpc_ctl()` wrote `FIX` on every row of the `$OMEGA` and `$SIGMA`
+  blocks of the `_orig` and `_sim` control streams, which NM-TRAN refuses
+  (error 52, "THIS OPTION HAS ALREADY BEEN SPECIFIED"): `FIX` is now written
+  once, on the `BLOCK(n)` line. Found with NONMEM 7.6 on the example project.
 * The entries below, up to 0.7.1, were released under the name nmtools.
 
 # nmpilot 0.7.1

@@ -67,6 +67,12 @@ test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
   expect_true(any(grepl("$ESTIMATION MAXEVAL=0", orig, fixed = TRUE)))
   expect_true(any(grepl("NSIM = 1", orig, fixed = TRUE)))
   expect_true(any(grepl("4.2 FIX", sim, fixed = TRUE)))
+  # NM-TRAN refuses FIX repeated inside a BLOCK: once, on the record line.
+  for (x in list(sim, orig)) {
+    expect_true(any(grepl("^\\$OMEGA BLOCK\\(1\\) FIX$", x)))
+    expect_true(any(grepl("^\\$SIGMA BLOCK\\(1\\) FIX$", x)))
+    expect_equal(sum(grepl("FIX", x[grep("^\\$(OMEGA|SIGMA)", x)[1]:length(x)])), 2L)
+  }
   expect_false(any(grepl("^\\$COV", sim)))
   expect_true(any(grepl("FILE=est_sim.fit", sim, fixed = TRUE)))
   # Estimation run in a .reg directory: the VPC runs use .reg directories too.
@@ -110,4 +116,11 @@ test_that("nm_vpc and nm_vpc_ctl work without .reg directories (flat layout)", {
   nm_vpc_ctl("est", root2, nmfe_path = "nmfe.bat", n_sim = 10, verbose = FALSE)
   expect_equal(called$run_subdir, "")
   expect_true(file.exists(file.path(root2, "est_sim.ctl")))
+})
+
+test_that(".nm_vpc_write_matrix writes FIX once per BLOCK", {
+  m <- .nm_vpc_write_matrix("OMEGA", c(0.068259, 0, 0.0423479, 0, 0, 0.172495))
+  expect_equal(m[1], "$OMEGA BLOCK(3) FIX")
+  expect_equal(sum(grepl("FIX", m)), 1L)
+  expect_equal(trimws(m[2:4]), c("0.068259", "0 0.0423479", "0 0 0.172495"))
 })

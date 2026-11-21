@@ -49,20 +49,21 @@ NULL
     "")
 }
 
-# Format OMEGA or SIGMA block lines (diagonal only from .ext vector)
-# .ext stores upper triangle: OMEGA(1,1) OMEGA(2,1) OMEGA(2,2) ...
+# Format OMEGA or SIGMA block lines from the .ext vector
+# .ext stores the lower triangle by rows: OMEGA(1,1) OMEGA(2,1) OMEGA(2,2) ...
+# NM-TRAN accepts FIX only once per BLOCK: it is written on the record line.
 .nm_vpc_write_matrix <- function(record, vals) {
   # Find dimension from number of elements: n*(n+1)/2 = length
   n_elem <- length(vals)
   dim    <- round((-1 + sqrt(1 + 8 * n_elem)) / 2)
 
-  lines <- paste0("$", record, " BLOCK(", dim, ")")
+  lines <- paste0("$", record, " BLOCK(", dim, ") FIX")
   k <- 1
   for (i in seq_len(dim)) {
     row_vals <- vapply(seq_len(i), function(j) {
       sprintf("%g", vals[k + j - 1])
     }, character(1))
-    lines <- c(lines, paste(" ", paste(row_vals, collapse = " "), "FIX"))
+    lines <- c(lines, paste(" ", paste(row_vals, collapse = " ")))
     k <- k + i
   }
   c(lines, "")
