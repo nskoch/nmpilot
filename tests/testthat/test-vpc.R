@@ -143,3 +143,21 @@ test_that("nm_vpc draws no line with missing points when a bin is empty", {
   obs_lines <- g$layers[vapply(g$layers, function(l) inherits(l$geom, "GeomLine"), TRUE)]
   expect_equal(sort(unique(obs_lines[[1]]$data$MED_T)), c(1, 4, 8, 12))
 })
+
+test_that(".fit tables: no record is lost, with or without header lines", {
+  rows <- c("  1.0000E+00  1.0000E+00  5.0000E-01  0.0000E+00  0.0000E+00  2.0000E+00  2.1000E+00  2.0500E+00",
+            "  1.0000E+00  1.0000E+00  1.0000E+00  0.0000E+00  0.0000E+00  3.0000E+00  3.1000E+00  3.0500E+00",
+            "  1.0000E+00  2.0000E+00  5.0000E-01  0.0000E+00  0.0000E+00           .  2.2000E+00  2.1000E+00")
+  # NOHEADER (as written by nm_vpc_ctl), first record is an observation
+  f1 <- tempfile(fileext = ".fit"); writeLines(rows, f1)
+  x1 <- .nm_vpc_read_fit(f1, vpc_cols)
+  expect_equal(nrow(x1), 3L)
+  expect_equal(x1$DV[1], 2)
+  expect_true(is.na(x1$DV[3]))
+  # header lines ("TABLE NO.", column names), repeated for a second subproblem
+  hd <- c("TABLE NO.  1", paste(sprintf("%12s", vpc_cols), collapse = ""))
+  f2 <- tempfile(fileext = ".fit"); writeLines(c(hd, rows[1:2], hd, rows[3]), f2)
+  x2 <- .nm_vpc_read_fit(f2, vpc_cols)
+  expect_equal(nrow(x2), 3L)
+  expect_equal(x2$DV[1], 2)
+})

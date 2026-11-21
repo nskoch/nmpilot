@@ -1,4 +1,4 @@
-# nmpilot (development version)
+# nmpilot 0.8.0
 
 * The package is renamed **nmpilot** (formerly **nmtools**), to avoid
   confusion with an unrelated GitHub repository of the same name in the same
@@ -21,6 +21,11 @@
   warning "Removed 1 row containing missing values (geom_line)". On the
   example project with automatic bins, the statistics of the 12 h bin were
   drawn at 24 h and the 24 h bin was missing. Fixed.
+* `nm_vpc()`: the first line of the `.fit` tables was always skipped, as if
+  it were a header, whereas `nm_vpc_ctl()` writes them without header
+  (`NOHEADER`): when a data set starts with an observation, that
+  observation was lost. Header lines ("TABLE NO.", column names) are now
+  recognised and left out, and no record is skipped.
 * `nm_run()` (and the functions that launch runs through it, such as
   `nm_vpc_ctl()`): a simulation-only run (`$SIMULATION ONLYSIM`, e.g. the
   `_sim` run of a VPC) that finished is now reported with

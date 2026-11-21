@@ -26,13 +26,19 @@ NULL
 # Internal helpers
 # =============================================================================
 
-# Read a NONMEM .fit file (two-line header: skip first, use second as names)
+# Read a NONMEM .fit table. Header lines ("TABLE NO. n", column names,
+# repeated for each subproblem unless NOHEADER/ONEHEADER) are recognised and
+# left out; the tables written by nm_vpc_ctl() have none (NOHEADER), so no
+# line is skipped blindly: the first record is kept even when it is an
+# observation. A data line starts with a number.
 .nm_vpc_read_fit <- function(fit_file, col_names) {
   if (!file.exists(fit_file)) stop(".fit file not found: ", fit_file)
-  raw <- utils::read.table(fit_file, skip = 1, header = FALSE,
-                    col.names = col_names, na.strings = ".",
-                    stringsAsFactors = FALSE)
-  raw
+  L <- readLines(fit_file, warn = FALSE)
+  hdr <- grepl("^\\s*TABLE NO", L) | !grepl("^\\s*[-+.0-9]", L)
+  read <- function(...) utils::read.table(..., header = FALSE,
+                                          col.names = col_names, na.strings = ".",
+                                          stringsAsFactors = FALSE)
+  if (!any(hdr)) read(fit_file) else read(text = L[!hdr])
 }
 
 # Compute bin breaks from observed TIME using the chosen method
