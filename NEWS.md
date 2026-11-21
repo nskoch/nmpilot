@@ -15,6 +15,12 @@
   blocks of the `_orig` and `_sim` control streams, which NM-TRAN refuses
   (error 52, "THIS OPTION HAS ALREADY BEEN SPECIFIED"): `FIX` is now written
   once, on the `BLOCK(n)` line. Found with NONMEM 7.6 on the example project.
+* `nm_run()` (and the functions that launch runs through it, such as
+  `nm_vpc_ctl()`): a simulation-only run (`$SIMULATION ONLYSIM`, e.g. the
+  `_sim` run of a VPC) that finished is now reported with
+  `minimization_status = "simulation"` and `run_ok = TRUE`, and is skipped
+  as done by `skip_terminated = TRUE`. It was reported with `NA` and
+  relaunched at each call.
 * The entries below, up to 0.7.1, were released under the name nmtools.
 
 # nmpilot 0.7.1

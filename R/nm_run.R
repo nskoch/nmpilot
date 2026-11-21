@@ -81,6 +81,21 @@
   # "OPTIMIZATION/PORTION ... COMPLETED" instead of "MINIMIZATION")
   stp <- .nm_lst_step_status(x)
   if (is.na(stp$code)) {
+    # Simulation-only run ($SIMULATION ONLYSIM, e.g. the _sim run of
+    # nm_vpc_ctl): no estimation step (no #METH line), no OFV; finished when
+    # NONMEM printed its final lines (#CPUT / Stop Time)
+    if (any(grepl("SIMULATION STEP PERFORMED", x, fixed = TRUE)) &&
+        !any(grepl("^\\s*#METH:", x)) &&
+        any(grepl("^\\s*(#CPUT:|Stop Time:)", x))) {
+      return(data.frame(
+        minimization_status = "simulation",
+        min_ok              = NA,
+        cov_ok              = NA,
+        run_ok              = TRUE,
+        cov_status          = "not_requested",
+        stringsAsFactors    = FALSE
+      ))
+    }
     # Evaluation run (MAXEVAL=0): no minimization, an OFV is printed
     if (any(grepl("(EVALUATION)", x, fixed = TRUE)) && any(grepl("^\\s*#OBJV:", x))) {
       return(data.frame(
@@ -169,7 +184,7 @@
 .nm_is_run_terminal <- function(lst_file, accept_failed = TRUE) {
   if (!file.exists(lst_file)) return(FALSE)
   st <- .nm_lst_status(lst_file)
-  if (identical(st$minimization_status, "evaluation")) return(TRUE)
+  if (st$minimization_status %in% c("evaluation", "simulation")) return(TRUE)
   if (is.na(st$min_ok)) return(FALSE)
   if (accept_failed) return(!is.na(st$minimization_status))
   isTRUE(st$run_ok)
@@ -310,7 +325,9 @@
 #'     \item{minimization_status}{Minimization status string: `"successful"`,
 #'       `"terminated"`, `"rounding_errors"`, `"min_success_cov_failed"`,
 #'       `"evaluation"` (run without minimization, `MAXEVAL=0`; `min_ok` is
-#'       then `NA` and `run_ok` `TRUE`), or `"unknown"`.}
+#'       then `NA` and `run_ok` `TRUE`), `"simulation"` (simulation-only
+#'       run, `$SIMULATION ONLYSIM`, finished; `ofv` and `min_ok` are then
+#'       `NA` and `run_ok` `TRUE`), or `"unknown"`.}
 #'     \item{min_ok}{Logical: did minimization succeed?}
 #'     \item{cov_ok}{Logical: did the covariance step succeed?}
 #'     \item{run_ok}{Logical: is the run globally acceptable

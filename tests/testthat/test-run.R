@@ -115,6 +115,34 @@ test_that("OFV and status of an evaluation run (MAXEVAL=0) are read", {
   expect_true(nmpilot:::.nm_is_run_terminal(lst))
 })
 
+test_that("status of a simulation-only run ($SIMULATION ONLYSIM) is read", {
+  sim_lines <- c(
+    " PROBLEM NO.:           1      SUBPROBLEM NO.:         500",
+    "",
+    " SIMULATION STEP PERFORMED",
+    " SOURCE  1:",
+    "    SEED1:      77690045   SEED2:             0",
+    " Elapsed simulation  time in seconds:     0.01",
+    " ESTIMATION STEP OMITTED:                 YES")
+  done <- tempfile(fileext = ".lst")
+  writeLines(c(sim_lines, " #CPUT: Total CPU Time in Seconds,        9.953",
+               "Stop Time: ", "21/11/2026 ", "18:33"), done)
+  st <- nmpilot:::.nm_lst_status(done)
+  expect_equal(st$minimization_status, "simulation")
+  expect_true(st$run_ok)
+  expect_true(is.na(st$min_ok))
+  expect_true(is.na(nmpilot:::.nm_lst_ofv(done)))
+  expect_true(nmpilot:::.nm_is_run_terminal(done))
+  expect_true(nmpilot:::.nm_is_run_terminal(done, accept_failed = FALSE))
+
+  # output cut before NONMEM's final lines: not finished, not terminal
+  cut <- tempfile(fileext = ".lst")
+  writeLines(sim_lines, cut)
+  st2 <- nmpilot:::.nm_lst_status(cut)
+  expect_true(is.na(st2$minimization_status))
+  expect_false(nmpilot:::.nm_is_run_terminal(cut))
+})
+
 test_that("a synchronised analysis folder triggers a warning", {
   expect_warning(nmpilot:::.nm_warn_synced_dir("D:/Dropbox/nm76g64/run/projet"), "synchronised")
   expect_warning(nmpilot:::.nm_warn_synced_dir("C:/Users/n/OneDrive - AP-HM/projet"), "synchronised")

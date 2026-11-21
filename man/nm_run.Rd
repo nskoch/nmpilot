@@ -73,7 +73,9 @@ columns:
 \item{minimization_status}{Minimization status string: \code{"successful"},
 \code{"terminated"}, \code{"rounding_errors"}, \code{"min_success_cov_failed"},
 \code{"evaluation"} (run without minimization, \code{MAXEVAL=0}; \code{min_ok} is
-then \code{NA} and \code{run_ok} \code{TRUE}), or \code{"unknown"}.}
+then \code{NA} and \code{run_ok} \code{TRUE}), \code{"simulation"} (simulation-only
+run, \verb{$SIMULATION ONLYSIM}, finished; \code{ofv} and \code{min_ok} are then
+\code{NA} and \code{run_ok} \code{TRUE}), or \code{"unknown"}.}
 \item{min_ok}{Logical: did minimization succeed?}
 \item{cov_ok}{Logical: did the covariance step succeed?}
 \item{run_ok}{Logical: is the run globally acceptable
