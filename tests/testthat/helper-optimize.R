@@ -1,9 +1,9 @@
 # Emulates the derivatives table of run1 (NONMEM unavailable here): analytic
 # 1-cpt oral model, derivatives by finite differences at the EBEs of run1.
 .emul_deriv <- function(run_dir, data_file, out) {
-  ext <- nmtools:::.nm_vpc_read_ext_final(file.path(run_dir, "run1.ext"))
+  ext <- nmpilot:::.nm_vpc_read_ext_final(file.path(run_dir, "run1.ext"))
   th <- as.numeric(ext[1, grep("^THETA", names(ext))])
-  phi <- nmtools:::.nm_w_read_phi(file.path(run_dir, "run1.phi"))
+  phi <- nmpilot:::.nm_w_read_phi(file.path(run_dir, "run1.phi"))
   d <- read.csv(data_file, na.strings = "."); names(d)[1] <- "ID"
   d <- d[d$EVID == 0, ]
   conc <- function(eta, t, dose = 100) {

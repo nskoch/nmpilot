@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # nm_profile.R
 # Objective-function profile (profile likelihood) over one model parameter.
-# Part of the {nmtools} package. PsN-independent, Windows-compatible.
+# Part of the {nmpilot} package. PsN-independent, Windows-compatible.
 #-------------------------------------------------------------------------------
 
 # Signed integer/decimal with optional scientific exponent
@@ -275,7 +275,7 @@
 #'   whole number,
 #'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
 #'   (interactive sessions: the cores are shown and the number is asked once per R
-#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   session, then reused; `options(nmpilot.n_cores = NULL)` asks again).
 #'   Each run is then started in the background in its own directory; if R
 #'   is interrupted, the runs already started go on in the background and a
 #'   later call with the same arguments picks up their results.

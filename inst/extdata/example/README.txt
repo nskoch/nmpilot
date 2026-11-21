@@ -1,4 +1,4 @@
-nmtools example project - SIMULATED DATA, FICTITIOUS SUBJECTS
+nmpilot example project - SIMULATED DATA, FICTITIOUS SUBJECTS
 =============================================================
 
 example_data.csv was simulated in R (script sim_example_data.R, seed 20261115).

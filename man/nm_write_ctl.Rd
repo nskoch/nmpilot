@@ -181,7 +181,7 @@ nm_write_ctl(f, route = "IV", cpts = 2,
 nm_ctl_check(f)
 
 # From a data-driven suggestion
-ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 nm_write_ctl(from = s, candidate = 1, verbose = FALSE)
 }

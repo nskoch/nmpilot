@@ -26,7 +26,7 @@ The path of the written file (invisibly), or \code{NULL} if \code{plot} is
 \code{NULL}.
 }
 \description{
-Single export entry point for all nmtools plots: plot methods return the
+Single export entry point for all nmpilot plots: plot methods return the
 ggplot object and leave saving to this function.
 }
 \examples{

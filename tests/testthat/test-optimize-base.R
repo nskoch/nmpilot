@@ -4,7 +4,7 @@
 ex_copy <- function() {
   d <- file.path(tempfile("optb_"))
   dir.create(d)
-  file.copy(system.file("extdata", "example", package = "nmtools"), d, recursive = TRUE)
+  file.copy(system.file("extdata", "example", package = "nmpilot"), d, recursive = TRUE)
   file.path(d, "example")
 }
 
@@ -29,7 +29,7 @@ test_that("nm_derivatives_ctl writes the evaluation run", {
 
 test_that("OMEGA blocks are written back", {
   m <- matrix(c(0.1, 0.02, 0, 0.02, 0.2, 0, 0, 0, 0), 3)
-  w <- nmtools:::.nm_ob_write_random("OMEGA", m)
+  w <- nmpilot:::.nm_ob_write_random("OMEGA", m)
   expect_equal(w[1], "$OMEGA BLOCK(2) FIX")
   expect_equal(w[4], "$OMEGA 0 FIX")
 })
@@ -52,31 +52,31 @@ test_that("linearized model reproduces the NONMEM OFV and detects a covariate", 
   ex <- ex_copy()
   rd <- file.path(ex, "run1.reg")
   .emul_deriv(rd, file.path(ex, "example_data.csv"), file.path(rd, "run1_deriv.dtab"))
-  fin <- nmtools:::.nm_vpc_read_ext_final(file.path(rd, "run1.ext"))
-  om <- nmtools:::.nm_ob_ext_matrix(fin, "OMEGA"); sg <- nmtools:::.nm_ob_ext_matrix(fin, "SIGMA")
-  dt <- nmtools:::.nm_read_table(file.path(rd, "run1_deriv.dtab"))
-  cov <- nmtools:::.nm_w_covariates(file.path(ex, "example_data.csv"), NA)
-  info <- nmtools:::.nm_ob_cov_info(cov, "GENO", 5L)
-  des <- nmtools:::.nm_ob_cov_design(cov, unique(dt$ID), info, "power")
-  prep <- nmtools:::.nm_ob_prepare(dt, om, sg, des$X, NULL)
-  sp0 <- nmtools:::.nm_ob_spec(list(1L, 2L, 3L), "base", design = des)
-  st0 <- nmtools:::.nm_ob_start(sp0, prep)
+  fin <- nmpilot:::.nm_vpc_read_ext_final(file.path(rd, "run1.ext"))
+  om <- nmpilot:::.nm_ob_ext_matrix(fin, "OMEGA"); sg <- nmpilot:::.nm_ob_ext_matrix(fin, "SIGMA")
+  dt <- nmpilot:::.nm_read_table(file.path(rd, "run1_deriv.dtab"))
+  cov <- nmpilot:::.nm_w_covariates(file.path(ex, "example_data.csv"), NA)
+  info <- nmpilot:::.nm_ob_cov_info(cov, "GENO", 5L)
+  des <- nmpilot:::.nm_ob_cov_design(cov, unique(dt$ID), info, "power")
+  prep <- nmpilot:::.nm_ob_prepare(dt, om, sg, des$X, NULL)
+  sp0 <- nmpilot:::.nm_ob_spec(list(1L, 2L, 3L), "base", design = des)
+  st0 <- nmpilot:::.nm_ob_start(sp0, prep)
   # FOCE-I objective of the linearized model = NONMEM OFV at the estimates
-  ofv0 <- nmtools:::.nm_ob_ofv(st0, sp0, prep)
+  ofv0 <- nmpilot:::.nm_ob_ofv(st0, sp0, prep)
   expect_lt(abs(ofv0 - (-1147.341)), 0.05)
   # fast approximation: a few units away
-  expect_lt(abs(nmtools:::.nm_ob_ofv_fast(st0, sp0, prep) - (-1147.341)), 10)
-  f0 <- nmtools:::.nm_ob_fit(sp0, prep)
-  sp1 <- nmtools:::.nm_ob_spec(list(1L, 2L, 3L), "base",
+  expect_lt(abs(nmpilot:::.nm_ob_ofv_fast(st0, sp0, prep) - (-1147.341)), 10)
+  f0 <- nmpilot:::.nm_ob_fit(sp0, prep)
+  sp1 <- nmpilot:::.nm_ob_spec(list(1L, 2L, 3L), "base",
                                beta = list(list(eta = 1L, covariate = "GENO")), design = des)
-  f1 <- nmtools:::.nm_ob_fit(sp1, prep, f0$u)
+  f1 <- nmpilot:::.nm_ob_fit(sp1, prep, f0$u)
   expect_lt(f1$ofv - f0$ofv, -20)
   expect_gt(f1$u$beta[1, 1], log(1.2))
   # wrong (additive) residual model in the base: combined is proposed
   dt$H_EPS1 <- 0.15; dt[grep("^D_EPS", names(dt))] <- 0
-  prep2 <- nmtools:::.nm_ob_prepare(dt, om, sg, NULL, NULL)
-  b <- nmtools:::.nm_ob_fit(nmtools:::.nm_ob_spec(list(1L, 2L, 3L), "base"), prep2)
-  cmb <- nmtools:::.nm_ob_fit(nmtools:::.nm_ob_spec(list(1L, 2L, 3L), "comb"), prep2, b$u)
+  prep2 <- nmpilot:::.nm_ob_prepare(dt, om, sg, NULL, NULL)
+  b <- nmpilot:::.nm_ob_fit(nmpilot:::.nm_ob_spec(list(1L, 2L, 3L), "base"), prep2)
+  cmb <- nmpilot:::.nm_ob_fit(nmpilot:::.nm_ob_spec(list(1L, 2L, 3L), "comb"), prep2, b$u)
   expect_lt(cmb$ofv - b$ofv, -100)
 })
 
@@ -102,11 +102,11 @@ test_that("residual starts follow the base residual model", {
   ex <- ex_copy()
   rd <- file.path(ex, "run1.reg")
   .emul_deriv(rd, file.path(ex, "example_data.csv"), file.path(rd, "run1_deriv.dtab"))
-  fin <- nmtools:::.nm_vpc_read_ext_final(file.path(rd, "run1.ext"))
-  om <- nmtools:::.nm_ob_ext_matrix(fin, "OMEGA"); sg <- nmtools:::.nm_ob_ext_matrix(fin, "SIGMA")
-  dt <- nmtools:::.nm_read_table(file.path(rd, "run1_deriv.dtab"))
-  prep <- nmtools:::.nm_ob_prepare(dt, om, sg, NULL, NULL)
-  st <- nmtools:::.nm_ob_start(nmtools:::.nm_ob_spec(list(1L, 2L, 3L), "comb"), prep)
+  fin <- nmpilot:::.nm_vpc_read_ext_final(file.path(rd, "run1.ext"))
+  om <- nmpilot:::.nm_ob_ext_matrix(fin, "OMEGA"); sg <- nmpilot:::.nm_ob_ext_matrix(fin, "SIGMA")
+  dt <- nmpilot:::.nm_read_table(file.path(rd, "run1_deriv.dtab"))
+  prep <- nmpilot:::.nm_ob_prepare(dt, om, sg, NULL, NULL)
+  st <- nmpilot:::.nm_ob_start(nmpilot:::.nm_ob_spec(list(1L, 2L, 3L), "comb"), prep)
   # run1: W = sqrt((THETA(4)*IPRED)^2 + THETA(5)^2), THETA(4) = 0.168, THETA(5) = 0.0138
   expect_equal(unname(exp(st[7:8])), c(0.0138296, 0.168218), tolerance = 1e-3)
 })

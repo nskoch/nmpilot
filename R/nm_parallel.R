@@ -5,10 +5,10 @@
 # NM-TRAN and the compiler write their work files in the current directory,
 # so two simultaneous runs must use two different directories. Each run is
 # started in the background by a small launcher script written in its
-# directory (`<run>_nmtools.bat` on Windows, `<run>_nmtools.sh` elsewhere):
+# directory (`<run>_nmpilot.bat` on Windows, `<run>_nmpilot.sh` elsewhere):
 # it calls nmfe exactly as the sequential launcher does, sends the console
-# output to `<run>_nmtools.log` and writes the exit status of nmfe to the
-# flag file `<run>.nmtools_done`. R keeps at most `n_cores` runs going and
+# output to `<run>_nmpilot.log` and writes the exit status of nmfe to the
+# flag file `<run>.nmpilot_done`. R keeps at most `n_cores` runs going and
 # polls the flag files. With n_cores = 1 the functions keep their sequential
 # launcher (console output of NONMEM shown as before).
 # =============================================================================
@@ -46,9 +46,9 @@ nm_cores <- function(verbose = TRUE) {
     n_cores <- match.arg(n_cores, c("auto", "ask"))
     if (n_cores == "auto") return(info$auto)
     # "ask": the answer is kept for the rest of the R session
-    prev <- getOption("nmtools.n_cores")
+    prev <- getOption("nmpilot.n_cores")
     if (!is.null(prev)) {
-      message(sprintf("n_cores = %d (answer kept for this session; options(nmtools.n_cores = NULL) to ask again)",
+      message(sprintf("n_cores = %d (answer kept for this session; options(nmpilot.n_cores = NULL) to ask again)",
                       as.integer(prev)))
       return(as.integer(prev))
     }
@@ -60,7 +60,7 @@ nm_cores <- function(verbose = TRUE) {
         "This computer has %d logical / %d physical cores. Number of parallel NONMEM runs [%d]: ",
         info$logical, info$physical, info$auto))
       k <- if (!nzchar(trimws(ans))) info$auto else suppressWarnings(as.integer(ans))
-      if (!is.na(k) && k >= 1L) { n_cores <- k; options(nmtools.n_cores = k); break }
+      if (!is.na(k) && k >= 1L) { n_cores <- k; options(nmpilot.n_cores = k); break }
       message("Please type a whole number of at least 1.")
     }
   }
@@ -76,13 +76,13 @@ nm_cores <- function(verbose = TRUE) {
 # Start one NONMEM run in the background in `run_dir`; returns the flag path.
 .nm_launch_bg <- function(nmfe_path, run_dir, run_name) {
   run_dir <- normalizePath(run_dir, mustWork = TRUE)
-  done <- file.path(run_dir, paste0(run_name, ".nmtools_done"))
+  done <- file.path(run_dir, paste0(run_name, ".nmpilot_done"))
   unlink(done)
   ctl <- paste0(run_name, ".ctl"); lst <- paste0(run_name, ".lst")
-  log <- paste0(run_name, "_nmtools.log")
+  log <- paste0(run_name, "_nmpilot.log")
   if (.Platform$OS.type == "windows") {
     nmfe_win <- normalizePath(nmfe_path, winslash = "\\", mustWork = FALSE)
-    script <- file.path(run_dir, paste0(run_name, "_nmtools.bat"))
+    script <- file.path(run_dir, paste0(run_name, "_nmpilot.bat"))
     # No redirection inside the batch: "call nmfe ... 2>&1" makes cmd keep the
     # first "2>trash.tmp" of nmfe in force (later copies fail), and running nmfe
     # in a child cmd lost the last line. R itself opens the log files, so cmd
@@ -95,9 +95,9 @@ nm_cores <- function(verbose = TRUE) {
                script)
     old <- setwd(run_dir); on.exit(setwd(old), add = TRUE)
     system2("cmd.exe", args = c("/c", basename(script)), wait = FALSE,
-            stdout = log, stderr = paste0(run_name, "_nmtools.err"))
+            stdout = log, stderr = paste0(run_name, "_nmpilot.err"))
   } else {
-    script <- file.path(run_dir, paste0(run_name, "_nmtools.sh"))
+    script <- file.path(run_dir, paste0(run_name, "_nmpilot.sh"))
     writeLines(c("#!/bin/sh",
                  "cd \"$(dirname \"$0\")\"",
                  sprintf("\"%s\" %s %s > %s 2>&1", nmfe_path, ctl, lst, log),

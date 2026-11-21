@@ -148,7 +148,7 @@ nm_derivatives_ctl <- function(run, out_dir = NULL, name = NULL, extra = NULL) {
   d_nm <- as.vector(outer(seq_len(n_eps), seq_len(n_eta),
                           function(j, k) sprintf("D_EPS%d_ETA%d", j, k)))
   d_j <- rep(seq_len(n_eps), n_eta); d_k <- rep(seq_len(n_eta), each = n_eps)
-  code <- c("; ---- nmtools: derivatives of Y for the linearization ----",
+  code <- c("; ---- nmpilot: derivatives of Y for the linearization ----",
             paste0("  ", c(g_nm, h_nm, d_nm), " = 0"),
             "\"LAST",
             sprintf("\"  %s = G(%d,1)", g_nm, seq_len(n_eta)),
@@ -847,7 +847,7 @@ nm_derivatives_ctl <- function(run, out_dir = NULL, name = NULL, extra = NULL) {
 #'   post-processing for residual model identification. AAPS J 2018;20:81.
 #' @seealso [nm_derivatives_ctl()], [nm_wasserstein()]
 #' @examples
-#' ex <- system.file("extdata", "example", "run1.reg", package = "nmtools")
+#' ex <- system.file("extdata", "example", "run1.reg", package = "nmpilot")
 #' o <- nm_optimize_base(ex, covariates = c("WT", "GENO"), level = 1, verbose = FALSE)
 #' o
 #' @export

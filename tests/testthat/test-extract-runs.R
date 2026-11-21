@@ -82,7 +82,7 @@ test_that("residual-error THETAs are named from short $THETA labels only", {
 })
 
 test_that("covariate-effect THETAs are named from their $THETA label (example project)", {
-  ex <- system.file("extdata", "example", package = "nmtools")
+  ex <- system.file("extdata", "example", package = "nmpilot")
   skip_if(!nzchar(ex))
   p <- nm_extract_runs(ex, verbose = FALSE)$params
   th <- p[p$run == "run2" & p$type == "THETA", ]

@@ -50,7 +50,7 @@ than predict the RSE reported by NONMEM. Michaelis-Menten candidates are
 not supported (no analytic solution).
 }
 \examples{
-ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 nm_suggest_design(s)
 # a sparse design with 3 samples per subject

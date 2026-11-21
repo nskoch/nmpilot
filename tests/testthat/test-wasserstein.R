@@ -42,27 +42,27 @@ test_that("W1 matches exact formulas", {
   set.seed(3)
   for (i in 1:50) {
     x <- stats::rnorm(sample(3:30, 1)); y <- stats::rexp(sample(3:30, 1))
-    expect_equal(nmtools:::.nm_w1(x, y), w1_quantile(x, y), tolerance = 1e-12)
+    expect_equal(nmpilot:::.nm_w1(x, y), w1_quantile(x, y), tolerance = 1e-12)
   }
   x <- stats::rnorm(20); y <- stats::rnorm(20, 1)
-  expect_equal(nmtools:::.nm_w1(x, y), mean(abs(sort(x) - sort(y))), tolerance = 1e-12)
-  expect_equal(nmtools:::.nm_w1_to_zero(x), nmtools:::.nm_w1(x, rep(0, 20)), tolerance = 1e-12)
-  expect_equal(nmtools:::.nm_w1(x, x), 0)
+  expect_equal(nmpilot:::.nm_w1(x, y), mean(abs(sort(x) - sort(y))), tolerance = 1e-12)
+  expect_equal(nmpilot:::.nm_w1_to_zero(x), nmpilot:::.nm_w1(x, rep(0, 20)), tolerance = 1e-12)
+  expect_equal(nmpilot:::.nm_w1(x, x), 0)
 })
 
 test_that("W1 matches transport::wasserstein1d when available", {
   skip_if_not_installed("transport")
   set.seed(4)
   x <- stats::rnorm(17); y <- stats::rgamma(23, 2)
-  expect_equal(nmtools:::.nm_w1(x, y), transport::wasserstein1d(x, y, p = 1), tolerance = 1e-10)
+  expect_equal(nmpilot:::.nm_w1(x, y), transport::wasserstein1d(x, y, p = 1), tolerance = 1e-10)
 })
 
 test_that("the permutation test is reproducible and keeps the user's random state", {
   set.seed(99); before <- stats::runif(1); set.seed(99)
-  a <- nmtools:::.nm_w_perm(1:10 + 0.5, 1:12, n_perm = 200, seed = 1)
+  a <- nmpilot:::.nm_w_perm(1:10 + 0.5, 1:12, n_perm = 200, seed = 1)
   after <- stats::runif(1)
   expect_identical(before, after)
-  b <- nmtools:::.nm_w_perm(1:10 + 0.5, 1:12, n_perm = 200, seed = 1)
+  b <- nmpilot:::.nm_w_perm(1:10 + 0.5, 1:12, n_perm = 200, seed = 1)
   expect_identical(a, b)
   expect_gte(a$p, 1 / 201); expect_lte(a$p, 1)
 })

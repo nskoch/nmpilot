@@ -55,10 +55,10 @@ test_that("Wings label syntax is detected only when labels replace THETA/ETA", {
   std <- write_ctl("$INPUT ID TIME DV WT", "$THETA (0,5) ; CL", " (0,50) ; V",
                    "$OMEGA 0.1 ; CL", "$PK", "  CL = THETA(1)*EXP(ETA(1))", "  V = THETA(2)",
                    "  S2 = V")
-  expect_false(nmtools:::.nm_is_wings_ctl(std))
+  expect_false(nmpilot:::.nm_is_wings_ctl(std))
   wings <- write_ctl("$INPUT ID TIME DV", "$THETA (0,5) ;POPCL", "$OMEGA 0.1 ; eta_cl",
                      "$PK", "  CL = POPCL*EXP(eta_cl)")
-  expect_true(nmtools:::.nm_is_wings_ctl(wings))
+  expect_true(nmpilot:::.nm_is_wings_ctl(wings))
 })
 
 test_that("nm_run accepts $DATA relative to the control stream folder", {
@@ -108,17 +108,17 @@ test_that("OFV and status of an evaluation run (MAXEVAL=0) are read", {
     "",
     " #OBJV:********************************************         -1147.341       ********************************************",
     " THETA - VECTOR OF FIXED EFFECTS PARAMETERS   *********"), lst)
-  expect_equal(nmtools:::.nm_lst_ofv(lst), -1147.341)
-  st <- nmtools:::.nm_lst_status(lst)
+  expect_equal(nmpilot:::.nm_lst_ofv(lst), -1147.341)
+  st <- nmpilot:::.nm_lst_status(lst)
   expect_equal(st$minimization_status, "evaluation")
   expect_true(st$run_ok)
-  expect_true(nmtools:::.nm_is_run_terminal(lst))
+  expect_true(nmpilot:::.nm_is_run_terminal(lst))
 })
 
 test_that("a synchronised analysis folder triggers a warning", {
-  expect_warning(nmtools:::.nm_warn_synced_dir("D:/Dropbox/nm76g64/run/projet"), "synchronised")
-  expect_warning(nmtools:::.nm_warn_synced_dir("C:/Users/n/OneDrive - AP-HM/projet"), "synchronised")
-  expect_silent(nmtools:::.nm_warn_synced_dir("C:/nm76g64/run/projet"))
-  old <- options(nmtools.warn_synced = FALSE); on.exit(options(old))
-  expect_silent(nmtools:::.nm_warn_synced_dir("D:/Dropbox/projet"))
+  expect_warning(nmpilot:::.nm_warn_synced_dir("D:/Dropbox/nm76g64/run/projet"), "synchronised")
+  expect_warning(nmpilot:::.nm_warn_synced_dir("C:/Users/n/OneDrive - AP-HM/projet"), "synchronised")
+  expect_silent(nmpilot:::.nm_warn_synced_dir("C:/nm76g64/run/projet"))
+  old <- options(nmpilot.warn_synced = FALSE); on.exit(options(old))
+  expect_silent(nmpilot:::.nm_warn_synced_dir("D:/Dropbox/projet"))
 })

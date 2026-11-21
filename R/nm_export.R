@@ -13,7 +13,7 @@
 
 #' Export a ggplot to an image file
 #'
-#' Single export entry point for all nmtools plots: plot methods return the
+#' Single export entry point for all nmpilot plots: plot methods return the
 #' ggplot object and leave saving to this function.
 #'
 #' @param plot    A ggplot (or patchwork) object.

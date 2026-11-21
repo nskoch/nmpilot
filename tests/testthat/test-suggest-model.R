@@ -15,14 +15,14 @@ sim_data <- function(sp, n, times, dose_levels = 100, doses = data.frame(TIME = 
                      prop = 0.12, add = 0, iiv = 0.25, seed = 1, theta_fun = NULL,
                      extra_input = NULL, lloq = NULL) {
   set.seed(seed)
-  st <- nmtools:::.nm_ctl_struct(sp$cpts, sp$route, sp$absorption, sp$elimination, sp$transit_n)
+  st <- nmpilot:::.nm_ctl_struct(sp$cpts, sp$route, sp$absorption, sp$elimination, sp$transit_n)
   rows <- list()
   for (i in seq_len(n)) {
     th <- sp$theta * exp(stats::rnorm(length(sp$theta), 0, iiv))
     if (!is.null(sp$alag)) th <- c(th, ALAG1 = sp$alag)
     amt <- dose_levels[(i - 1) %% length(dose_levels) + 1]
     dd <- data.frame(ID = i, TIME = doses$TIME, AMT = amt, TINF = 0)
-    f <- if (is.null(theta_fun)) nmtools:::.nm_sd_predict(th, sp, st, dd, times, 1) else
+    f <- if (is.null(theta_fun)) nmpilot:::.nm_sd_predict(th, sp, st, dd, times, 1) else
       theta_fun(th, sp, st, dd, times, amt)
     dv <- f * (1 + stats::rnorm(length(f), 0, prop)) + stats::rnorm(length(f), 0, add)
     blq <- if (!is.null(lloq)) dv < lloq else dv <= 0
@@ -146,8 +146,8 @@ test_that("nm_suggest_design scales with the number of subjects and the design",
 })
 
 test_that("macro constants of the analytic solution match the compartmental model", {
-  st <- nmtools:::.nm_ctl_struct(2L, "IV", "first-order", "linear")
-  m <- nmtools:::.nm_sd_macro(c(CL = 5, V1 = 20, Q = 15, V2 = 60), st)
+  st <- nmpilot:::.nm_ctl_struct(2L, "IV", "first-order", "linear")
+  m <- nmpilot:::.nm_sd_macro(c(CL = 5, V1 = 20, Q = 15, V2 = 60), st)
   # sum of amplitudes = 1/V1; AUC of a unit dose = 1/CL
   expect_equal(sum(m$A), 1 / 20)
   expect_equal(sum(m$A / m$lam), 1 / 5)
@@ -158,7 +158,7 @@ test_that("alerts flag double peaks, time-varying CL and less-than-proportional 
   sp_dp <- sim_spec(1, "EV", "first-order", c(CL = 10, V = 30, KA = 3))
   dp <- function(th, sp, st, dd, times, amt) {
     d2 <- rbind(transform(dd, AMT = amt / 2), transform(dd, AMT = amt / 2, TIME = dd$TIME + 5))
-    nmtools:::.nm_sd_predict(th, sp, st, d2, times, 1)
+    nmpilot:::.nm_sd_predict(th, sp, st, d2, times, 1)
   }
   f <- sim_data(sp_dp, 12, c(0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 5.5, 6, 7, 8, 10, 12, 24),
                 prop = 0.05, iiv = 0.15, theta_fun = dp)
@@ -169,9 +169,9 @@ test_that("alerts flag double peaks, time-varying CL and less-than-proportional 
   doses <- data.frame(TIME = seq(0, 84, by = 12))
   tv <- function(th, sp, st, dd, times, amt) {
     first <- times < 12
-    out <- nmtools:::.nm_sd_predict(th, sp, st, dd, times, 1)
+    out <- nmpilot:::.nm_sd_predict(th, sp, st, dd, times, 1)
     th2 <- th; th2["CL"] <- th["CL"] * 1.8
-    out[!first] <- nmtools:::.nm_sd_predict(th2, sp, st, dd, times[!first], 1)
+    out[!first] <- nmpilot:::.nm_sd_predict(th2, sp, st, dd, times[!first], 1)
     out
   }
   ft <- sim_data(sp, 10, c(0.5, 1, 2, 3, 4, 6, 8, 11.9, 84.5, 85, 86, 87, 88, 90, 92, 95.9),
@@ -180,7 +180,7 @@ test_that("alerts flag double peaks, time-varying CL and less-than-proportional 
   expect_true("time-varying clearance" %in% st$alerts$type)
   # exposure proportional to dose^0.6
   lp <- function(th, sp, st, dd, times, amt)
-    nmtools:::.nm_sd_predict(th, sp, st, dd, times, 1) * (amt / 10)^-0.4
+    nmpilot:::.nm_sd_predict(th, sp, st, dd, times, 1) * (amt / 10)^-0.4
   fl <- sim_data(sp, 18, rich_t, dose_levels = c(10, 100, 1000), prop = 0.08, theta_fun = lp)
   sl <- nm_suggest_model(fl, verbose = FALSE, design_eval = FALSE)
   expect_true("less than dose-proportional" %in% sl$alerts$type)
@@ -245,7 +245,7 @@ test_that("nm_suggest_run writes, runs and ranks the candidates", {
 })
 
 test_that("nm_suggest_covariates detects a covariate effect on CL", {
-  ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+  ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
   s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 60)
   cv <- nm_suggest_covariates(s, c("GENO", "WT"), n_perm = 500)
   expect_s3_class(cv, "nm_suggest_covariates")
@@ -299,12 +299,12 @@ test_that("datasets are adapted to the compartment numbering of each candidate",
   spec <- function(cpts, route, input, absorption) list(cpts = cpts, route = route, input = input,
     absorption = absorption, transit_n = 2L, elimination = "linear")
   # first-order: depot 1, central 2 -> original file
-  expect_identical(nmtools:::.nm_sr_prepare_data(src, spec(1, "EV", "first-order", "first-order"),
+  expect_identical(nmpilot:::.nm_sr_prepare_data(src, spec(1, "EV", "first-order", "first-order"),
                                                  root, "a", verbose = FALSE), src)
-  expect_identical(nmtools:::.nm_sr_prepare_data(src, spec(2, "EV", "transit", "transit"),
+  expect_identical(nmpilot:::.nm_sr_prepare_data(src, spec(2, "EV", "transit", "transit"),
                                                  root, "b", verbose = FALSE), src)
   # zero-order duration: everything in CMT 1, RATE = -2 on doses, rest untouched
-  out <- nmtools:::.nm_sr_prepare_data(src, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
+  out <- nmpilot:::.nm_sr_prepare_data(src, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
                                        root, "c", verbose = FALSE)
   expect_false(identical(out, src))
   l <- readLines(out)
@@ -313,23 +313,23 @@ test_that("datasets are adapted to the compartment numbering of each candidate",
   expect_equal(l[3:5], c("1,0,100,-2,.,1,1,1", "1,1,.,0,5.2,0,0,1", "1,4,.,0,3.1,0,0,1"))
   expect_identical(readLines(src)[3], "1,0,100,.,1,1,1")   # original unchanged
   # IV with observations coded CMT 2: moved to the central compartment
-  out_iv <- nmtools:::.nm_sr_prepare_data(src, spec(2, "IV", "IV bolus", "first-order"),
+  out_iv <- nmpilot:::.nm_sr_prepare_data(src, spec(2, "IV", "IV bolus", "first-order"),
                                           root, "d", verbose = FALSE)
   expect_equal(readLines(out_iv)[4], "1,1,.,5.2,0,0,1")
   # existing RATE column: -2 set on doses only
   src2 <- file.path(root, "r.csv")
   writeLines(c("ID,TIME,AMT,RATE,DV,EVID,MDV,CMT", "1,0,100,0,.,1,1,1", "1,1,.,0,5.2,0,0,1"), src2)
-  l2 <- readLines(nmtools:::.nm_sr_prepare_data(src2, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
+  l2 <- readLines(nmpilot:::.nm_sr_prepare_data(src2, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
                                                 root, "e", verbose = FALSE))
   expect_equal(l2[2:3], c("1,0,100,-2,.,1,1,1", "1,1,.,0,5.2,0,0,1"))
   # several observed compartments or several routes: explicit stop
   src3 <- file.path(root, "m.csv")
   writeLines(c("ID,TIME,AMT,DV,EVID,MDV,CMT", "1,0,100,.,1,1,1", "1,1,.,5,0,0,2", "1,1,.,2,0,0,3"), src3)
-  expect_error(nmtools:::.nm_sr_prepare_data(src3, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
+  expect_error(nmpilot:::.nm_sr_prepare_data(src3, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
                                              root, "f", verbose = FALSE), "observed compartments")
   src4 <- file.path(root, "v.csv")
   writeLines(c("ID,TIME,AMT,DV,EVID,MDV,CMT", "1,0,100,.,1,1,1", "1,0,50,.,1,1,2", "1,1,.,5,0,0,2"), src4)
-  expect_error(nmtools:::.nm_sr_prepare_data(src4, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
+  expect_error(nmpilot:::.nm_sr_prepare_data(src4, spec(1, "EV", "zero-order-d1", "zero-order-d1"),
                                              root, "g", verbose = FALSE), "route")
 })
 

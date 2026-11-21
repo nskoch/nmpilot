@@ -127,7 +127,7 @@
 #'   [nm_suggest_covariates()], [plot.nm_model_suggestion()]
 #'
 #' @examples
-#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 #' s <- nm_suggest_model(ex, verbose = FALSE, max_profiles = 15)
 #' s
 #' s$candidates[, c("rank", "cpts", "input", "elimination", "error", "score")]

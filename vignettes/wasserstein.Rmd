@@ -31,12 +31,12 @@ between groups of subjects defined by a covariate:
 
 The example project of the package contains a BASE model without covariate
 and a FINAL model with body weight and genotype on CL (simulated data, see
-`vignette("nmtools")`). The covariates are read from the data set named in
+`vignette("nmpilot")`). The covariates are read from the data set named in
 `$DATA`; the ETA on CL is found from the model code.
 
 ```{r w}
-library(nmtools)
-ex <- system.file("extdata", "example", package = "nmtools")
+library(nmpilot)
+ex <- system.file("extdata", "example", package = "nmpilot")
 w <- nm_wasserstein(
   runs       = c(BASE = file.path(ex, "run1.reg"), FINAL = file.path(ex, "run2.reg")),
   covariates = c("WT", "GENO"),

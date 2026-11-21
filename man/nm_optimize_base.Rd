@@ -105,7 +105,7 @@ approximation is reported in \code{check} (linearized vs NONMEM OFV of the base
 model).
 }
 \examples{
-ex <- system.file("extdata", "example", "run1.reg", package = "nmtools")
+ex <- system.file("extdata", "example", "run1.reg", package = "nmpilot")
 o <- nm_optimize_base(ex, covariates = c("WT", "GENO"), level = 1, verbose = FALSE)
 o
 }

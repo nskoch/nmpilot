@@ -64,7 +64,7 @@ NONMEM.}
 whole number,
 \code{"auto"} (physical cores minus one, see \code{\link[=nm_cores]{nm_cores()}}) or \code{"ask"}
 (interactive sessions: the cores are shown and the number is asked once per R
-session, then reused; \code{options(nmtools.n_cores = NULL)} asks again).
+session, then reused; \code{options(nmpilot.n_cores = NULL)} asks again).
 Each run is then started in the background in its own directory; if R
 is interrupted, the runs already started go on in the background and a
 later call with the same arguments picks up their results.}

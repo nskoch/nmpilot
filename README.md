@@ -1,10 +1,10 @@
-# nmtools
+# nmpilot
 
 <!-- badges: start -->
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24244339.svg)](https://doi.org/10.5281/zenodo.24244339)
 <!-- badges: end -->
 
-**nmtools** is an R package that drives a population pharmacokinetic (popPK)
+**nmpilot** is an R package that drives a population pharmacokinetic (popPK)
 analysis with NONMEM from R, from the data set to the final model diagnostics.
 It calls the NONMEM `nmfe` launcher directly and does not need PsN or
 Wings for NONMEM. Wings is optional: runs can sit next to their control
@@ -14,16 +14,22 @@ are also read, so that projects started with Wings can be continued.
 
 > **Status:** version 0.7.1, under active development. The interface may still
 > change. Bug reports and suggestions are welcome in the
-> [issues](https://github.com/nskoch/nmtools/issues).
+> [issues](https://github.com/nskoch/nmpilot/issues).
+
+> **New name:** the package was called **nmtools** up to version 0.7.1. It was
+> renamed **nmpilot** to avoid confusion with an unrelated GitHub repository of
+> the same name in the same field. If you installed nmtools, remove it with
+> `remove.packages("nmtools")`, install nmpilot as below, and replace
+> `library(nmtools)` by `library(nmpilot)` in your scripts.
 
 ## Installation
 
 ```r
 # install.packages("remotes")
-remotes::install_github("nskoch/nmtools")
+remotes::install_github("nskoch/nmpilot")
 
 # with the vignettes:
-remotes::install_github("nskoch/nmtools", build_vignettes = TRUE)
+remotes::install_github("nskoch/nmpilot", build_vignettes = TRUE)
 ```
 
 Running models requires a working NONMEM installation. The package is
@@ -58,17 +64,17 @@ BASE and a FINAL model, so that every function that reads results can be
 tried without NONMEM:
 
 ```r
-ex <- system.file("extdata", "example", package = "nmtools")
+ex <- system.file("extdata", "example", package = "nmpilot")
 runs <- nm_extract_runs(ex)
 ```
 
-Two vignettes use it: `vignette("nmtools")` (getting started, from the data
+Two vignettes use it: `vignette("nmpilot")` (getting started, from the data
 set to the comparison of two models) and `vignette("wasserstein")`.
 
 ## A typical workflow
 
 ```r
-library(nmtools)
+library(nmpilot)
 
 # 1. Data set: read, summarise, plot
 dat <- nm_read_csv("C:/nm76g64/run/study/data.csv")
@@ -245,14 +251,15 @@ plot(w, type = "r2w")
 ## Citation
 
 ```r
-citation("nmtools")
+citation("nmpilot")
 ```
 
 gives the reference of the package and, for `nm_jackknife()` and
 `nm_wasserstein()`, the reference of the original method. Each release is
 archived on Zenodo with its own DOI; the DOI badge above
 (10.5281/zenodo.24244339) cites all versions and resolves to the latest one
-(v0.7.1: 10.5281/zenodo.24406632).
+(v0.7.1: 10.5281/zenodo.24406632). The archives up to v0.7.1 carry the
+former name, nmtools.
 The releases v0.6.0 and v0.7.0 were made by mistake on the commit of
 version 0.5.0 and hold its code: use v0.7.1 or later.
 

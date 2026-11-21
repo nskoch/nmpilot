@@ -1,4 +1,4 @@
-$PROBLEM nmtools example - FINAL model (weight on CL and V, genotype on CL)
+$PROBLEM nmpilot example - FINAL model (weight on CL and V, genotype on CL)
 ; Simulated data, fictitious subjects (see README_example.txt)
 $INPUT ID TIME AMT DV EVID MDV CMT WT GENO
 $DATA ../example_data.csv IGNORE=#

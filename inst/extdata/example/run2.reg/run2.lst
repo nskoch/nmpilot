@@ -1,6 +1,6 @@
 15/11/2026 
 10:31
-$PROBLEM nmtools example - FINAL model (weight on CL and V, genotype on CL)
+$PROBLEM nmpilot example - FINAL model (weight on CL and V, genotype on CL)
 ; Simulated data, fictitious subjects (see README_example.txt)
 $INPUT ID TIME AMT DV EVID MDV CMT WT GENO
 $DATA D:/Dropbox/nm76g64/run/nmtools/dev/example/example_data.csv IGNORE=#
@@ -66,7 +66,7 @@ Days until program expires :  94
  PERFORMED BY NOUS INFOSYSTEMS.
 
  PROBLEM NO.:         1
- nmtools example - FINAL model (weight on CL and V, genotype on CL)
+ nmpilot example - FINAL model (weight on CL and V, genotype on CL)
 0DATA CHECKOUT RUN:              NO
  DATA SET LOCATED ON UNIT NO.:    2
  THIS UNIT TO BE REWOUND:        NO

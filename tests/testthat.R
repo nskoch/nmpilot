@@ -6,6 +6,6 @@
 # https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(nmtools)
+library(nmpilot)
 
-test_check("nmtools")
+test_check("nmpilot")

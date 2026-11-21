@@ -45,21 +45,21 @@ max_conc <- function(fk) {
 }
 
 test_that("n_cores is resolved from a number, \"auto\" or \"ask\"", {
-  expect_equal(nmtools:::.nm_resolve_cores(1), 1L)
-  expect_equal(suppressWarnings(nmtools:::.nm_resolve_cores(3.0)), 3L)
-  expect_gte(nmtools:::.nm_resolve_cores("auto"), 1L)
-  expect_error(nmtools:::.nm_resolve_cores(0), "n_cores")
-  expect_error(nmtools:::.nm_resolve_cores("many"))
-  old <- options(nmtools.n_cores = NULL)
+  expect_equal(nmpilot:::.nm_resolve_cores(1), 1L)
+  expect_equal(suppressWarnings(nmpilot:::.nm_resolve_cores(3.0)), 3L)
+  expect_gte(nmpilot:::.nm_resolve_cores("auto"), 1L)
+  expect_error(nmpilot:::.nm_resolve_cores(0), "n_cores")
+  expect_error(nmpilot:::.nm_resolve_cores("many"))
+  old <- options(nmpilot.n_cores = NULL)
   on.exit(options(old), add = TRUE)
-  if (!interactive()) expect_error(nmtools:::.nm_resolve_cores("ask"), "interactive")
+  if (!interactive()) expect_error(nmpilot:::.nm_resolve_cores("ask"), "interactive")
   # an answer given earlier in the session is reused without asking
-  options(nmtools.n_cores = 3L)
-  expect_message(k <- nmtools:::.nm_resolve_cores("ask"), "kept for this session")
+  options(nmpilot.n_cores = 3L)
+  expect_message(k <- nmpilot:::.nm_resolve_cores("ask"), "kept for this session")
   expect_equal(k, 3L)
-  options(nmtools.n_cores = NULL)
+  options(nmpilot.n_cores = NULL)
   big <- nm_cores(verbose = FALSE)$logical + 5L
-  expect_warning(nmtools:::.nm_resolve_cores(big), "logical cores")
+  expect_warning(nmpilot:::.nm_resolve_cores(big), "logical cores")
   expect_named(nm_cores(verbose = FALSE), c("logical", "physical", "auto"))
 })
 
@@ -82,7 +82,7 @@ test_that("nm_run runs several control streams in parallel, at most n_cores at a
   expect_true(all(log$min_ok))
   expect_equal(max_conc(fk), 2L)
   expect_lt(el, 6 * 2)                          # faster than one after the other
-  expect_true(file.exists(file.path(root, "r1.reg", "r1_nmtools.log")))
+  expect_true(file.exists(file.path(root, "r1.reg", "r1_nmpilot.log")))
   # finished runs are skipped on a second call
   log2 <- nm_run(fk$nmfe, ctls, root, n_cores = 2, verbose = FALSE)
   expect_true(all(log2$action == "skipped_done"))

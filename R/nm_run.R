@@ -151,16 +151,16 @@
 # sync by a cloud client (Dropbox, OneDrive, Google Drive, iCloud, Box). The
 # client can lock the files NM-TRAN and the compiler are writing ("the process
 # cannot access the file because it is being used by another process") and
-# make a run fail. Silenced by options(nmtools.warn_synced = FALSE).
+# make a run fail. Silenced by options(nmpilot.warn_synced = FALSE).
 .nm_warn_synced_dir <- function(dir) {
-  if (isFALSE(getOption("nmtools.warn_synced", TRUE))) return(invisible(FALSE))
+  if (isFALSE(getOption("nmpilot.warn_synced", TRUE))) return(invisible(FALSE))
   pat <- "(?i)(dropbox|onedrive|google ?drive|icloud ?drive|box ?sync|/box/|\\\\box\\\\|pcloud)"
   hit <- grepl(pat, dir, perl = TRUE)
   if (hit) warning(
     "The analysis directory is inside a synchronised folder (", dir, "). ",
     "The sync client can lock the files written by NM-TRAN and the compiler ",
     "and make a run fail: prefer a local folder (e.g. under C:/nm76g64/run/), ",
-    "or pause the synchronisation. Silence with options(nmtools.warn_synced = FALSE).",
+    "or pause the synchronisation. Silence with options(nmpilot.warn_synced = FALSE).",
     call. = FALSE)
   invisible(hit)
 }
@@ -272,7 +272,7 @@
 #'   when it lies in a folder synchronised by a cloud client (Dropbox,
 #'   OneDrive, Google Drive, iCloud, Box): the client can lock the files
 #'   written by NM-TRAN and make a run fail (silence it with
-#'   `options(nmtools.warn_synced = FALSE)`).
+#'   `options(nmpilot.warn_synced = FALSE)`).
 #' @param run_subdir Suffix of the run subdirectories: `".reg"` (default,
 #'   Wings-compatible layout `run001.reg/`), any other suffix (e.g. `".run"`),
 #'   or `""` to run in the folder of the control stream itself, without
@@ -289,9 +289,9 @@
 #'   after the other, NONMEM output shown in the console). A whole number,
 #'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
 #'   (interactive sessions: the cores are shown and the number is asked once per R
-#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again). In
+#'   session, then reused; `options(nmpilot.n_cores = NULL)` asks again). In
 #'   parallel, each run is started in the background from its run directory;
-#'   the console output of nmfe goes to `<run>_nmtools.log`. Runs written in
+#'   the console output of nmfe goes to `<run>_nmpilot.log`. Runs written in
 #'   the same folder (`run_subdir = ""`) are always run one after the other.
 #'   If R is interrupted, the runs already started go on in the background.
 #' @param verbose Logical. If `TRUE` (default), progress messages are printed

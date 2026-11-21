@@ -165,7 +165,7 @@ from the one predicted by the first-dose terminal slope, and a
 less-than-proportional exposure (saturable absorption or bioavailability).
 }
 \examples{
-ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 s <- nm_suggest_model(ex, verbose = FALSE, max_profiles = 15)
 s
 s$candidates[, c("rank", "cpts", "input", "elimination", "error", "score")]

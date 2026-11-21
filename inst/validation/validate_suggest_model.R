@@ -7,8 +7,8 @@
 # elimination and residual error model, and how often the true model is
 # among the first 3 candidates.
 #
-# Usage (from R, nmtools installed):
-#   source(system.file("validation", "validate_suggest_model.R", package = "nmtools"))
+# Usage (from R, nmpilot installed):
+#   source(system.file("validation", "validate_suggest_model.R", package = "nmpilot"))
 #   res <- validate_suggest_model(n_rep = 20, out_dir = "validation_results")
 #   res$summary
 #
@@ -71,7 +71,7 @@
   sp <- list(cpts = sc$cpts, route = sc$route, input = if (sc$route == "IV") "IV" else sc$input,
              absorption = absorption, transit_n = if (is.null(sc$transit_n)) 2L else sc$transit_n, elimination = "linear")
   st <- if (sc$elimination == "linear")
-    nmtools:::.nm_ctl_struct(sc$cpts, sc$route, absorption, "linear", sp$transit_n) else NULL
+    nmpilot:::.nm_ctl_struct(sc$cpts, sc$route, absorption, "linear", sp$transit_n) else NULL
   err <- switch(sc$error, proportional = c(0.15, 0), additive = c(0, 0.08), combined = c(0.15, 0.03))
   rows <- list()
   for (i in seq_len(n)) {
@@ -80,7 +80,7 @@
     amt <- sc$doses[(i - 1) %% length(sc$doses) + 1]
     times <- if (design == "rich") rich_times else sort(round(stats::runif(3, 0.25, 24), 2))
     f <- if (sc$elimination == "linear")
-      nmtools:::.nm_sd_predict(th, sp, st, data.frame(ID = i, TIME = 0, AMT = amt, TINF = 0), times, 1) else
+      nmpilot:::.nm_sd_predict(th, sp, st, data.frame(ID = i, TIME = 0, AMT = amt, TINF = 0), times, 1) else
       .val_sim_mm(th, amt, times)
     dv <- f * (1 + stats::rnorm(length(f), 0, err[1])) + stats::rnorm(length(f), 0, err[2])
     blq <- dv < 0.02

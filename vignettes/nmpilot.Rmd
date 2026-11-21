@@ -1,8 +1,8 @@
 ---
-title: "Getting started with nmtools"
+title: "Getting started with nmpilot"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting started with nmtools}
+  %\VignetteIndexEntry{Getting started with nmpilot}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,14 +11,14 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.5)
 ```
 
-This vignette walks through a small popPK analysis with **nmtools**, from the
+This vignette walks through a small popPK analysis with **nmpilot**, from the
 data set and a first control stream to the comparison of two models. NONMEM is not needed to read it:
 the package ships an example project whose NONMEM runs have already been
 made. The chunks that call NONMEM are shown but not run.
 
 ```{r setup}
-library(nmtools)
-ex <- system.file("extdata", "example", package = "nmtools")
+library(nmpilot)
+ex <- system.file("extdata", "example", package = "nmpilot")
 list.files(ex, recursive = TRUE)
 ```
 
@@ -178,4 +178,4 @@ plot(jk, "scatter")
 ```
 
 The covariate assessment based on the Wasserstein distance is described in
-`vignette("wasserstein", package = "nmtools")`.
+`vignette("wasserstein", package = "nmpilot")`.

@@ -1,4 +1,4 @@
-# Simulated example data for nmtools (fictitious subjects).
+# Simulated example data for nmpilot (fictitious subjects).
 set.seed(20261115)
 n <- 60
 id <- seq_len(n)

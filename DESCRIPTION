@@ -1,4 +1,4 @@
-Package: nmtools
+Package: nmpilot
 Title: R Tools for Direct NONMEM Workflow Automation
 Version: 0.7.1
 Authors@R: person("Nicolas", "Simon", email = "nicolas.simon@univ-amu.fr",
@@ -14,8 +14,8 @@ Description: Direct execution of NONMEM via nmfe (no Wings, no PsN),
     VPC/pc-VPC generation, dataset preparation and visualization,
     and run comparison tools for pharmacometric workflows.
 License: MIT + file LICENSE
-URL: https://github.com/nskoch/nmtools
-BugReports: https://github.com/nskoch/nmtools/issues
+URL: https://github.com/nskoch/nmpilot
+BugReports: https://github.com/nskoch/nmpilot/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports:

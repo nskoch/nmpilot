@@ -1,6 +1,6 @@
 #  ---------------------------------------------------------------------------
 #  nm_bootstrap.R  --  Nonparametric case (subject-level) bootstrap for NONMEM
-#  Part of the nmtools package (PsN-/WFN-independent).
+#  Part of the nmpilot package (PsN-/WFN-independent).
 #
 #  Exported :  nm_bootstrap()
 #  S3       :  print.nm_bootstrap(), plot.nm_bootstrap()
@@ -59,7 +59,7 @@
 #'   whole number,
 #'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
 #'   (interactive sessions: the cores are shown and the number is asked once per R
-#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   session, then reused; `options(nmpilot.n_cores = NULL)` asks again).
 #'   Each run is then started in the background in its own directory; if R
 #'   is interrupted, the runs already started go on in the background and a
 #'   later call with the same arguments picks up their results. In parallel, each run uses a
@@ -200,9 +200,9 @@ nm_bootstrap <- function(ctl,
                       overwrite = TRUE)
         }
         .nm_clean_run_outputs(sd, base, keep_ext = FALSE)
-        unlink(file.path(sd, c(paste0(base, "_boot_nmtools.bat"), paste0(base, "_boot_nmtools.sh"),
-                               paste0(base, "_boot_nmtools.log"), paste0(base, "_boot_nmtools.err"),
-                               paste0(base, "_boot.nmtools_done"))))
+        unlink(file.path(sd, c(paste0(base, "_boot_nmpilot.bat"), paste0(base, "_boot_nmpilot.sh"),
+                               paste0(base, "_boot_nmpilot.log"), paste0(base, "_boot_nmpilot.err"),
+                               paste0(base, "_boot.nmpilot_done"))))
       })
     done <- seq_len(n)   # nothing left for the sequential loop
   }

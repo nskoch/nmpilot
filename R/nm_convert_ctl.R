@@ -309,7 +309,7 @@
 #' # Convert a WFN extended control stream
 #' out <- nm_convert_ctl("C:/analyses/run001_wfn.ctl")
 #'
-#' # Then run with nmtools
+#' # Then run with nmpilot
 #' log <- nm_run(
 #'   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
 #'   ctl_files    = out,

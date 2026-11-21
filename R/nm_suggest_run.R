@@ -254,7 +254,7 @@ print.nm_suggest_run <- function(x, ...) {
 #'   \doi{10.3389/fphar.2026.1804989}
 #' @seealso [nm_suggest_model()], [nm_wasserstein()]
 #' @examples
-#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 #' s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 #' nm_suggest_covariates(s, covariates = c("WT", "GENO"), n_perm = 500)
 #' @export

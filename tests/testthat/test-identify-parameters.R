@@ -159,7 +159,7 @@ test_that("derived parameters are kept and depth points to the direct one", {
 })
 
 test_that("nm_identify_directory returns one row per control stream", {
-  d <- file.path(tempdir(), "nmtools-identify-dir")
+  d <- file.path(tempdir(), "nmpilot-identify-dir")
   dir.create(d, showWarnings = FALSE)
   writeLines(c("$THETA (0,5)", "$OMEGA 0.1", "$PK", "  CL = THETA(1)*EXP(ETA(1))"),
              file.path(d, "a.ctl"))

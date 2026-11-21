@@ -1,4 +1,19 @@
-# nmtools 0.7.1
+# nmpilot (development version)
+
+* The package is renamed **nmpilot** (formerly **nmtools**), to avoid
+  confusion with an unrelated GitHub repository of the same name in the same
+  field. Install it with `remotes::install_github("nskoch/nmpilot")` and load
+  it with `library(nmpilot)`; remove the old package with
+  `remove.packages("nmtools")`. No function is renamed.
+* The options are renamed `nmpilot.n_cores` and `nmpilot.warn_synced`
+  (formerly `nmtools.n_cores` and `nmtools.warn_synced`).
+* The files written by parallel runs are renamed `<run>_nmpilot.bat` (or
+  `.sh`), `<run>_nmpilot.log`, `<run>_nmpilot.err` and `<run>.nmpilot_done`.
+  Files left by earlier versions (`*_nmtools.*`, `*.nmtools_done`) are not
+  used and can be deleted.
+* The entries below, up to 0.7.1, were released under the name nmtools.
+
+# nmpilot 0.7.1
 
 * No change in the code. This release is the first to contain the work of
   versions 0.6.0 (parallel NONMEM runs) and 0.7.0 (reading NONMEM outputs),
@@ -6,7 +21,7 @@
   their Zenodo archives) were made on the commit of version 0.5.0: they hold
   the code of 0.5.0. Use 0.7.1 or later.
 
-# nmtools 0.7.0
+# nmpilot 0.7.0
 
 ## Reading NONMEM outputs: several $EST and $PROB, IOV, $MIX, failed runs
 
@@ -52,7 +67,7 @@
   IMP, ITS > FOCE, IOV, `$MIX` with `METHOD=1` and `CONDITIONAL`, empty
   `.ext`, `.ext` from another run.
 
-# nmtools 0.6.0
+# nmpilot 0.6.0
 
 ## Parallel NONMEM runs
 
@@ -88,7 +103,7 @@
 * `print.nm_jackknife()`: the reference OFV is printed with three decimals
   (it was rounded to four significant digits, e.g. -1224).
 
-# nmtools 0.5.0
+# nmpilot 0.5.0
 
 ## Direct comparison of two models (`nm_compare()`)
 
@@ -141,7 +156,7 @@
   iCloud, Box), whose client can lock files during compilation (silence with
   `options(nmtools.warn_synced = FALSE)`).
 
-# nmtools 0.4.1
+# nmpilot 0.4.1
 
 * `nm_suggest_model()`: the residual error model is chosen on a common
   structural fit of each interval (iteratively reweighted least squares
@@ -155,7 +170,7 @@
   combined error, lower for some proportional-error scenarios
   (`inst/validation/validate_suggest_model.R`).
 
-# nmtools 0.4.0
+# nmpilot 0.4.0
 
 ## Data-driven suggestion of structural models
 
@@ -199,7 +214,7 @@
 * New validation script `inst/validation/validate_suggest_model.R`
   (recognition rate of the true structure on simulated datasets).
 
-# nmtools 0.3.0
+# nmpilot 0.3.0
 
 ## Writing control streams
 
@@ -226,7 +241,7 @@ Functions ported from the Shiny application "Générateur NONMEM .ctl"
   `$ABBR REPLACE`; `$INPUT` items; M3 requirements), with optional line
   differences from a reference control stream.
 
-# nmtools 0.2.3
+# nmpilot 0.2.3
 
 * New `nm_jackknife()`: leave-one-subject-out jackknife of a NONMEM model
   (method of the standalone script nonmem-jackknife-influence,
@@ -242,7 +257,7 @@ Functions ported from the Shiny application "Générateur NONMEM .ctl"
   from their `$THETA` comment label when it is a short name (`CL_WT`, `PROP`,
   `RUV_A`, `4 Prop (...)` -> `Prop`) instead of `THETA4`, `THETA5`...
 
-# nmtools 0.2.2
+# nmpilot 0.2.2
 
 ## Breaking changes
 
@@ -285,7 +300,7 @@ Functions ported from the Shiny application "Générateur NONMEM .ctl"
 * `citation("nmtools")` cites the package and, for `nm_wasserstein()`, the
   original article.
 
-# nmtools 0.2.1
+# nmpilot 0.2.1
 
 * `nm_wasserstein()`: new argument `continuous = "pairwise"` to compare every
   pair of quartiles of a continuous covariate (6 comparisons), as in the
@@ -298,7 +313,7 @@ Functions ported from the Shiny application "Générateur NONMEM .ctl"
   sum written with extra parentheses (e.g.
   `((THETA(1)*FALL) + (THETA(8)*(CLCR/89)))`) is now a covariate effect.
 
-# nmtools 0.2.0
+# nmpilot 0.2.0
 
 * New `nm_wasserstein()`: distribution-based covariate assessment with the
   Wasserstein distance (Simon, Hulot and von Fabeck, Front Pharmacol 2026,
@@ -308,7 +323,7 @@ Functions ported from the Shiny application "Générateur NONMEM .ctl"
   reference) and reports a Wasserstein-based R2 with the eta-shrinkage.
   `print()` and `plot()` methods (ECDF by group, R2W bar chart).
 
-# nmtools 0.1.0
+# nmpilot 0.1.0
 
 First public release.
 

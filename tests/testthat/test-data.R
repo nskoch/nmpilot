@@ -26,7 +26,7 @@ test_that("nm_add_rate adds RATE after AMT", {
 })
 
 test_that("nm_export_data writes '.' for missing values", {
-  out <- file.path(tempdir(), "nmtools-export", "d.csv")
+  out <- file.path(tempdir(), "nmpilot-export", "d.csv")
   invisible(capture.output(suppressMessages(
     nm_export_data(data.frame(ID = 1:2, DV = c(1.5, NA)), out))))
   expect_true(file.exists(out))

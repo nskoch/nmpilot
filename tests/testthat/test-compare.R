@@ -33,7 +33,7 @@ test_that("Vuong and Clarke tests on individual contributions", {
   set.seed(1)
   subj <- data.frame(ID = 1:40, iOFV_1 = rnorm(40, 10, 3))
   subj$iOFV_2 <- subj$iOFV_1 - rnorm(40, 1, 2)          # run 2 better on average
-  t <- nmtools:::.nm_cmp_tests(subj, k = c(5, 6), ofv = c(sum(subj$iOFV_1), sum(subj$iOFV_2)),
+  t <- nmpilot:::.nm_cmp_tests(subj, k = c(5, 6), ofv = c(sum(subj$iOFV_1), sum(subj$iOFV_2)),
                                n_obs = 200, nested = TRUE, n_boot = 500, seed = 1,
                                labels = c("A", "B"))
   d <- (subj$iOFV_1 - subj$iOFV_2) / 2
@@ -54,7 +54,7 @@ test_that("Vuong and Clarke tests on individual contributions", {
 })
 
 test_that("nm_compare on the example runs (base vs final)", {
-  ex <- system.file("extdata", "example", package = "nmtools")
+  ex <- system.file("extdata", "example", package = "nmpilot")
   cmp <- nm_compare(file.path(ex, "run1.reg"), file.path(ex, "run2.reg"),
                     labels = c("base", "final"), nested = TRUE,
                     covariates = c("WT", "GENO"), n_boot = 300)

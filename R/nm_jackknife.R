@@ -1,6 +1,6 @@
 #  ---------------------------------------------------------------------------
 #  nm_jackknife.R  --  Leave-one-subject-out jackknife of a NONMEM model
-#  Part of the nmtools package (PsN-/WFN-independent).
+#  Part of the nmpilot package (PsN-/WFN-independent).
 #
 #  Exported :  nm_jackknife()
 #  S3       :  print.nm_jackknife(), plot.nm_jackknife()
@@ -14,7 +14,7 @@
 #                 ||(th(-i)-th_ref)/SE_ref|| when the reference $COV is usable.
 #  Subjects are ranked by |dOFV|. The metrics and the reading of OFV/THETA/SE
 #  from the .lst are those of the published script; data reading, $DATA
-#  patching and the NONMEM launch use the shared nmtools helpers (as
+#  patching and the NONMEM launch use the shared nmpilot helpers (as
 #  nm_bootstrap()): the data lines are copied verbatim, so number formatting
 #  and conditional IGNORE rows are preserved.
 #  ---------------------------------------------------------------------------
@@ -127,7 +127,7 @@
 #'   whole number,
 #'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
 #'   (interactive sessions: the cores are shown and the number is asked once per R
-#'   session, then reused; `options(nmtools.n_cores = NULL)` asks again).
+#'   session, then reused; `options(nmpilot.n_cores = NULL)` asks again).
 #'   Each run is then started in the background in its own directory; if R
 #'   is interrupted, the runs already started go on in the background and a
 #'   later call with the same arguments picks up their results.

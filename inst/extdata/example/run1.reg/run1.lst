@@ -1,6 +1,6 @@
 15/11/2026 
 10:31
-$PROBLEM nmtools example - BASE model (1-cpt oral, no covariate)
+$PROBLEM nmpilot example - BASE model (1-cpt oral, no covariate)
 ; Simulated data, fictitious subjects (see README_example.txt)
 $INPUT ID TIME AMT DV EVID MDV CMT WT GENO
 $DATA D:/Dropbox/nm76g64/run/nmtools/dev/example/example_data.csv IGNORE=#
@@ -64,7 +64,7 @@ Days until program expires :  94
  PERFORMED BY NOUS INFOSYSTEMS.
 
  PROBLEM NO.:         1
- nmtools example - BASE model (1-cpt oral, no covariate)
+ nmpilot example - BASE model (1-cpt oral, no covariate)
 0DATA CHECKOUT RUN:              NO
  DATA SET LOCATED ON UNIT NO.:    2
  THIS UNIT TO BE REWOUND:        NO

@@ -1,15 +1,15 @@
-citHeader("To cite nmtools in publications, please use:")
+citHeader("To cite nmpilot in publications, please use:")
 
 bibentry(
   bibtype = "Manual",
-  title   = "nmtools: R Tools for Direct NONMEM Workflow Automation",
+  title   = "nmpilot: R Tools for Direct NONMEM Workflow Automation",
   author  = person("Nicolas", "Simon"),
   year    = "2026",
   note    = paste("R package version", meta$Version),
-  url     = "https://github.com/nskoch/nmtools",
+  url     = "https://github.com/nskoch/nmpilot",
   textVersion = paste0(
-    "Simon N (2026). nmtools: R Tools for Direct NONMEM Workflow Automation. ",
-    "R package version ", meta$Version, ". https://github.com/nskoch/nmtools"
+    "Simon N (2026). nmpilot: R Tools for Direct NONMEM Workflow Automation. ",
+    "R package version ", meta$Version, ". https://github.com/nskoch/nmpilot"
   )
 )
 

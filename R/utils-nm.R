@@ -1,7 +1,7 @@
 # =============================================================================
 # utils-nm.R
 # Package-level imports, global variable declarations, and internal helpers
-# shared by several nmtools functions.
+# shared by several nmpilot functions.
 # =============================================================================
 
 #' @importFrom magrittr %>%

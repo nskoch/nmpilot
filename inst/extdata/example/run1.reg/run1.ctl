@@ -1,4 +1,4 @@
-$PROBLEM nmtools example - BASE model (1-cpt oral, no covariate)
+$PROBLEM nmpilot example - BASE model (1-cpt oral, no covariate)
 ; Simulated data, fictitious subjects (see README_example.txt)
 $INPUT ID TIME AMT DV EVID MDV CMT WT GENO
 $DATA ../example_data.csv IGNORE=#

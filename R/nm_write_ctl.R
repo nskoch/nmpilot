@@ -4,7 +4,7 @@
 #
 # Ported from the Shiny application "Générateur NONMEM .ctl"
 # (https://nicolas-simon.shinyapps.io/nonmem_ctl_publi/). The model-building
-# helpers below are the application's helpers, renamed to the nmtools
+# helpers below are the application's helpers, renamed to the nmpilot
 # conventions (.nm_ctl_*), with English comments in the generated code.
 # Transformations of an existing control stream (MU referencing, IOV, M3) and
 # the static check live in nm_ctl_transform.R.
@@ -474,7 +474,7 @@ print.nm_ctl <- function(x, ...) {
 #' nm_ctl_check(f)
 #'
 #' # From a data-driven suggestion
-#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 #' s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 #' nm_write_ctl(from = s, candidate = 1, verbose = FALSE)
 #' @export

@@ -2,8 +2,8 @@
 # failed or interrupted runs, IOV (SAME) and $MIX. The test runs are built
 # from the example run2 (simulated data shipped with the package).
 
-ex_lst <- function() readLines(system.file("extdata", "example", "run2.reg", "run2.lst", package = "nmtools"), warn = FALSE)
-ex_ext <- function() readLines(system.file("extdata", "example", "run2.reg", "run2.ext", package = "nmtools"), warn = FALSE)
+ex_lst <- function() readLines(system.file("extdata", "example", "run2.reg", "run2.lst", package = "nmpilot"), warn = FALSE)
+ex_ext <- function() readLines(system.file("extdata", "example", "run2.reg", "run2.ext", package = "nmpilot"), warn = FALSE)
 
 make_run <- function(root, name, lst = NULL, ext = NULL, ext_name = NULL, ctl = NULL) {
   d <- file.path(root, paste0(name, ".nm7")); dir.create(d, recursive = TRUE)
@@ -90,16 +90,16 @@ test_that("IOV: ETAs declared SAME are found (BLOCK, BLOC, SAME(k))", {
   ctl <- c("$OMEGA 0.1 ; CL", "$OMEGA 0 FIX", "$OMEGA BLOCK(1) 0.1 ; IOV1",
            "$OMEGA BLOCK(1) SAME", "$OMEGA BLOC(2) 0.1 0.01 0.1", "$OMEGA BLOCK(2) SAME(2)",
            ";$OMEGA BLOCK(1) SAME", "$SIGMA 0.1")
-  s <- nmtools:::.nm_ctl_same_etas(ctl)
+  s <- nmpilot:::.nm_ctl_same_etas(ctl)
   expect_equal(s$etas, c(4L, 7L, 8L, 9L, 10L))
   expect_equal(s$n_records, 2L)
 })
 
 test_that("$MIX: subpopulations, proportion THETAs and .phm assignment", {
   ctl <- c("$THETA 1 2 (0,0.5,1)", "$MIX", "  P(1)=THETA(3)", "  P(2)=1.-THETA(3)", "  NSPOP=2", "$EST")
-  m <- nmtools:::.nm_ctl_mixture(ctl)
+  m <- nmpilot:::.nm_ctl_mixture(ctl)
   expect_true(m$mix); expect_equal(m$n_subpop, 2L); expect_equal(m$p_theta, 3L)
-  expect_false(nmtools:::.nm_ctl_mixture("$THETA 1")$mix)
+  expect_false(nmpilot:::.nm_ctl_mixture("$THETA 1")$mix)
 
   phm <- tempfile(fileext = ".phm")
   writeLines(c("TABLE NO.     1: First Order Conditional Estimation with Interaction: Problem=1",
@@ -108,7 +108,7 @@ test_that("$MIX: subpopulations, proportion THETAs and .phm assignment", {
                "            1            1            2  2.00000E-01  12.0",
                "            2            2            1  1.00000E-01  9.0",
                "            2            2            2  9.00000E-01  8.0"), phm)
-  d <- nmtools:::.nm_parse_phm(phm)
+  d <- nmpilot:::.nm_parse_phm(phm)
   expect_equal(d$SUBPOP[d$assigned], c(1L, 2L))
 })
 
@@ -116,10 +116,10 @@ test_that("mixture shrinkage: the smallest value over subpopulations is kept", {
   L <- c(" ETAshrink(%):   1.7689E+00  5.0761E+00  1.0000E+02  1.0000E+02",
          " EBVshrink(%):   1.9973E+00  5.0717E+00  1.0000E+02  1.0000E+02",
          " ETAshrink(%):   1.0000E+02  1.0000E+02  1.4253E+00  2.0000E+01")
-  expect_equal(nmtools:::.nm_lst_shrink(L, "ETA.?SHRINK"), c(1.7689, 5.0761, 1.4253, 20))
+  expect_equal(nmpilot:::.nm_lst_shrink(L, "ETA.?SHRINK"), c(1.7689, 5.0761, 1.4253, 20))
   # without $MIX, SD then VR, as before
   L2 <- c(" ETASHRINKSD(%)  4.2618E+00  1.0118E+01", " ETASHRINKVR(%)  8.3420E+00  1.9213E+01")
-  expect_equal(nmtools:::.nm_lst_shrink(L2, "ETA.?SHRINK"), c(4.2618, 10.118, 8.342, 19.213))
+  expect_equal(nmpilot:::.nm_lst_shrink(L2, "ETA.?SHRINK"), c(4.2618, 10.118, 8.342, 19.213))
 })
 
 test_that("nm_run, nm_profile, nm_bootstrap, nm_jackknife and nm_compare read the last step", {
@@ -132,28 +132,28 @@ test_that("nm_run, nm_profile, nm_bootstrap, nm_jackknife and nm_compare read th
   f1 <- tempfile(fileext = ".lst"); writeLines(L, f1)
   f2 <- tempfile(fileext = ".lst"); writeLines(c(L[seq_len(i - 1)], its, L[i:length(L)]), f2)
   # nm_run
-  expect_equal(nmtools:::.nm_lst_status(f2)$minimization_status, "successful")
-  expect_equal(nmtools:::.nm_lst_ofv(f2), nmtools:::.nm_lst_ofv(f1))
+  expect_equal(nmpilot:::.nm_lst_status(f2)$minimization_status, "successful")
+  expect_equal(nmpilot:::.nm_lst_ofv(f2), nmpilot:::.nm_lst_ofv(f1))
   # nm_profile / nm_jackknife
-  expect_true(nmtools:::.nm_parse_status(f2)$min_ok)
-  expect_equal(nmtools:::.nm_extract_ofv(f2), nmtools:::.nm_extract_ofv(f1))
-  expect_equal(nmtools:::.nm_jk_theta_lst(readLines(f2)), nmtools:::.nm_jk_theta_lst(readLines(f1)))
+  expect_true(nmpilot:::.nm_parse_status(f2)$min_ok)
+  expect_equal(nmpilot:::.nm_extract_ofv(f2), nmpilot:::.nm_extract_ofv(f1))
+  expect_equal(nmpilot:::.nm_jk_theta_lst(readLines(f2)), nmpilot:::.nm_jk_theta_lst(readLines(f1)))
   # nm_bootstrap
-  expect_equal(nmtools:::.nm_min_status(f2), "successful")
+  expect_equal(nmpilot:::.nm_min_status(f2), "successful")
   # nm_compare
-  expect_equal(nmtools:::.nm_cmp_extract_ofv(f2), nmtools:::.nm_cmp_extract_ofv(f1))
+  expect_equal(nmpilot:::.nm_cmp_extract_ofv(f2), nmpilot:::.nm_cmp_extract_ofv(f1))
 
   # last step = SAEM: its "COMPLETED" status counts as success
   saem <- c(L[seq_len(i - 1)], " #METH: Stochastic Approximation Expectation-Maximization", "",
             " STOCHASTIC PORTION WAS COMPLETED", " REDUCED STOCHASTIC PORTION WAS COMPLETED",
             " #OBJV:********************************************     -1200.000       **********")
   f3 <- tempfile(fileext = ".lst"); writeLines(saem, f3)
-  expect_equal(nmtools:::.nm_lst_step_status(saem)$code, "successful")
-  expect_equal(nmtools:::.nm_min_status(f3), "successful")
+  expect_equal(nmpilot:::.nm_lst_step_status(saem)$code, "successful")
+  expect_equal(nmpilot:::.nm_min_status(f3), "successful")
   # earlier step successful but last one terminated: terminated
   term <- c(L, " #METH: First Order Conditional Estimation with Interaction", "",
             "0MINIMIZATION TERMINATED", " DUE TO ROUNDING ERRORS (ERROR=134)")
-  expect_equal(nmtools:::.nm_lst_step_status(term)$code, "rounding_errors")
+  expect_equal(nmpilot:::.nm_lst_step_status(term)$code, "rounding_errors")
 })
 
 test_that("nm_run: the covariance status ignores 'AFTER CHECKING THAT THE COVARIANCE STEP...'", {
@@ -162,7 +162,7 @@ test_that("nm_run: the covariance status ignores 'AFTER CHECKING THAT THE COVARI
                     " REGARD THE RESULTS OF THE ESTIMATION STEP CAREFULLY, AND ACCEPT THEM ONLY",
                     " AFTER CHECKING THAT THE COVARIANCE STEP PRODUCES REASONABLE OUTPUT."), after = k)
   f <- tempfile(fileext = ".lst"); writeLines(L2, f)
-  s <- nmtools:::.nm_lst_status(f)
+  s <- nmpilot:::.nm_lst_status(f)
   expect_equal(s$minimization_status, "successful")
   expect_equal(s$cov_status, "successful")
   expect_true(s$run_ok)

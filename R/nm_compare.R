@@ -1,7 +1,7 @@
 # =============================================================================
 # nm_compare.R
 # Paired comparison of two NONMEM runs (CWRES, NPDE, iOFV)
-# Part of the nmtools package
+# Part of the nmpilot package
 # =============================================================================
 
 #' Compare two NONMEM runs

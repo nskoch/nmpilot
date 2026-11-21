@@ -172,7 +172,7 @@
 #'   `n_subjects`, `n_obs`, `spec`, `times`.
 #' @seealso [nm_suggest_model()]
 #' @examples
-#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmtools")
+#' ex <- system.file("extdata", "example", "example_data.csv", package = "nmpilot")
 #' s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 #' nm_suggest_design(s)
 #' # a sparse design with 3 samples per subject
