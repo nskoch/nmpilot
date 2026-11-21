@@ -1,7 +1,7 @@
 # nmtools
 
 <!-- badges: start -->
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24406632.svg)](https://doi.org/10.5281/zenodo.24406632)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24244339.svg)](https://doi.org/10.5281/zenodo.24244339)
 <!-- badges: end -->
 
 **nmtools** is an R package that drives a population pharmacokinetic (popPK)
@@ -250,7 +250,9 @@ citation("nmtools")
 
 gives the reference of the package and, for `nm_jackknife()` and
 `nm_wasserstein()`, the reference of the original method. Each release is
-archived on Zenodo with its own DOI; the DOI badge above points to v0.7.1.
+archived on Zenodo with its own DOI; the DOI badge above
+(10.5281/zenodo.24244339) cites all versions and resolves to the latest one
+(v0.7.1: 10.5281/zenodo.24406632).
 The releases v0.6.0 and v0.7.0 were made by mistake on the commit of
 version 0.5.0 and hold its code: use v0.7.1 or later.
 
