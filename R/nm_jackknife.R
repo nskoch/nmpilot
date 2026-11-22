@@ -97,7 +97,8 @@
 #'
 #' @param ctl Path to the reference control stream (`.ctl`), already run.
 #' @param nmfe_path Path to the nmfe launcher (e.g.
-#'   `"C:/nm76g64/run/nmfe76.bat"`). Needed when `run = TRUE`.
+#'   `"C:/nm76g64/run/nmfe76.bat"` on Windows, `"/opt/nm760/run/nmfe76"` on
+#'   Linux or macOS). Needed when `run = TRUE`.
 #' @param lst Reference output. Default: the `.lst` of the same name next to
 #'   `ctl`.
 #' @param reference_data Data file. `NULL` (default): read from `$DATA`.

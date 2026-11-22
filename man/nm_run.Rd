@@ -18,7 +18,8 @@ nm_run(
 }
 \arguments{
 \item{nmfe_path}{Full path to the nmfe executable
-(e.g. \code{"C:/nm76g64/run/nmfe76.bat"}).}
+(e.g. \code{"C:/nm76g64/run/nmfe76.bat"} on Windows, \code{"/opt/nm760/run/nmfe76"}
+on Linux or macOS, where it is run directly and must be executable).}
 
 \item{ctl_files}{Character vector of paths to \code{.ctl} files. May be absolute
 paths or file names relative to \code{analysis_dir}.}

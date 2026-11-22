@@ -1,3 +1,16 @@
+# nmpilot (development version)
+
+* Linux and macOS: `nm_bootstrap()` no longer depends on `cmd.exe`. Its
+  sequential loop (`n_cores = 1`) now uses the launcher shared by `nm_run()`,
+  `nm_profile()` and `nm_jackknife()`, which calls `cmd.exe` on Windows and
+  the nmfe script directly on Linux and macOS. On these systems, a launcher
+  that is not executable is reported with a clear message ("chmod +x")
+  instead of a failure of the system call. The documentation of `nmfe_path`
+  gives a Linux example. Checked on Linux with a simulated nmfe for
+  `nm_run()`, `nm_profile()`, `nm_jackknife()`, `nm_bootstrap()`,
+  `nm_vpc_ctl()` and `nm_vpc()`, one run at a time and in parallel; not yet
+  with a real NONMEM installation on Linux or macOS.
+
 # nmpilot 0.8.0
 
 * The package is renamed **nmpilot** (formerly **nmtools**), to avoid

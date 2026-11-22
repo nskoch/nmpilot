@@ -31,7 +31,8 @@ nm_bootstrap(
 \arguments{
 \item{ctl}{Path to the base control stream (.ctl).}
 
-\item{nmfe_path}{Path to the nmfe*.bat launcher (e.g. "C:/nm74g64/run/nmfe74.bat").}
+\item{nmfe_path}{Path to the NONMEM launcher: nmfe*.bat on Windows (e.g. "C:/nm74g64/run/nmfe74.bat"),
+the nmfe script on Linux or macOS (e.g. "/opt/nm760/run/nmfe76").}
 
 \item{n}{Number of bootstrap replicates (default 500).}
 

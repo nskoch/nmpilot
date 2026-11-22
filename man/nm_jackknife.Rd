@@ -30,7 +30,8 @@ nm_jackknife(
 \item{ctl}{Path to the reference control stream (\code{.ctl}), already run.}
 
 \item{nmfe_path}{Path to the nmfe launcher (e.g.
-\code{"C:/nm76g64/run/nmfe76.bat"}). Needed when \code{run = TRUE}.}
+\code{"C:/nm76g64/run/nmfe76.bat"} on Windows, \code{"/opt/nm760/run/nmfe76"} on
+Linux or macOS). Needed when \code{run = TRUE}.}
 
 \item{lst}{Reference output. Default: the \code{.lst} of the same name next to
 \code{ctl}.}

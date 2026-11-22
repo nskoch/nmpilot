@@ -137,3 +137,29 @@ test_that("nm_profile, nm_jackknife and nm_bootstrap run in parallel", {
   expect_true(dir.exists(file.path(b$run_dir, "slot2")))
   expect_false(file.exists(file.path(b$run_dir, "slot1", "b1_boot.csv")))
 })
+
+test_that("nm_bootstrap runs one replicate at a time with the common launcher (any OS)", {
+  skip_on_cran()
+  root <- tempfile("bseq"); dir.create(root)
+  fk <- fake_nmfe(root)
+  writeLines(c("ID,TIME,AMT,DV", paste(rep(1:4, each = 2), rep(c(0, 1), 4),
+                                        rep(c(100, "."), 4), rep(c(".", 5), 4), sep = ",")),
+             file.path(root, "bdata.csv"))
+  writeLines(c("$PROB x", "$INPUT ID TIME AMT DV", "$DATA bdata.csv IGNORE=@", "$PRED",
+               "  Y = THETA(1) + EPS(1)", "$THETA 1", "$SIGMA 1", "$EST METHOD=1"),
+             file.path(root, "b1.ctl"))
+  b <- suppressMessages(nm_bootstrap(file.path(root, "b1.ctl"), nmfe_path = fk$nmfe,
+                                     n = 2, seed = 1, verbose = FALSE, n_cores = 1))
+  expect_equal(b$n_run, 2L)
+  expect_true(all(b$estimates$status == "successful"))
+  expect_equal(b$estimates$THETA1, rep(2.5, 2))
+  expect_equal(max_conc(fk), 1L)
+})
+
+test_that("a launcher that is not executable is reported on Linux and macOS", {
+  skip_on_os("windows")
+  root <- tempfile("nox"); dir.create(root)
+  f <- file.path(root, "nmfe76"); writeLines("#!/bin/sh", f); Sys.chmod(f, "644")
+  expect_error(.nm_launch(f, root, "r1"), "not executable")
+  expect_error(.nm_launch_bg(f, root, "r1"), "not executable")
+})

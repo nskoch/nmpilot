@@ -279,7 +279,8 @@
 #' path in the copied control stream.
 #'
 #' @param nmfe_path Full path to the nmfe executable
-#'   (e.g. `"C:/nm76g64/run/nmfe76.bat"`).
+#'   (e.g. `"C:/nm76g64/run/nmfe76.bat"` on Windows, `"/opt/nm760/run/nmfe76"`
+#'   on Linux or macOS, where it is run directly and must be executable).
 #' @param ctl_files Character vector of paths to `.ctl` files. May be absolute
 #'   paths or file names relative to `analysis_dir`.
 #' @param analysis_dir Root directory of the analysis. One run subdirectory

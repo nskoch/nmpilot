@@ -214,8 +214,19 @@
     system2("cmd.exe", args = c("/c", shQuote(nmfe_win, type = "cmd"),
                                 paste0(run_name, ".ctl"), lst))
   } else {
+    .nm_check_nmfe_exec(nmfe_path)
     system2(nmfe_path, args = c(paste0(run_name, ".ctl"), lst))
   }
+}
+
+#' On Linux and macOS, nmfe is run directly: it must be executable
+#' @noRd
+.nm_check_nmfe_exec <- function(nmfe_path) {
+  if (.Platform$OS.type != "windows" && file.exists(nmfe_path) &&
+      file.access(nmfe_path, 1L) != 0L)
+    stop("The NONMEM launcher is not executable: ", nmfe_path,
+         "\n  Make it executable (e.g. chmod +x) or check the path.", call. = FALSE)
+  invisible(TRUE)
 }
 
 #' Linear-interpolation crossings of a curve through `level`, bracketing `x_min`
@@ -251,7 +262,8 @@
 #' stripped by default; every other record is preserved byte-for-byte. Each run
 #' is written to its own sub-directory under `output_dir/runs/`.
 #'
-#' @param nmfe_path Path to the NONMEM launcher (e.g. `nmfe76.bat`).
+#' @param nmfe_path Path to the NONMEM launcher (e.g. `nmfe76.bat` on Windows,
+#'   the `nmfe76` script on Linux or macOS).
 #' @param ctl_path Path to the reference control file.
 #' @param param The parameter to profile: a `$THETA` label (matched whole-word,
 #'   case-insensitive, e.g. `"CL"`) or an index (`3`, `"3"`, or `"THETA(3)"`).

@@ -175,7 +175,8 @@ NULL
 #' @param analysis_dir Root directory of the analysis, containing the
 #'   estimation run (in a subdirectory or directly).
 #' @param nmfe_path Full path to the nmfe executable
-#'   (e.g. \code{"C:/nm76g64/run/nmfe76.bat"}).
+#'   (e.g. \code{"C:/nm76g64/run/nmfe76.bat"} on Windows,
+#'   \code{"/opt/nm760/run/nmfe76"} on Linux or macOS).
 #' @param n_sim Number of simulation replicates (default: 500).
 #' @param seed Random seed for \code{$SIMULATION} (default: 12345).
 #' @param skip_terminated Passed to \code{\link{nm_run}}. If \code{TRUE}

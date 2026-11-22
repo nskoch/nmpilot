@@ -29,7 +29,8 @@ nm_profile(
 \method{plot}{nm_profile}(x, type = c("ofv", "dofv"), ...)
 }
 \arguments{
-\item{nmfe_path}{Path to the NONMEM launcher (e.g. \code{nmfe76.bat}).}
+\item{nmfe_path}{Path to the NONMEM launcher (e.g. \code{nmfe76.bat} on Windows,
+the \code{nmfe76} script on Linux or macOS).}
 
 \item{ctl_path}{Path to the reference control file.}
 

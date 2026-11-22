@@ -35,7 +35,8 @@
 #' Nonparametric (case) bootstrap of a NONMEM model
 #'
 #' @param ctl            Path to the base control stream (.ctl).
-#' @param nmfe_path      Path to the nmfe*.bat launcher (e.g. "C:/nm74g64/run/nmfe74.bat").
+#' @param nmfe_path      Path to the NONMEM launcher: nmfe*.bat on Windows (e.g. "C:/nm74g64/run/nmfe74.bat"),
+#'                       the nmfe script on Linux or macOS (e.g. "/opt/nm760/run/nmfe76").
 #' @param n              Number of bootstrap replicates (default 500).
 #' @param ci             Confidence level(s) for the percentile CI (default 0.95; e.g. c(0.95,0.90)).
 #' @param seed           RNG seed for reproducibility (default: a random seed, stored in the result).
@@ -158,7 +159,6 @@ nm_bootstrap <- function(ctl,
   }
   if (is.null(nmfe_path) || !file.exists(nmfe_path))
     stop("A valid `nmfe_path` is required when run = TRUE.")
-  nmfe_win <- normalizePath(nmfe_path, winslash = "\\", mustWork = FALSE)
 
   # --- Resume --------------------------------------------------------------
   done <- integer(0)
@@ -214,7 +214,7 @@ nm_bootstrap <- function(ctl,
     .nm_write_replicate(raw, plan[[b]], boot_csv, sep = sep)   # renumbered IDs 1..N, no header
 
     t0     <- Sys.time()
-    lst    <- .nm_boot_launch(run_dir, boot_ctl_name, nmfe_win)
+    lst    <- .nm_boot_launch(run_dir, boot_ctl_name, nmfe_path)
     secs   <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
     status <- .nm_min_status(lst)
     ext    <- file.path(run_dir, paste0(base, "_boot.ext"))
@@ -381,14 +381,13 @@ nm_bootstrap <- function(ctl,
 #  NONMEM launch + output parsing
 # ===========================================================================
 
-# Verified launcher: setwd into the run dir, call nmfe via cmd.exe /c quoting
-# ONLY the executable (nmfe_win uses backslashes; .ctl/.lst have no spaces).
-.nm_boot_launch <- function(run_dir, boot_ctl_name, nmfe_win) {
-  lst_name <- sub("\\.ctl$", ".lst", boot_ctl_name)
-  old <- setwd(run_dir); on.exit(setwd(old))
-  suppressWarnings(system2("cmd.exe",
-    args = c("/c", shQuote(nmfe_win, type = "cmd"), boot_ctl_name, lst_name)))
-  lst <- file.path(run_dir, lst_name)
+# Run one replicate in run_dir with the package's common launcher
+# (.nm_launch: cmd.exe on Windows, nmfe called directly on Linux/macOS).
+# Returns the .lst path, or NA when NONMEM wrote none.
+.nm_boot_launch <- function(run_dir, boot_ctl_name, nmfe_path) {
+  run_name <- sub("\\.ctl$", "", boot_ctl_name)
+  suppressWarnings(.nm_launch(nmfe_path, run_dir, run_name))
+  lst <- file.path(run_dir, paste0(run_name, ".lst"))
   if (file.exists(lst)) lst else NA_character_
 }
 

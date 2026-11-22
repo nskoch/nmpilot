@@ -26,7 +26,8 @@ files are looked for in \code{run001.reg/}, \code{run001.nm7/},
 estimation run (in a subdirectory or directly).}
 
 \item{nmfe_path}{Full path to the nmfe executable
-(e.g. \code{"C:/nm76g64/run/nmfe76.bat"}).}
+(e.g. \code{"C:/nm76g64/run/nmfe76.bat"} on Windows,
+\code{"/opt/nm760/run/nmfe76"} on Linux or macOS).}
 
 \item{n_sim}{Number of simulation replicates (default: 500).}
 

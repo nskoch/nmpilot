@@ -97,6 +97,7 @@ nm_cores <- function(verbose = TRUE) {
     system2("cmd.exe", args = c("/c", basename(script)), wait = FALSE,
             stdout = log, stderr = paste0(run_name, "_nmpilot.err"))
   } else {
+    .nm_check_nmfe_exec(nmfe_path)
     script <- file.path(run_dir, paste0(run_name, "_nmpilot.sh"))
     writeLines(c("#!/bin/sh",
                  "cd \"$(dirname \"$0\")\"",

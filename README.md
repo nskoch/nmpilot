@@ -34,7 +34,10 @@ remotes::install_github("nskoch/nmpilot", build_vignettes = TRUE)
 
 Running models requires a working NONMEM installation. The package is
 developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
-`nmfe76.bat`); Linux and macOS are not tested yet. Reading outputs,
+`nmfe76.bat`). On Linux and macOS, give the path of the nmfe script (for
+example `/opt/nm760/run/nmfe76`, which must be executable): every function that
+runs NONMEM calls it directly. This was checked on Linux with a simulated nmfe,
+not yet with a real NONMEM installation. Reading outputs,
 diagnostics and plots work without NONMEM, on outputs of NONMEM 7.1 to 7.6.
 
 ## What the package covers
