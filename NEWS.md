@@ -1,4 +1,4 @@
-# nmpilot (development version)
+# nmpilot 0.8.1
 
 * Linux and macOS: `nm_bootstrap()` no longer depends on `cmd.exe`. Its
   sequential loop (`n_cores = 1`) now uses the launcher shared by `nm_run()`,
