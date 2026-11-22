@@ -1,0 +1,3 @@
+# Line endings: text files are stored with LF in the repository and
+# converted to the platform convention in the working copy.
+* text=auto
