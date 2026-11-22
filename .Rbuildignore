@@ -9,3 +9,6 @@
 ^_a_supprimer$
 ^doc$
 ^Meta$
+^_pkgdown\.yml$
+^pkgdown$
+^docs$

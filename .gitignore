@@ -24,3 +24,6 @@ dev/
 install_package.R
 /doc/
 /Meta/
+/pkgdown/index.md
+/pkgdown/assets/guide.html
+/docs/

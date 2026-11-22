@@ -1,0 +1,11 @@
+template:
+  bootstrap: 5
+
+navbar:
+  structure:
+    left: [intro, reference, articles, guide, news]
+    right: [search, github]
+  components:
+    guide:
+      text: Guide
+      href: guide.html

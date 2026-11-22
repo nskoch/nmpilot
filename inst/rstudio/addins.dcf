@@ -1,0 +1,4 @@
+Name: nmpilot task guide
+Description: Opens the nmpilot task guide: stages of a popPK analysis, the matching functions and examples of R code.
+Binding: nm_guide_addin
+Interactive: false
