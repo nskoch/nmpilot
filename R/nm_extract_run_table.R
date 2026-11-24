@@ -41,15 +41,29 @@
 
   exists_ext <- file.exists(candidate_ext)
 
+  candidate_lst <- file.path(candidate_dirs, paste0(run_name, ".lst"))
+
   if (!any(exists_ext)) {
-    stop(
-      paste0(
-        "No .ext file found for run '", run_name, "'.\n\n",
-        "Paths tried:\n - ",
-        paste(candidate_ext, collapse = "\n - ")
-      ),
-      call. = FALSE
-    )
+    # No .ext (runs of PsN or of older NONMEM versions, interrupted runs):
+    # the estimates printed in the .lst are used
+    exists_lst <- file.exists(candidate_lst)
+    if (!any(exists_lst)) {
+      stop(
+        paste0(
+          "No .ext or .lst file found for run '", run_name, "'.\n\n",
+          "Paths tried:\n - ",
+          paste(c(candidate_ext, candidate_lst), collapse = "\n - ")
+        ),
+        call. = FALSE
+      )
+    }
+    idx <- which(exists_lst)[1]
+    return(list(
+      run_dir = candidate_dirs[idx],
+      ext_file = NA_character_,
+      lst_file = candidate_lst[idx],
+      extension = extensions[idx]
+    ))
   }
 
   if (sum(exists_ext) > 1) {
@@ -69,6 +83,7 @@
   list(
     run_dir = candidate_dirs[idx],
     ext_file = candidate_ext[idx],
+    lst_file = if (file.exists(candidate_lst[idx])) candidate_lst[idx] else NA_character_,
     extension = extensions[idx]
   )
 }
@@ -543,8 +558,8 @@
       )
 
       cor_val <- vapply(seq_len(nrow(zc)), function(q) {
-        vi <- diag_map[[as.character(ic[q])]]
-        vj <- diag_map[[as.character(jc[q])]]
+        vi <- unname(diag_map[as.character(ic[q])])
+        vj <- unname(diag_map[as.character(jc[q])])
         cij <- zc$value[q]
 
         if (
@@ -687,7 +702,8 @@
 .nm_rt_flextable <- function(df,
                                        ofv,
                                        last_iteration = NA_real_,
-                                       final_row_available = FALSE) {
+                                       final_row_available = FALSE,
+                                       source = "ext") {
 
   df_display <- df %>%
     dplyr::select(
@@ -837,13 +853,16 @@
     "Final NONMEM estimation row (-1000000000): absent; last positive iteration used"
   }
 
+  footer <- if (identical(source, "lst")) {
+    c(ofv_txt,
+      "Estimates read in the .lst file (no usable .ext file)")
+  } else {
+    c(ofv_txt, iter_txt, final_txt)
+  }
+
   ft <- flextable::add_footer_lines(
     ft,
-    values = c(
-      ofv_txt,
-      iter_txt,
-      final_txt
-    )
+    values = footer
   )
 
   ft <- flextable::align(
@@ -873,11 +892,31 @@
 
 .nm_rt_export_word <- function(file_path,
                                output_file = "nonmem_results.docx",
-                               run_name = NULL) {
+                               run_name = NULL,
+                               lst_file = NA_character_) {
 
-  message("Reading .ext file: ", file_path)
+  ext_obj <- NULL
+  if (!is.na(file_path) && file.exists(file_path)) {
+    message("Reading .ext file: ", file_path)
+    ext_obj <- tryCatch(.nm_rt_parse_ext(file_path), error = function(e) {
+      if (is.na(lst_file)) stop(conditionMessage(e), call. = FALSE)
+      message("The .ext file cannot be used (", conditionMessage(e), ")")
+      NULL
+    })
+  }
 
-  ext_obj <- .nm_rt_parse_ext(file_path)
+  # No .ext, or an empty one: estimates printed in the .lst (last estimation
+  # step of the last problem with an estimation)
+  if (is.null(ext_obj)) {
+    if (is.na(lst_file) || !file.exists(lst_file))
+      stop("No usable .ext file and no .lst file.", call. = FALSE)
+    message("Reading the estimates in the .lst file: ", lst_file)
+    l <- .nm_parse_lst(lst_file)
+    ext_obj <- l$estimates
+    if (is.null(ext_obj) || is.null(ext_obj$raw) || !nrow(ext_obj$raw))
+      stop("No parameter estimates found in the .lst file: ", lst_file,
+           call. = FALSE)
+  }
 
   message("Extracting parameters...")
 
@@ -889,7 +928,8 @@
     df = params,
     ofv = ext_obj$ofv,
     last_iteration = ext_obj$last_iteration,
-    final_row_available = ext_obj$final_row_available
+    final_row_available = ext_obj$final_row_available,
+    source = ext_obj$source %||% "ext"
   )
 
   message("Building the Word document...")
@@ -991,9 +1031,13 @@
   } else {
     message("OFV: not available")
   }
-  message("Last iteration: ", ext_obj$last_iteration)
-  message("Final row -1000000000: ",
-          ifelse(ext_obj$final_row_available, "yes", "no"))
+  if (identical(ext_obj$source, "lst")) {
+    message("Source of the estimates: .lst")
+  } else {
+    message("Last iteration: ", ext_obj$last_iteration)
+    message("Final row -1000000000: ",
+            ifelse(ext_obj$final_row_available, "yes", "no"))
+  }
 
   invisible(
     list(
@@ -1031,7 +1075,8 @@
   res <- .nm_rt_export_word(
     file_path = run_info$ext_file,
     output_file = output_file,
-    run_name = run_name
+    run_name = run_name,
+    lst_file = run_info$lst_file
   )
 
   invisible(
@@ -1039,6 +1084,7 @@
       res,
       list(
         ext_file = run_info$ext_file,
+        lst_file = run_info$lst_file,
         run_dir = run_info$run_dir,
         extension = run_info$extension
       )
@@ -1054,7 +1100,10 @@
 #' Parameter table of one NONMEM run, exported to Word
 #'
 #' Reads the `.ext` file of a run and writes a Word document with the
-#' parameter estimates, 95% confidence intervals and RSE. ETA and EPS
+#' parameter estimates, 95% confidence intervals and RSE. When there is no
+#' `.ext` file, or when it holds no estimates (empty file), the estimates
+#' printed in the `.lst` file are used, as in [nm_extract_runs()]; the table
+#' footer then says so. ETA and EPS
 #' standard deviations are derived from the variances (delta method for their
 #' SE); ETA correlations are derived from the OMEGA matrix.
 #'
@@ -1080,8 +1129,9 @@
 #'   layout.
 #'
 #' @return Invisibly, a list with `flextable`, `params` (parameter table),
-#'   `ext` (parsed .ext), `output_file`, `ext_file`, `run_dir` and
-#'   `extension`.
+#'   `ext` (parsed .ext, or estimates read in the .lst, with
+#'   `source = "lst"`), `output_file`, `ext_file` (`NA` without .ext),
+#'   `lst_file`, `run_dir` and `extension`.
 #'
 #' @examples
 #' \dontrun{

@@ -31,12 +31,16 @@ layout.}
 }
 \value{
 Invisibly, a list with \code{flextable}, \code{params} (parameter table),
-\code{ext} (parsed .ext), \code{output_file}, \code{ext_file}, \code{run_dir} and
-\code{extension}.
+\code{ext} (parsed .ext, or estimates read in the .lst, with
+\code{source = "lst"}), \code{output_file}, \code{ext_file} (\code{NA} without .ext),
+\code{lst_file}, \code{run_dir} and \code{extension}.
 }
 \description{
 Reads the \code{.ext} file of a run and writes a Word document with the
-parameter estimates, 95\% confidence intervals and RSE. ETA and EPS
+parameter estimates, 95\% confidence intervals and RSE. When there is no
+\code{.ext} file, or when it holds no estimates (empty file), the estimates
+printed in the \code{.lst} file are used, as in \code{\link[=nm_extract_runs]{nm_extract_runs()}}; the table
+footer then says so. ETA and EPS
 standard deviations are derived from the variances (delta method for their
 SE); ETA correlations are derived from the OMEGA matrix.
 }

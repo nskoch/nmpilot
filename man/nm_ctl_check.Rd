@@ -26,11 +26,18 @@ Looks for inconsistencies that can be detected without running NM-TRAN:
 are never used), data items used in the code but absent from \verb{$INPUT},
 an active \code{RATE} with first-order absorption, and the requirements of the
 M3 method (BQL records not ignored, LLOQ defined, Laplace estimation).
+It also reports four errors refused by NM-TRAN: \code{TOL} missing with a
+general ADVAN (6, 8, 9, 13-18), an unknown \code{METHOD} (FO is written
+\code{METHOD=ZERO}), a \code{THETA} initial estimate of 0 that is not fixed, a
+\verb{$TABLE} item written after an option of the same line (items written
+on a line below the options are accepted), and \code{Y} with \code{EPS}/\code{ERR} defined
+only in \code{IF} blocks testing \code{ICALL.EQ.4} (simulation code for NM-TRAN).
 }
 \details{
 Declarations are counted over all \verb{$THETA}, \verb{$OMEGA} and \verb{$SIGMA}
 records, including values written on the record line, \code{BLOCK(n)},
-\code{DIAGONAL(n)}, \code{SAME(k)} and \verb{$ABBR REPLACE} lists.
+\code{DIAGONAL(n)}, \code{SAME(k)} and \verb{$ABBR REPLACE} lists and ranges
+(\code{ETA(4,6,8)}, \code{ETA(,3:32)}).
 
 This check does not replace NM-TRAN: it catches common mistakes early.
 }

@@ -81,8 +81,11 @@
 # Default initial values of the structural THETAs.
 .nm_ctl_theta_default <- function(p) switch(p,
   "CL" = 5, "V" = 50, "V1" = 50, "VMAX" = 5, "KM" = 2,
-  "Q" = 5, "Q2" = 5, "Q3" = 5, "Q4" = 5,
-  "V2" = 100, "V3" = 200, "V4" = 200,
+  # the two peripheral compartments of ADVAN12 (Q3/V3, Q4/V4) get different
+  # rate constants: equal ones are refused by PREDPP ("K32, OR K42 IS TOO
+  # CLOSE TO AN EIGENVALUE")
+  "Q" = 5, "Q2" = 5, "Q3" = 5, "Q4" = 2,
+  "V2" = 100, "V3" = 200, "V4" = 400,
   "KA" = 1, "K0" = 1, "MTT" = 2, "DUR" = 2, 1)
 
 # Absorption parameters get a larger default IIV.
@@ -387,7 +390,9 @@ print.nm_ctl <- function(x, ...) {
 #'   dataset), `MTT` (mean transit time).
 #'
 #' Combinations without an analytic solution (Michaelis-Menten elimination,
-#' transit compartments) are written with `$DES` and `ode_subroutine`.
+#' transit compartments) are written with `$DES` and `ode_subroutine`, with
+#' `TOL=9` on the `$SUBROUTINES` line (NM-TRAN requires `TOL` for these
+#' subroutines).
 #' Residual error uses `ERR(1)` (proportional) and `ERR(2)` (additive); the
 #' component absent from the chosen model is fixed to 0.
 #'
@@ -408,11 +413,12 @@ print.nm_ctl <- function(x, ...) {
 #' @param elimination `"linear"` or `"michaelis-menten"`.
 #' @param dynamics `"analytic"` or `"ode"`. Analytic is used only when an
 #'   `ADVAN` exists for the model; otherwise ODE is used.
-#' @param ode_subroutine `"ADVAN13"` or `"ADVAN6"`.
+#' @param ode_subroutine `"ADVAN13"` or `"ADVAN6"`, written with `TOL=9`.
 #' @param error `"additive"`, `"proportional"` or `"combined"`.
 #' @param method Estimation method: `"FO"`, `"FOCE"`, `"FOCEI"`,
 #'   `"LAPLACE"`, `"LAPLACEI"`, `"IMP"`, `"ITS"`, `"SAEM"` or `"BAYES"`.
-#'   `$COVARIANCE` is added for FO, FOCE and Laplace methods.
+#'   `$COVARIANCE` is added for FO, FOCE and Laplace methods. FO is written
+#'   `METHOD=ZERO` (NONMEM does not accept `METHOD=FO`).
 #' @param theta_init Named numeric vector of initial values; defaults are
 #'   used for the other parameters.
 #' @param theta_lower,theta_upper Named numeric vectors of bounds. The lower
@@ -615,9 +621,10 @@ nm_write_ctl <- function(file = NULL,
   if (dynamics == "analytic" && st$linear) {
     advan_line <- .nm_ctl_advan(st)
     if (!is.null(advan_line)) use_ode <- FALSE
-    else advan_line <- paste("$SUBROUTINES", ode_subroutine, "; ODE: no analytic solution for this model")
+    else advan_line <- paste("$SUBROUTINES", ode_subroutine, "TOL=9 ; ODE: no analytic solution for this model")
   } else {
-    advan_line <- trimws(paste("$SUBROUTINES", ode_subroutine,
+    # NM-TRAN requires TOL with ADVAN6 and ADVAN13 (error 145)
+    advan_line <- trimws(paste("$SUBROUTINES", ode_subroutine, "TOL=9",
                                if (!st$linear) "; ODE required for Michaelis-Menten" else ""))
   }
 
@@ -649,7 +656,8 @@ nm_write_ctl <- function(file = NULL,
   # ---- $ESTIMATION / $COVARIANCE -------------------------------------------------
   base_cl <- " MAXEVAL=9999 SIGDIGITS=3 PRINT=5"
   est_line <- switch(method,
-    "FO"       = paste0("$ESTIMATION METHOD=FO", if (length(eta_params)) " POSTHOC" else "", base_cl),
+    # NONMEM knows METHOD=ZERO (or 0), not METHOD=FO (NM-TRAN error 287)
+    "FO"       = paste0("$ESTIMATION METHOD=ZERO", if (length(eta_params)) " POSTHOC" else "", base_cl),
     "FOCE"     = paste0("$ESTIMATION METHOD=COND", base_cl),
     "FOCEI"    = paste0("$ESTIMATION METHOD=COND INTERACTION", base_cl),
     "LAPLACE"  = paste0("$ESTIMATION METHOD=COND LAPLACE", base_cl),

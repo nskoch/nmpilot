@@ -87,8 +87,9 @@
   if (!length(grep("^\\s*#METH:", L)) && !length(ps) && nmtran_err) return("nmtran_error")
   if (nmtran_err && !has_obj) return("nmtran_error")
   # simulation-only run ($SIMULATION ONLYSIM): no estimation step at all, the
-  # simulation was performed and NONMEM printed its final lines
-  if (!length(grep("^\\s*#METH:", L)) &&
+  # simulation was performed and NONMEM printed its final lines (NONMEM 7.1
+  # prints an empty "#METH:" line after a simulation-only problem)
+  if (!length(grep("^\\s*#METH:\\s*\\S", L)) &&
       any(grepl("SIMULATION STEP PERFORMED", L, fixed = TRUE)) &&
       any(grepl("^\\s*(#CPUT:|Stop Time:)", L))) return("simulation")
   if (has_obj && is.finite(ofv)) return("completed")
@@ -129,13 +130,22 @@
   if (length(v)) out <- c(out, stats::setNames(v, paste0("THETA", seq_along(v))))
 
   mat <- function(S, lab, pre) {
-    rows <- list(); cur <- NA_integer_
+    # Beyond 12 ETAs, NONMEM wraps each row: the "+" line holds the first 12
+    # values and the next lines (without "+") the others (bbr run acop-iov,
+    # 62 ETAs). These lines are read while they hold numbers only.
+    rows <- list(); cur <- NA_integer_; in_row <- FALSE
+    num_only <- "^\\s*((-?[0-9]+\\.[0-9]+E[+-][0-9]+|\\.{5,})\\s*)+$"
     for (ln in S) {
       if (grepl(paste0("^\\s*", lab, "[0-9]+\\s*$"), ln)) {
         cur <- as.integer(sub(paste0("^\\s*", lab), "", trimws(ln)))
-        rows[[as.character(cur)]] <- numeric(0)
+        rows[[as.character(cur)]] <- numeric(0); in_row <- FALSE
       } else if (grepl("^\\+", ln) && !is.na(cur)) {
         rows[[as.character(cur)]] <- c(rows[[as.character(cur)]], tok2num(.nm_lst_num_tokens(ln)))
+        in_row <- TRUE
+      } else if (in_row && grepl(num_only, ln)) {
+        rows[[as.character(cur)]] <- c(rows[[as.character(cur)]], tok2num(.nm_lst_num_tokens(ln)))
+      } else {
+        in_row <- FALSE
       }
     }
     res <- c()
@@ -147,7 +157,8 @@
     }
     res
   }
-  out <- c(out, mat(seg(i_om), "ETA", "OMEGA"), mat(seg(i_si), "EPS", "SIGMA"))
+  # from the 10th element on, NONMEM prints the labels as ET10, EP10...
+  out <- c(out, mat(seg(i_om), "ETA?", "OMEGA"), mat(seg(i_si), "EPS?", "SIGMA"))
   out
 }
 
@@ -159,7 +170,9 @@
   if (!length(i_est)) return(NULL)
   i_se  <- hdr("STANDARD ERROR OF ESTIMATE")
   i_next <- sort(c(hdr("COVARIANCE MATRIX OF ESTIMATE"), hdr("STANDARD ERROR OF ESTIMATE"),
-                   hdr("CORRELATION MATRIX OF ESTIMATE"), hdr("#METH:"), length(Ls) + 1L))
+                   hdr("CORRELATION MATRIX OF ESTIMATE"), hdr("#METH:"),
+                   # tables printed in the .lst (NONMEM V/VI and $TABLE PRINT)
+                   hdr("^1?\\s*TABLE NO\\."), length(Ls) + 1L))
   blk <- function(i) {
     if (!length(i)) return(character(0))
     e <- i_next[i_next > i[1]][1]

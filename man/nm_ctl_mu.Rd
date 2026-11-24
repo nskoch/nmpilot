@@ -22,7 +22,9 @@ every parameter written in a supported form.}
 
 \item{mode}{\code{"readable"} (\code{MU_m = LOG(THETA(n))}, THETAs unchanged) or
 \code{"linear"} (\code{MU_m = THETA(n)}, the THETA initial value and bounds are
-log-transformed; requires one value per line in \verb{$THETA}).}
+log-transformed; requires one value per line in \verb{$THETA}; an initial
+value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses an
+initial estimate of 0 unless it is fixed).}
 
 \item{file}{Output path. If \code{NULL} (default), nothing is written.}
 

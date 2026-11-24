@@ -1,3 +1,112 @@
+# nmpilot (development version)
+
+Reading of real outputs of NONMEM 7.1 to 7.6 (point A.3): a sample of 43 runs
+(7.1, 7.2, 7.3, 7.4.1, 7.6, and a few NONMEM V/VI outputs; models with and
+without `$DES`, ADVAN1 to ADVAN13) was read with `nm_extract_runs()`; the
+following problems were found and fixed. NONMEM 7.5 was not checked (no
+output of this version was available).
+
+* `nm_extract_runs()` failed for a whole directory ("subscript out of
+  bounds") when a run without `.ext` had 10 ETAs or more: from the 10th
+  element on, NONMEM prints the rows of the matrices as `ET10`, `EP10`, which
+  were not recognised. These labels are now read, and a correlation whose
+  variance is missing is reported as `NA` instead of stopping
+  `nm_extract_runs()` and `nm_extract_run_table()`.
+* A simulation-only run of NONMEM 7.1, which prints an empty `#METH:` line,
+  was reported as interrupted; it is now reported as a simulation.
+* `nm_ctl_check()` reads the use of `THETA(n)`, `ETA(n)`, `EPS(n)`, `CMT`,
+  `EVID`, `MDV` and `RATE` in the code records only: an initial estimate such
+  as `$THETA (18.3 FIXED)` was taken for a use of `THETA(18)` ("used but not
+  declared"), and a title such as `$PROBLEM ... 1 CMT` for a use of `CMT`.
+  With PREDPP (`$SUBROUTINES`), `EVID` and `MDV` used in the code without
+  being in `$INPUT` are no longer reported, as NM-TRAN supplies these items.
+  `RATE` with `KA` is no longer reported when a zero-order input into any
+  compartment (`D2`, `R3`...) is modelled.
+* NONMEM V/VI outputs: the tables printed in the `.lst` were read as
+  parameter estimates, and the OFV, printed about ten lines below its banner,
+  was not found. Both are now read.
+* `nm_extract_runs()` reads the number of observations (`n_obs`) in the
+  `.lst` ("TOT. NO. OF OBS RECS") when there is no `.smr`, which is the case
+  of the runs launched with `nm_run()` or nmfe without Wings for NONMEM; the
+  BIC is then computed as well. On the 43 runs of the sample, the value read
+  in the `.lst` equals the one of the `.smr` whenever both exist.
+* `nm_extract_run_table()` no longer requires a `.ext` file: when it is
+  missing or holds no estimates (empty file), the estimates printed in the
+  `.lst` are used, as in `nm_extract_runs()`, and the table footer says so.
+  This covers the runs of older NONMEM versions or of PsN without `.ext`
+  (16 of the 43 runs of the sample have none). The `.lst` prints three
+  significant digits: on three runs read both ways, the estimates differ by
+  less than 0.4 % and the OFV is the same.
+* A model written with `$DES` (the example run2 rewritten with ADVAN13) was
+  run with NONMEM 7.6 through the whole chain: estimation (same OFV and
+  estimates as run2), `nm_extract_runs()`, `nm_extract_run_table()`,
+  `nm_vpc_ctl()` and `nm_vpc()`, `nm_profile()`, `nm_bootstrap()` and the
+  derivatives run of `nm_derivatives_ctl()`.
+* Control streams written by `nm_write_ctl()`, `nm_ctl_mu()`, `nm_ctl_iov()`
+  and `nm_ctl_m3()` were run through NONMEM 7.6 (75 runs: every structure,
+  error model, estimation method and transformation; action 26). Six
+  errors were found and fixed:
+  - `$DES` models (`ADVAN13`, `ADVAN6`) are written with `TOL=9`, required by
+    NM-TRAN (error 145);
+  - FO is written `METHOD=ZERO` instead of `METHOD=FO` (error 287);
+  - `nm_ctl_m3()` adds `M3LLOQ`, `M3SD`, `M3PBQL` before the options of
+    `$TABLE`, not after `FILE=` (error 20);
+  - `nm_ctl_m3()` writes both definitions of `Y` in one `IF/THEN/ELSE`
+    block, the M3 quantities being computed before it. The former code
+    defined `Y` with the residual error in a block written
+    `IF (BQL.EQ.0.OR.ICALL.EQ.4) THEN`, which NM-TRAN 7.6 refused (error 122,
+    "EPS VARIABLES REQUIRED WITH POPULATION DATA", and warning 53): a block
+    testing `ICALL.EQ.4` is simulation code for NM-TRAN. The censoring flag
+    `M3CENS` keeps the test of `ICALL` out of the blocks defining `Y`. The
+    four M3 control streams then ran with NONMEM 7.6 (estimation with
+    LAPLACE converged, covariance step completed);
+  - `nm_ctl_mu(mode = "linear")` writes 0.0001 instead of log(1) = 0 for a
+    THETA whose initial value is 1 (error 260: initial estimate of 0);
+  - three-compartment models with first-order absorption (ADVAN12): the
+    default initial values of the second peripheral compartment are now
+    Q4 = 2 and V4 = 400 (they were equal to Q3 and V3, which PREDPP refuses:
+    "K32, OR K42 IS TOO CLOSE TO AN EIGENVALUE").
+* `nm_ctl_check()` reports these NM-TRAN errors: `TOL` missing with a
+  general ADVAN, unknown `METHOD`, `THETA` initial estimate of 0 not fixed,
+  `$TABLE` item written after the options, `Y` with `EPS`/`ERR` defined only
+  in `IF` blocks testing `ICALL.EQ.4`. No false alarm on the 38 real
+  control streams of the sample nor on the example project.
+* New tests for these cases and for models written with `$DES`
+  (`test-lst-versions.R`, `test-des.R`, `test-nmtran-errors.R`), built from
+  the example run or written by hand.
+
+* Tests on control streams and outputs not written by nmpilot (point A.4):
+  seven runs of the package bbr (Metrum Research Group, MIT licence; NONMEM
+  7.4.4) are copied in `tests/testthat/fixtures/public/bbr`, with their
+  licence and source. They cover `$DES`, `$PRIOR`, `MTIME`, BAYES, a
+  FOCEI > BAYES > IMP chain, `$SIMULATION ONLYSIM`, `$ABBR REPLACE` with 62
+  ETAs and `$MIX`. The new tests check `nm_ctl_check()`,
+  `nm_identify_parameters()`, the reading of the `.lst`, `nm_extract_runs()`
+  and `nm_convert_ctl()` on these files. They showed six problems, fixed:
+  * `nm_ctl_check()` reported as an error `$TABLE` items written on a line
+    below the options, which NM-TRAN accepts; only an item written after an
+    option of the same line is reported now.
+  * `$ABBR REPLACE` with a range (`ETA(OCC_CL)=ETA(,3:32)`, also
+    `ETA(3 TO 32 BY 2)`): the ETAs were reported as unused by
+    `nm_ctl_check()` and not linked to their parameter by
+    `nm_identify_parameters()`. The names given by `$ABBR REPLACE` (ranges
+    and lists) are now replaced by their elements, so that IOV ETAs are
+    linked to their parameter. `nm_identify_parameters()` also counts the
+    ETAs of `$OMEGA BLOCK(n) SAME(k)` (k blocks, not one).
+  * Shrinkage read in the `.lst`: beyond 10 ETAs, the values continued on the
+    following lines were ignored (20 values read out of 62).
+  * Without `.ext`, the OMEGA matrix of the `.lst` was misread beyond 12
+    ETAs (rows wrapped by NONMEM): 12 variances read out of 62.
+  * `nm_identify_parameters()`: a covariate effect written in a helper
+    variable added on the log scale (`CLEGFR = LOG(EGFR/90)*THETA(6)`,
+    `CL = EXP(THETA(3) + CLEGFR + ETA(3))`) was taken for a typical value.
+  * `nm_identify_parameters()`: a THETA present in every branch of a
+    conditional definition (`IF(PATIENT.EQ.0) KOUT = EXP(THETA(1) + ETA(1))`,
+    `IF(PATIENT.EQ.1) KOUT = EXP(THETA(1) + ETA(2))`) was taken for a
+    covariate effect; it is the typical value. The THETAs of `MTIME(n)` and
+    of the mixture probabilities `P(n)` of `$MIX` are returned in the new
+    element `special_theta` instead of `unmapped_theta`.
+
 # nmpilot 0.8.1
 
 * Linux and macOS: `nm_bootstrap()` no longer depends on `cmd.exe`. Its

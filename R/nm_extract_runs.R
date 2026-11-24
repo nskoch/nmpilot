@@ -905,8 +905,8 @@ print.nm_runs <- function(x, ...) {
       )
 
       cor_val <- vapply(seq_len(nrow(zc)), function(q) {
-        vi <- diag_map[[as.character(ic[q])]]
-        vj <- diag_map[[as.character(jc[q])]]
+        vi <- unname(diag_map[as.character(ic[q])])
+        vj <- unname(diag_map[as.character(jc[q])])
         cij <- zc$value[q]
         if (
           is.null(vi) || is.null(vj) ||
@@ -1075,7 +1075,8 @@ print.nm_runs <- function(x, ...) {
   if (is.na(ofv)) {
     i <- stringr::str_which(L, "(?i)MINIMUM VALUE OF OBJECTIVE FUNCTION")
     if (length(i)) {
-      for (k in i[1]:min(i[1] + 3L, length(L))) {
+      # NONMEM V/VI print the value about ten lines below the banner
+      for (k in i[1]:min(i[1] + 12L, length(L))) {
         num <- stringr::str_extract(L[k], "-?\\d+\\.\\d+")
         if (!is.na(num)) {
           ofv <- as.numeric(num)
@@ -1190,8 +1191,18 @@ print.nm_runs <- function(x, ...) {
     n_est = st$n_est,
     est_methods = if (st$n_est) paste(vapply(st$methods, .nm_est_code, ""), collapse = " > ") else NA_character_,
     run_state = .nm_lst_run_state(L_all, st, ofv),
-    estimates = .nm_lst_estimates(L, ofv)
+    estimates = .nm_lst_estimates(L, ofv),
+    n_obs = .nm_lst_n_obs(Lp)
   )
+}
+
+# Number of observation records printed by NONMEM in the problem header
+# ("TOT. NO. OF OBS RECS:"), used when there is no .smr (runs launched with
+# nmfe or nm_run, without Wings for NONMEM).
+.nm_lst_n_obs <- function(Lp) {
+  m <- stringr::str_match(Lp, "(?i)TOT\\.\\s*NO\\.\\s*OF\\s*OBS\\s*RECS:\\s*([0-9]+)")[, 2]
+  m <- m[!is.na(m)]
+  if (length(m)) as.integer(m[1]) else NA_integer_
 }
 
 
@@ -1199,10 +1210,18 @@ print.nm_runs <- function(x, ...) {
   idx <- stringr::str_which(L, paste0("(?i)", key))
   if (!length(idx)) return(numeric(0))
 
+  # Beyond 10 ETAs, NONMEM continues the values on the following lines, which
+  # carry no label (bbr run acop-iov: 62 ETAs on 7 lines). These lines are
+  # read as long as they hold numbers only.
   num_of <- function(i) {
+    j <- i
+    while (j < length(L) &&
+           grepl("^\\s+[-+]?[0-9.]+([EeDd][-+]?[0-9]+)?(\\s+[-+]?[0-9.]+([EeDd][-+]?[0-9]+)?)*\\s*$",
+                 L[j + 1L]))
+      j <- j + 1L
     v <- suppressWarnings(as.numeric(
       stringr::str_extract_all(
-        L[i],
+        paste(L[i:j], collapse = " "),
         "-?\\d+\\.?\\d+([eE][+-]?\\d+)?"
       )[[1]]
     ))
@@ -1435,6 +1454,7 @@ print.nm_runs <- function(x, ...) {
   }
 
   n_obs <- if (!is.null(s)) s$n_obs else NA_integer_
+  if (is.na(n_obs %||% NA_integer_) && !is.null(l)) n_obs <- l$n_obs %||% NA_integer_
 
   aic <- if (is.finite(ofv) && n_par > 0) {
     ofv + 2 * n_par

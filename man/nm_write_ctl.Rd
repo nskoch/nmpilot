@@ -69,13 +69,14 @@ from \code{input}; without \code{input}, standard names are used.}
 \item{dynamics}{\code{"analytic"} or \code{"ode"}. Analytic is used only when an
 \code{ADVAN} exists for the model; otherwise ODE is used.}
 
-\item{ode_subroutine}{\code{"ADVAN13"} or \code{"ADVAN6"}.}
+\item{ode_subroutine}{\code{"ADVAN13"} or \code{"ADVAN6"}, written with \code{TOL=9}.}
 
 \item{error}{\code{"additive"}, \code{"proportional"} or \code{"combined"}.}
 
 \item{method}{Estimation method: \code{"FO"}, \code{"FOCE"}, \code{"FOCEI"},
 \code{"LAPLACE"}, \code{"LAPLACEI"}, \code{"IMP"}, \code{"ITS"}, \code{"SAEM"} or \code{"BAYES"}.
-\verb{$COVARIANCE} is added for FO, FOCE and Laplace methods.}
+\verb{$COVARIANCE} is added for FO, FOCE and Laplace methods. FO is written
+\code{METHOD=ZERO} (NONMEM does not accept \code{METHOD=FO}).}
 
 \item{theta_init}{Named numeric vector of initial values; defaults are
 used for the other parameters.}
@@ -165,7 +166,9 @@ dataset), \code{MTT} (mean transit time).
 }
 
 Combinations without an analytic solution (Michaelis-Menten elimination,
-transit compartments) are written with \verb{$DES} and \code{ode_subroutine}.
+transit compartments) are written with \verb{$DES} and \code{ode_subroutine}, with
+\code{TOL=9} on the \verb{$SUBROUTINES} line (NM-TRAN requires \code{TOL} for these
+subroutines).
 Residual error uses \code{ERR(1)} (proportional) and \code{ERR(2)} (additive); the
 component absent from the chosen model is fixed to 0.
 }

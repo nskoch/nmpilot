@@ -1,6 +1,6 @@
 # Helpers that write small synthetic NONMEM files in a temporary directory.
-# Fixtures are created at test time (no binary or NONMEM output stored in the
-# repository).
+# Fixtures are created at test time. The only NONMEM outputs stored in the
+# repository are public ones (fixtures/public, see the README of each source).
 
 write_ctl <- function(...) {
   path <- tempfile(fileext = ".ctl")

@@ -22,7 +22,10 @@ parameter is computed from, e.g. \code{"V"} for \code{S2 = V} or \code{"CL, V"} 
 \code{mapping_detail} and \code{mapping_detail_all} (one row per PK parameter /
 THETA or ETA association; \code{depth} is the number of assignment steps
 between the THETA/ETA and the parameter, 0 when it appears directly in
-its definition), \code{residual_error}, \code{theta}, \code{omega},
+its definition), \code{residual_error}, \code{special_theta} (THETAs of model
+event times \code{MTIME(n)} in \verb{$PK} and of mixture probabilities \code{P(n)} in
+\verb{$MIX}, with their role \code{model_event_time} or \code{mixture_probability};
+they are not counted in \code{unmapped_theta}), \code{theta}, \code{omega},
 \code{omega_elements} (variances and BLOCK covariances), \code{unmapped_theta},
 \code{unmapped_omega}, \code{missing_theta_declaration},
 \code{missing_omega_declaration} and \code{label_substitutions} (the labels

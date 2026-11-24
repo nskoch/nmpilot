@@ -259,76 +259,84 @@
     if (length(vals) < need) vals <- c(vals, rep(NA_real_, need - length(vals)))
     if (length(vals) > need) vals <- vals[seq_len(need)]
 
-    block_id <- eta_offset + 1L
-    eta_ids <- eta_offset + seq_len(n)
+    # BLOCK(n) SAME(k): k blocks identical to the previous one (bbr run
+    # acop-iov: $OMEGA BLOCK(1) SAME(29) stands for 29 ETAs).
+    reps <- 1L
+    sm <- regmatches(code, regexec("\\bSAME\\s*\\(\\s*([0-9]+)\\s*\\)", code,
+                                   ignore.case = TRUE, perl = TRUE))[[1]]
+    if (length(sm) == 2L) reps <- max(1L, as.integer(sm[2]))
+    for (rep_k in seq_len(reps)) {
+      block_id <- eta_offset + 1L
+      eta_ids <- eta_offset + seq_len(n)
 
-    if (hdr$type == "DIAGONAL") {
-      for (a in seq_len(n)) {
-        rr <- rr + 1L
-        eta_rows[[rr]] <- data.frame(
-          eta = eta_ids[a],
-          omega_label = if (a <= length(comments)) .nm_ip_label_clean(comments[a]) else NA_character_,
-          omega_initial = vals[a],
-          omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-          omega_structure = "DIAGONAL",
-          block_id = block_id,
-          block_position = a,
-          omega_raw = paste(raws, collapse = " | "),
-          stringsAsFactors = FALSE
-        )
-        er <- er + 1L
-        element_rows[[er]] <- data.frame(
-          eta_i = eta_ids[a], eta_j = eta_ids[a],
-          element_type = "variance", initial = vals[a],
-          fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-          structure = "DIAGONAL", block_id = block_id,
-          raw = paste(raws, collapse = " | "), stringsAsFactors = FALSE
-        )
-      }
-    } else {
-      # BLOCK values are lower triangular row-wise:
-      # (1,1), (2,1), (2,2), (3,1), (3,2), (3,3), ...
-      pos <- 0L
-      diag_values <- rep(NA_real_, n)
-      diag_fixed <- rep(FALSE, n)
-
-      for (a in seq_len(n)) {
-        for (b in seq_len(a)) {
-          pos <- pos + 1L
-          isdiag <- a == b
-          if (isdiag) diag_values[a] <- vals[pos]
+      if (hdr$type == "DIAGONAL") {
+        for (a in seq_len(n)) {
+          rr <- rr + 1L
+          eta_rows[[rr]] <- data.frame(
+            eta = eta_ids[a],
+            omega_label = if (a <= length(comments)) .nm_ip_label_clean(comments[a]) else NA_character_,
+            omega_initial = vals[a],
+            omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
+            omega_structure = "DIAGONAL",
+            block_id = block_id,
+            block_position = a,
+            omega_raw = paste(raws, collapse = " | "),
+            stringsAsFactors = FALSE
+          )
           er <- er + 1L
           element_rows[[er]] <- data.frame(
-            eta_i = eta_ids[a], eta_j = eta_ids[b],
-            element_type = if (isdiag) "variance" else "covariance",
-            initial = vals[pos],
+            eta_i = eta_ids[a], eta_j = eta_ids[a],
+            element_type = "variance", initial = vals[a],
             fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-            structure = "BLOCK", block_id = block_id,
+            structure = "DIAGONAL", block_id = block_id,
             raw = paste(raws, collapse = " | "), stringsAsFactors = FALSE
+          )
+        }
+      } else {
+        # BLOCK values are lower triangular row-wise:
+        # (1,1), (2,1), (2,2), (3,1), (3,2), (3,3), ...
+        pos <- 0L
+        diag_values <- rep(NA_real_, n)
+        diag_fixed <- rep(FALSE, n)
+
+        for (a in seq_len(n)) {
+          for (b in seq_len(a)) {
+            pos <- pos + 1L
+            isdiag <- a == b
+            if (isdiag) diag_values[a] <- vals[pos]
+            er <- er + 1L
+            element_rows[[er]] <- data.frame(
+              eta_i = eta_ids[a], eta_j = eta_ids[b],
+              element_type = if (isdiag) "variance" else "covariance",
+              initial = vals[pos],
+              fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
+              structure = "BLOCK", block_id = block_id,
+              raw = paste(raws, collapse = " | "), stringsAsFactors = FALSE
+            )
+          }
+        }
+
+        # Comments in BLOCK records are not standardized. Associate comments from
+        # rows preferentially to the corresponding ETA dimension when available.
+        block_comments <- unique(stats::na.omit(vapply(comments, .nm_ip_label_clean, character(1))))
+        for (a in seq_len(n)) {
+          lab <- if (length(block_comments) >= a) block_comments[a] else NA_character_
+          rr <- rr + 1L
+          eta_rows[[rr]] <- data.frame(
+            eta = eta_ids[a], omega_label = lab,
+            omega_initial = diag_values[a],
+            omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
+            omega_structure = "BLOCK",
+            block_id = block_id,
+            block_position = a,
+            omega_raw = paste(raws, collapse = " | "),
+            stringsAsFactors = FALSE
           )
         }
       }
 
-      # Comments in BLOCK records are not standardized. Associate comments from
-      # rows preferentially to the corresponding ETA dimension when available.
-      block_comments <- unique(stats::na.omit(vapply(comments, .nm_ip_label_clean, character(1))))
-      for (a in seq_len(n)) {
-        lab <- if (length(block_comments) >= a) block_comments[a] else NA_character_
-        rr <- rr + 1L
-        eta_rows[[rr]] <- data.frame(
-          eta = eta_ids[a], omega_label = lab,
-          omega_initial = diag_values[a],
-          omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-          omega_structure = "BLOCK",
-          block_id = block_id,
-          block_position = a,
-          omega_raw = paste(raws, collapse = " | "),
-          stringsAsFactors = FALSE
-        )
-      }
+      eta_offset <- eta_offset + n
     }
-
-    eta_offset <- eta_offset + n
     i <- max(j, i + 1L)
   }
 
@@ -927,6 +935,42 @@
   FALSE
 }
 
+# TRUE when the THETA is only found in helper variables defined as a single
+# product of the THETA and of covariates (no sum, no other THETA, no ETA), and
+# each such helper is an additive term of a sum of at least two terms in
+# another assignment (inside EXP() or not): the helper is then a covariate
+# term on the scale of that sum. A product such as CL = THETA(1)*(WT/70)**0.75
+# is not concerned, because CL is not an additive term elsewhere.
+.nm_ip_theta_logscale_helper <- function(ctx, theta_index, pk, pk_resolved,
+                                         is_cov = .nm_ip_known_data_like) {
+  if (!nrow(ctx)) return(FALSE)
+  reserved <- c("THETA", "ETA", "ERR", "EPS", "EXP", "LOG", "LOG10", "SQRT",
+                "ABS", "MIN", "MAX")
+  pk_defs <- unique(pk$lhs)
+  for (q in seq_len(nrow(ctx))) {
+    rhs <- ctx$rhs[q]; lhs <- toupper(ctx$lhs[q])
+    if (length(.nm_ip_additive_terms(rhs)) != 1L) return(FALSE)
+    if (grepl("(?<![A-Za-z])ETA\\s*\\(", rhs, ignore.case = TRUE, perl = TRUE)) return(FALSE)
+    if (!identical(unique(.nm_ip_split_ints(ctx$theta_direct[q])), as.integer(theta_index))) return(FALSE)
+    vars <- toupper(regmatches(rhs, gregexpr("\\b[A-Za-z][A-Za-z0-9_]*\\b", rhs, perl = TRUE))[[1]])
+    vars <- setdiff(vars, reserved)
+    expanded <- c(vars, .nm_ip_rhs_vars(intersect(vars, pk_resolved$lhs), pk_resolved))
+    terminal <- setdiff(unique(expanded), pk_defs)
+    if (!length(terminal) || !any(vapply(terminal, is_cov, logical(1)))) return(FALSE)
+    others <- pk$rhs[toupper(pk$lhs) != lhs]
+    term_of_sum <- any(vapply(others, function(r) {
+      groups <- c(r, vapply(.nm_ip_exp_terms(r), function(e)
+        sub("^[^(]*\\(", "", sub("\\)\\s*$", "", e)), character(1)))
+      any(vapply(groups, function(g) {
+        tt <- toupper(trimws(.nm_ip_additive_terms(g)))
+        length(tt) >= 2L && lhs %in% tt
+      }, logical(1)))
+    }, logical(1)))
+    if (!term_of_sum) return(FALSE)
+  }
+  TRUE
+}
+
 .nm_ip_theta_role_for_parameter <- function(theta_index, parameter, pk, pk_resolved, error,
                                             is_cov = .nm_ip_known_data_like) {
   err_hit <- if (nrow(error)) any(vapply(error$theta_direct,
@@ -955,6 +999,13 @@
   if (any(vapply(ctx$rhs, .nm_ip_theta_saturable_covariate, logical(1),
                  theta_index = theta_index, pk_defs = unique(pk$lhs),
                  pk_resolved = pk_resolved, is_cov = is_cov)))
+    return("covariate_effect")
+
+  # Covariate effect written in a helper variable that is added on the log
+  # scale, e.g. (bbr run 200)
+  #   CLEGFR = LOG(EGFR/90)*THETA(6)
+  #   CL = EXP(THETA(3) + CLWT + CLEGFR + ETA(3))   -> THETA(6) covariate
+  if (.nm_ip_theta_logscale_helper(ctx, theta_index, pk, pk_resolved, is_cov))
     return("covariate_effect")
 
   # Conditional covariate effect: the THETA only appears in assignments made
@@ -987,6 +1038,16 @@
       constant_branch <- any(same_lhs & pk$line_order != ctx$line_order[q] &
                                grepl("^\\s*[-+]?[0-9.]+([EeDd][-+]?[0-9]+)?\\s*$", pk$rhs))
       not_reference <- has_unconditional || !is_first_definition || constant_branch
+      # A THETA that also appears in the reference definition (another line)
+      # is that reference, whatever the branch (bbr run 1001:
+      # IF(PATIENT.EQ.0) KOUT = EXP(THETA(1) + ETA(1)) and
+      # IF(PATIENT.EQ.1) KOUT = EXP(THETA(1) + ETA(2)): THETA(1) is typical).
+      ref_rows <- if (has_unconditional) which(same_lhs & !pk$conditional)
+                  else which(same_lhs & pk$line_order == min(pk$line_order[same_lhs]))
+      ref_rows <- ref_rows[pk$line_order[ref_rows] != ctx$line_order[q]]
+      in_reference <- any(vapply(pk$theta_direct[ref_rows],
+                                 function(x) theta_index %in% .nm_ip_split_ints(x), logical(1)))
+      if (in_reference) not_reference <- FALSE
       if (not_reference && length(terminal) &&
           any(vapply(terminal, is_cov, logical(1))))
         return("covariate_effect")
@@ -1204,6 +1265,60 @@
   )
 }
 
+# THETAs of NONMEM variables that are not PK parameters and that the parser
+# of assignments does not read: model event times MTIME(n) in $PK and
+# mixture probabilities P(n) in $MIX (bbr runs 1001 and iovmm). A THETA used
+# through one helper variable (MT = THETA(4); MTIME(1) = MT) is found too.
+.nm_ip_special_theta <- function(lines, pk_resolved) {
+  rows <- list()
+  scan <- function(rec, var, role) {
+    rr <- .nm_ctl_record_range(lines, rec)
+    if (is.null(rr)) return(invisible())
+    code <- .nm_ctl_strip_comments(lines[rr[1]:rr[2]])
+    rx <- paste0("(?i)(?<![A-Za-z0-9_])(", var, "\\s*\\(\\s*[0-9]+\\s*\\))\\s*=\\s*(.*)$")
+    for (ln in code) {
+      m <- regmatches(ln, regexec(rx, ln, perl = TRUE))[[1]]
+      if (length(m) != 3L) next
+      rhs <- m[3]
+      th <- as.integer(regmatches(rhs, gregexpr("(?<=THETA\\()\\s*[0-9]+", rhs, perl = TRUE,
+                                                ignore.case = TRUE))[[1]])
+      w <- toupper(regmatches(rhs, gregexpr("\\b[A-Za-z][A-Za-z0-9_]*\\b", rhs, perl = TRUE))[[1]])
+      for (v in intersect(w, pk_resolved$lhs))
+        th <- c(th, .nm_ip_split_ints(pk_resolved$theta_all[pk_resolved$lhs == v][1]))
+      for (t in unique(th))
+        rows[[length(rows) + 1L]] <<- data.frame(
+          theta = t, symbol = paste0("THETA(", t, ")"), role = role,
+          variable = toupper(gsub("\\s", "", m[2])), stringsAsFactors = FALSE)
+    }
+  }
+  scan("PK", "MTIME", "model_event_time")
+  scan("MIX", "P", "mixture_probability")
+  if (!length(rows)) return(data.frame(theta = integer(), symbol = character(), role = character(),
+                                       variable = character(), stringsAsFactors = FALSE))
+  unique(do.call(rbind, rows))
+}
+
+# Names given by $ABBR REPLACE (THETA(CL)=THETA(2), ETA(OCC_CL)=ETA(,3:32))
+# are replaced in the code by the elements they stand for, so that these
+# elements are linked to their parameters: THETA(CL) becomes THETA(2), and a
+# name standing for several elements becomes their sum,
+# ETA(OCC_CL) -> (ETA(3)+ETA(4)+...+ETA(32)), which keeps the additive
+# structure of an IOV term. The $ABBR records themselves are left unchanged.
+.nm_ip_apply_abbr_replace <- function(lines) {
+  ab <- .nm_abbr_replace(lines)
+  if (!nrow(ab)) return(lines)
+  is_abbr <- grepl("^\\s*\\$ABBR", lines, ignore.case = TRUE)
+  for (k in seq_len(nrow(ab))) {
+    idx <- ab$index[[k]]
+    if (!length(idx)) next
+    el <- paste0(ab$token[k], "(", idx, ")")
+    to <- if (length(el) == 1L) el else paste0("(", paste(el, collapse = "+"), ")")
+    pat <- paste0("(?<![A-Za-z0-9_])", ab$token[k], "\\s*\\(\\s*", ab$name[k], "\\s*\\)")
+    lines[!is_abbr] <- gsub(pat, to, lines[!is_abbr], ignore.case = TRUE, perl = TRUE)
+  }
+  lines
+}
+
 # ------------------------------------------------------------------------------
 # Main API
 # ------------------------------------------------------------------------------
@@ -1252,7 +1367,10 @@
 #'   `mapping_detail` and `mapping_detail_all` (one row per PK parameter /
 #'   THETA or ETA association; `depth` is the number of assignment steps
 #'   between the THETA/ETA and the parameter, 0 when it appears directly in
-#'   its definition), `residual_error`, `theta`, `omega`,
+#'   its definition), `residual_error`, `special_theta` (THETAs of model
+#'   event times `MTIME(n)` in `$PK` and of mixture probabilities `P(n)` in
+#'   `$MIX`, with their role `model_event_time` or `mixture_probability`;
+#'   they are not counted in `unmapped_theta`), `theta`, `omega`,
 #'   `omega_elements` (variances and BLOCK covariances), `unmapped_theta`,
 #'   `unmapped_omega`, `missing_theta_declaration`,
 #'   `missing_omega_declaration` and `label_substitutions` (the labels
@@ -1272,7 +1390,7 @@ nm_identify_parameters <- function(file, likely_pk_only = TRUE) {
   stopifnot(length(file) == 1L, file.exists(file))
   lines <- readLines(file, warn = FALSE)
   lab <- .nm_ip_expand_labels(lines)
-  lines <- lab$lines
+  lines <- .nm_ip_apply_abbr_replace(lab$lines)
 
   theta <- .nm_ip_parse_theta(lines)
   om <- .nm_ip_parse_omega(lines)
@@ -1295,7 +1413,10 @@ nm_identify_parameters <- function(file, likely_pk_only = TRUE) {
 
   summary <- .nm_ip_parameter_summary(mapping, pk)
   residual <- .nm_ip_residual_error_mapping(theta, error)
+  special <- .nm_ip_special_theta(lines, pk_resolved)
   unmapped <- .nm_ip_find_unmapped(theta, om$eta, mapping, residual)
+  if (nrow(unmapped$theta) && nrow(special))
+    unmapped$theta <- unmapped$theta[!unmapped$theta$theta %in% special$theta, , drop = FALSE]
 
   eta_pk <- if (nrow(mapping)) sort(unique(mapping$index[mapping$element_type == "ETA"])) else integer()
   eta_omega <- if (nrow(om$eta)) om$eta$eta else integer()
@@ -1308,6 +1429,7 @@ nm_identify_parameters <- function(file, likely_pk_only = TRUE) {
     mapping_detail = mapping_view,
     mapping_detail_all = mapping,
     residual_error = residual,
+    special_theta = special,
     theta = theta,
     omega = om$eta,
     omega_elements = om$elements,
@@ -1338,6 +1460,11 @@ print.nm_parameter_map <- function(x, ...) {
     cat("\nOMEGA covariance elements:\n")
     print(x$omega_elements[x$omega_elements$element_type == "covariance", , drop = FALSE],
           row.names = FALSE)
+  }
+
+  if (!is.null(x$special_theta) && nrow(x$special_theta)) {
+    cat("\nTHETA of model event times (MTIME) and mixture probabilities ($MIX):\n")
+    print(x$special_theta, row.names = FALSE)
   }
 
   if (nrow(x$unmapped_theta)) {

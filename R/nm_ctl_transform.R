@@ -43,20 +43,213 @@
   unique(out)
 }
 
+# Lines of the control stream without the records that hold no abbreviated
+# code ($PROBLEM, $INPUT, $THETA, $OMEGA, $TABLE...), so that a title, an
+# initial estimate such as "$THETA (18.3 FIXED)" or a $TABLE item is not taken
+# for a use in the model code. Record names may be abbreviated (3 letters).
+.nm_ctl_code_lines <- function(lines) {
+  non_code <- c("PROBLEM", "INPUT", "DATA", "SUBROUTINES", "MODEL", "SIZES",
+                "THETA", "THETAI", "THETAR", "THETAP", "THETAPV", "OMEGA", "OMEGAP",
+                "OMEGAPD", "SIGMA", "SIGMAP", "SIGMAPD", "PRIOR", "ESTIMATION",
+                "COVARIANCE", "TABLE", "SCATTERPLOT", "SIMULATION", "NONPARAMETRIC",
+                "ETAS", "PHIS", "LEVEL", "ANNEAL", "MSFI", "SUPER", "WARNINGS",
+                "BIND", "FORMAT", "TTDF", "OLKJDF", "OVARF", "SLKJDF", "SVARF",
+                "RCOV", "RCOVI", "DEFAULT", "CHAIN", "INCLUDE")
+  is_rec <- grepl("^\\s*\\$", lines)
+  tok <- toupper(sub("^\\s*\\$([A-Za-z]*).*$", "\\1", lines))
+  drop_rec <- vapply(tok, function(t) nchar(t) >= 3L && any(startsWith(non_code, t)),
+                     logical(1))
+  keep <- logical(length(lines)); cur <- TRUE
+  for (k in seq_along(lines)) {
+    if (is_rec[k]) cur <- !drop_rec[k]
+    keep[k] <- cur
+  }
+  lines[keep]
+}
+
+# Lines of each record whose name starts with `prefix` (record names may be
+# abbreviated), comments removed, the record name removed from its first line.
+.nm_ctl_records <- function(lines, names) {
+  is_rec <- grepl("^\\s*\\$", lines)
+  tok <- toupper(sub("^\\s*\\$([A-Za-z]*).*$", "\\1", lines))
+  out <- list(); cur <- NULL
+  for (k in seq_along(lines)) {
+    if (is_rec[k]) {
+      if (!is.null(cur)) out[[length(out) + 1L]] <- cur
+      cur <- if (tok[k] %in% names) list(name = tok[k], start = k, text = character()) else NULL
+      if (is.null(cur)) next
+      txt <- sub("^\\s*\\$[A-Za-z]*", "", sub(";.*$", "", lines[k]))
+    } else {
+      if (is.null(cur)) next
+      txt <- sub(";.*$", "", lines[k])
+    }
+    cur$text <- c(cur$text, txt)
+  }
+  if (!is.null(cur)) out[[length(out) + 1L]] <- cur
+  out
+}
+
+# Static checks for errors that NM-TRAN refuses and that were met on control
+# streams written by nmpilot: TOL missing with a general ADVAN (error 145),
+# unknown METHOD (error 287), THETA initial estimate of 0 not fixed (error
+# 260), $TABLE item written after an option of the same line (error 20), Y with EPS/ERR
+# defined only in IF blocks testing ICALL.EQ.4 (error 122).
+.nm_ctl_nmtran_checks <- function(lines) {
+  msg <- list()
+  add <- function(cat, txt) msg[[length(msg) + 1L]] <<- c(cat, txt)
+
+  sub_recs <- .nm_ctl_records(lines, c("SUB", "SUBR", "SUBROUTINE", "SUBROUTINES"))
+  has_tol_rec <- length(.nm_ctl_records(lines, "TOL")) > 0
+  for (r in sub_recs) {
+    t <- toupper(paste(r$text, collapse = " "))
+    adv <- suppressWarnings(as.integer(sub(".*\\bADVAN\\s*([0-9]+).*", "\\1", t)))
+    if (!is.na(adv) && adv %in% c(6L, 8L, 9L, 13L, 14L, 15L, 16L, 17L, 18L) &&
+        !grepl("\\bTOL\\s*=", t) && !has_tol_rec)
+      add("$SUBROUTINES", paste0("ADVAN", adv, " requires TOL (e.g. TOL=9 in $SUBROUTINES or a $TOL record)."))
+  }
+
+  methods <- c("0", "ZERO", "1", "COND", "CONDITIONAL", "HYBRID", "ITS", "IMP", "IMPMAP",
+               "SAEM", "BAYES", "DIRECT", "NUTS", "CHAIN")
+  for (r in .nm_ctl_records(lines, c("EST", "ESTM", "ESTIMATION", "ESTIMATE"))) {
+    t <- toupper(paste(r$text, collapse = " "))
+    m <- regmatches(t, gregexpr("\\bMETH(OD)?\\s*=\\s*[A-Z0-9]+", t))[[1]]
+    for (v in sub(".*=\\s*", "", m))
+      if (!(v %in% methods || (nchar(v) >= 4 && startsWith("CONDITIONAL", v))))
+        add("$ESTIMATION", paste0("METHOD=", v, " is not a NONMEM method (FO is written METHOD=ZERO or METHOD=0)."))
+  }
+
+  n <- 0L
+  for (r in .nm_ctl_records(lines, "THETA")) {
+    t <- toupper(paste(r$text, collapse = " "))
+    spec <- regmatches(t, gregexpr("\\([^)]*\\)(\\s*FIX(ED)?)?|[-+]?[0-9.]+([ED][-+]?[0-9]+)?(\\s*FIX(ED)?)?", t))[[1]]
+    for (sp in spec) {
+      n <- n + 1L
+      fix <- grepl("FIX", sp)
+      p <- trimws(strsplit(gsub("[()]|FIX(ED)?", "", sp), ",")[[1]])
+      p <- p[nzchar(p)]
+      v <- suppressWarnings(as.numeric(sub("D", "E", if (length(p) >= 2L) p[2] else p[1])))
+      if (!fix && is.finite(v) && v == 0)
+        add("$THETA", paste0("THETA(", n, "): the initial estimate is 0 and not fixed (refused by NM-TRAN)."))
+    }
+  }
+
+  # Y with EPS/ERR defined only inside IF blocks that test ICALL.EQ.4: such a
+  # block is simulation code for NM-TRAN, which then finds no EPS for the
+  # estimation (error 122, "EPS VARIABLES REQUIRED WITH POPULATION DATA").
+  # Seen with M3 code written "IF (BQL.EQ.0.OR.ICALL.EQ.4) THEN ... Y = ...
+  # ERR ...": accepted once the test of ICALL was moved out of that block.
+  for (r in .nm_ctl_records(lines, c("ERROR", "PRED"))) {
+    depth <- 0L; icall <- logical(); y_eps_icall <- logical()
+    for (ln in toupper(trimws(r$text))) {
+      if (!nzchar(ln)) next
+      if (grepl("^IF\\s*\\(.*\\)\\s*THEN$", ln)) {
+        depth <- depth + 1L
+        icall[depth] <- grepl("\\bICALL\\s*\\.EQ\\.\\s*4\\b", ln) || (depth > 1L && icall[depth - 1L])
+        next
+      }
+      if (grepl("^END\\s*IF$", ln)) { depth <- max(0L, depth - 1L); next }
+      if (grepl("^ELSE", ln)) {
+        if (depth > 0L) icall[depth] <- depth > 1L && icall[depth - 1L]
+        next
+      }
+      one <- grepl("^IF\\s*\\(.*\\)\\s*Y\\s*=", ln)
+      if ((one || grepl("^Y\\s*=", ln)) &&
+          grepl("\\b(EPS|ERR)\\s*\\(", sub("^.*?\\bY\\s*=", "", ln, perl = TRUE))) {
+        in_icall <- (depth > 0L && icall[depth]) ||
+          (one && grepl("\\bICALL\\s*\\.EQ\\.\\s*4\\b", sub("\\bY\\s*=.*$", "", ln)))
+        y_eps_icall <- c(y_eps_icall, in_icall)
+      }
+    }
+    if (length(y_eps_icall) && all(y_eps_icall))
+      add(paste0("$", r$name), paste0("Y with EPS/ERR is defined only in IF blocks testing ICALL.EQ.4, which NM-TRAN ",
+                                     "treats as simulation code (error 122): move the test of ICALL out of these blocks."))
+  }
+
+  # Checked line by line: NM-TRAN refuses an item written after an option of
+  # the same line (A.26: "... FILE=sdtab M3LLOQ"), but accepts items written
+  # on a line below the options (bbr run iovmm, NONMEM 7.4.4:
+  # "$TABLE NOPRINT ONEHEADER FILE=../10par.tab" then "ID TIME ... ").
+  for (r in .nm_ctl_records(lines, c("TAB", "TABLE"))) {
+    late <- character()
+    for (ln in r$text) {
+      t <- gsub("\\s*=\\s*", "=", trimws(ln))
+      tok <- strsplit(t, "\\s+")[[1]]; tok <- tok[nzchar(tok)]
+      if (!length(tok)) next
+      is_opt <- .nm_ctl_table_is_opt(tok)
+      after_by <- c(FALSE, toupper(utils::head(tok, -1L)) %in% c("BY", "EXCLUDE_BY"))
+      first <- which(is_opt)[1]
+      if (!is.na(first)) late <- c(late, tok[seq_along(tok) > first & !is_opt & !after_by])
+    }
+    if (length(late))
+      add("$TABLE", paste0("Item(s) written after an option on the same line of $TABLE (record at line ", r$start, "): ",
+                           paste(late, collapse = ", "), ". NM-TRAN reads them as unknown options."))
+  }
+  msg
+}
+
+# Add items to a $TABLE line before its first option: NM-TRAN refuses an
+# item written after the options (error 20, "UNKNOWN OPTION").
+.nm_ctl_table_opts <- c("PRINT", "NOPRINT", "FILE", "NOHEADER", "ONEHEADER", "ONEHEADERALL",
+                        "NOAPPEND", "APPEND", "FIRSTONLY", "FIRSTRECORDONLY", "LASTONLY",
+                        "NOFORWARD", "FORWARD", "NOTITLE", "NOLABEL", "FORMAT", "LFORMAT",
+                        "RFORMAT", "ESAMPLE", "SEED", "CLOCKSEED", "WRESCHOL", "RANMETHOD",
+                        "UNCONDITIONAL", "CONDITIONAL", "OMITTED", "EXCLUDE_BY", "NOSUB",
+                        "PARAFILE", "VARCALC", "FIXEDETAS", "NPDTYPE", "IDFORMAT", "BY")
+.nm_ctl_table_is_opt <- function(tok) {
+  u <- toupper(tok)
+  grepl("=", u, fixed = TRUE) | sub("=.*$", "", u) %in% .nm_ctl_table_opts
+}
+.nm_ctl_table_add_items <- function(line, items) {
+  code <- sub(";.*$", "", line); comment <- substring(line, nchar(code) + 1L)
+  tok <- strsplit(trimws(code), "\\s+")[[1]]
+  opt <- which(.nm_ctl_table_is_opt(tok) & seq_along(tok) > 1L)
+  at <- if (length(opt)) opt[1] - 1L else length(tok)
+  tok <- append(tok, items, after = at)
+  paste0(paste(tok, collapse = " "), if (nzchar(comment)) paste0(" ", comment) else "")
+}
+
 # Indices used in the code for THETA(n), ETA(n), EPS(n) or ERR(n), including
-# the lists of $ABBR REPLACE ETA(OCC_BOVCL)=ETA(4,6,8).
+# the indices of $ABBR REPLACE: lists ETA(OCC_BOVCL)=ETA(4,6,8) and ranges
+# ETA(OCC_CL)=ETA(,3:32) (bbr run acop-iov, NONMEM 7.4).
 .nm_ctl_used <- function(lines, token) {
+  lines <- .nm_ctl_code_lines(lines)
+  ab <- .nm_abbr_replace(lines)
   txt <- toupper(paste(.nm_ctl_strip_comments(lines), collapse = "\n"))
+  txt <- gsub("\\$ABBR[^\n]*", "", txt, perl = TRUE)
   pat <- paste0("\\b", token, "\\s*\\(\\s*([0-9]+)")
   hits <- regmatches(txt, gregexpr(pat, txt, perl = TRUE))[[1]]
   used <- if (length(hits)) as.integer(sub(pat, "\\1", hits, perl = TRUE)) else integer()
-  ab <- regmatches(txt, gregexpr(paste0("\\$ABBR\\s+REPLACE[^\\n]*=\\s*", token, "\\s*\\(([0-9,\\s]+)\\)"),
-                                 txt, perl = TRUE))[[1]]
-  for (a in ab) {
-    lst <- sub(".*\\(([0-9,\\s]+)\\)\\s*$", "\\1", a, perl = TRUE)
-    used <- c(used, as.integer(strsplit(gsub("\\s", "", lst), ",", fixed = TRUE)[[1]]))
-  }
+  for (k in which(ab$token == token)) used <- c(used, ab$index[[k]])
   unique(used)
+}
+
+# $ABBR REPLACE records that give a name to THETA, ETA, EPS or ERR elements:
+# THETA(CL)=THETA(2), ETA(OCC_BOVCL)=ETA(4,6,8), ETA(OCC_CL)=ETA(,3:32) or
+# ETA(3 TO 32 BY 2). Returns a data.frame (token, name, index: list of the
+# element numbers, in order).
+.nm_abbr_replace <- function(lines) {
+  code <- toupper(.nm_ctl_strip_comments(lines))
+  rx <- "^\\s*\\$ABBR\\s+REPLACE\\s+(THETA|ETA|EPS|ERR)\\s*\\(\\s*([A-Z_][A-Z0-9_]*)\\s*\\)\\s*=\\s*(THETA|ETA|EPS|ERR)\\s*\\(([^)]*)\\)"
+  m <- regmatches(code, regexec(rx, code, perl = TRUE))
+  m <- m[lengths(m) == 5L]
+  out <- data.frame(token = vapply(m, `[`, "", 2), name = vapply(m, `[`, "", 3),
+                    stringsAsFactors = FALSE)
+  out$index <- lapply(m, function(x) {
+    spec <- gsub("\\s+TO\\s+", ":", gsub("\\s+BY\\s+", "/", trimws(x[5])))
+    idx <- integer()
+    for (p in trimws(strsplit(spec, ",", fixed = TRUE)[[1]])) {
+      if (!nzchar(p)) next
+      by <- 1L
+      if (grepl("/", p, fixed = TRUE)) {
+        by <- as.integer(sub(".*/", "", p)); p <- sub("/.*", "", p)
+      }
+      ab <- suppressWarnings(as.integer(strsplit(p, ":", fixed = TRUE)[[1]]))
+      if (anyNA(ab) || !length(ab)) next
+      idx <- c(idx, if (length(ab) == 2L) seq(ab[1], ab[2], by = by) else ab[1])
+    }
+    idx
+  })
+  out
 }
 
 # Text of every record `rec` (comments removed, record name removed), one
@@ -155,10 +348,17 @@
 #' are never used), data items used in the code but absent from `$INPUT`,
 #' an active `RATE` with first-order absorption, and the requirements of the
 #' M3 method (BQL records not ignored, LLOQ defined, Laplace estimation).
+#' It also reports four errors refused by NM-TRAN: `TOL` missing with a
+#' general ADVAN (6, 8, 9, 13-18), an unknown `METHOD` (FO is written
+#' `METHOD=ZERO`), a `THETA` initial estimate of 0 that is not fixed, a
+#' `$TABLE` item written after an option of the same line (items written
+#' on a line below the options are accepted), and `Y` with `EPS`/`ERR` defined
+#' only in `IF` blocks testing `ICALL.EQ.4` (simulation code for NM-TRAN).
 #'
 #' Declarations are counted over all `$THETA`, `$OMEGA` and `$SIGMA`
 #' records, including values written on the record line, `BLOCK(n)`,
-#' `DIAGONAL(n)`, `SAME(k)` and `$ABBR REPLACE` lists.
+#' `DIAGONAL(n)`, `SAME(k)` and `$ABBR REPLACE` lists and ranges
+#' (`ETA(4,6,8)`, `ETA(,3:32)`).
 #'
 #' This check does not replace NM-TRAN: it catches common mistakes early.
 #'
@@ -184,7 +384,8 @@ nm_ctl_check <- function(ctl, reference = NULL) {
   add <- function(level, cat, msg)
     z <<- rbind(z, data.frame(level = level, category = cat, message = msg, stringsAsFactors = FALSE))
 
-  code <- toupper(paste(.nm_ctl_strip_comments(lines), collapse = "\n"))
+  code <- toupper(paste(.nm_ctl_strip_comments(.nm_ctl_code_lines(lines)), collapse = "\n"))
+  full <- toupper(paste(.nm_ctl_strip_comments(lines), collapse = "\n"))
   inp  <- .nm_ctl_input_items(lines)
 
   nth  <- .nm_ctl_n_theta(lines);           uth  <- .nm_ctl_used(lines, "THETA")
@@ -198,23 +399,30 @@ nm_ctl_check <- function(ctl, reference = NULL) {
   for (i in setdiff(seq_len(neta), ueta)) add("WARNING", "IIV", paste0("OMEGA/ETA(", i, ") is declared but ETA(", i, ") is apparently unused."))
   for (i in ueps[ueps > nsig]) add("ERROR", "Residual error", paste0("EPS/ERR(", i, ") is used without a matching SIGMA."))
 
-  for (v in c("CMT", "EVID", "MDV", "RATE"))
+  # with PREDPP ($SUBROUTINES), NM-TRAN appends the EVID and MDV data items
+  # itself when $INPUT has none, so they may then be used in the code
+  predpp <- any(grepl("^\\s*\\$SUB", lines, ignore.case = TRUE))
+  for (v in c("CMT", if (!predpp) c("EVID", "MDV"), "RATE"))
     if (grepl(paste0("\\b", v, "\\b"), code, perl = TRUE) && !(v %in% inp))
       add("WARNING", "$INPUT", paste0(v, " is used but is not an active $INPUT item."))
 
-  if ("RATE" %in% inp && grepl("\\bKA\\b", code, perl = TRUE) && !grepl("\\b(D1|R1)\\b", code, perl = TRUE))
+  # a zero-order input into any compartment (D1, D2, R1...) uses RATE
+  if ("RATE" %in% inp && grepl("\\bKA\\b", code, perl = TRUE) && !grepl("\\b[DR][0-9]+\\b", code, perl = TRUE))
     add("WARNING", "Absorption", "RATE is active in a model with KA; check whether RATE should be RATE=DROP.")
 
   if (grepl("\\bF_FLAG\\b", code, perl = TRUE) && grepl("\\bPHI\\s*\\(", code, perl = TRUE)) {
-    if (grepl("\\$DATA[^\\n]*IGNORE[^\\n]*BQL", code, perl = TRUE))
+    if (grepl("\\$DATA[^\\n]*IGNORE[^\\n]*BQL", full, perl = TRUE))
       add("ERROR", "M3", "IGNORE refers to BQL: censored observations must not be excluded.")
     if (!grepl("\\bM3LLOQ\\b|\\bLLOQ\\b", code, perl = TRUE))
       add("ERROR", "M3", "No explicit censoring threshold (LLOQ) found.")
-    if (!grepl("\\bLAPLACE\\b|\\bLAPLACIAN\\b", code, perl = TRUE))
+    if (!grepl("\\bLAPLACE\\b|\\bLAPLACIAN\\b", full, perl = TRUE))
       add("WARNING", "M3", "F_FLAG/PHI found without LAPLACE estimation.")
     if (grepl("\\bBQL\\b", code, perl = TRUE) && !("BQL" %in% inp))
       add("ERROR", "M3", "BQL is used but is not an active $INPUT item.")
   }
+
+  # Errors found by NM-TRAN on control streams written by nmpilot (action 26)
+  for (m in .nm_ctl_nmtran_checks(lines)) add("ERROR", m[1], m[2])
 
   if (!nrow(z)) add("OK", "Check", "No obvious inconsistency found by the static checks.")
   if (!is.null(reference)) attr(z, "diff") <- .nm_ctl_diff(.nm_ctl_lines(reference), lines)
@@ -311,7 +519,9 @@ print.nm_ctl_check <- function(x, ...) {
 #'   every parameter written in a supported form.
 #' @param mode `"readable"` (`MU_m = LOG(THETA(n))`, THETAs unchanged) or
 #'   `"linear"` (`MU_m = THETA(n)`, the THETA initial value and bounds are
-#'   log-transformed; requires one value per line in `$THETA`).
+#'   log-transformed; requires one value per line in `$THETA`; an initial
+#'   value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses an
+#'   initial estimate of 0 unless it is fixed).
 #' @param file Output path. If `NULL` (default), nothing is written.
 #' @param overwrite Logical. Replace an existing `file`.
 #' @param verbose Logical. Print a message when the file is written.
@@ -351,6 +561,10 @@ nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
         stop("MU linear: the initial value of THETA(", n, ") must be > 0.")
       num <- function(v) format(round(v, 6), trim = TRUE, scientific = FALSE)
       v  <- log(r$value)
+      # NM-TRAN refuses an initial estimate of 0 unless fixed (error 260):
+      # log(1) = 0 is replaced by a value close to 0
+      zero <- !r$fixed && round(v, 6) == 0
+      if (zero) v <- 1e-4
       lo <- if (is.finite(r$lower) && r$lower > 0) log(r$lower) else NA_real_
       hi <- if (is.finite(r$upper) && r$upper > 0) log(r$upper) else NA_real_
       sp <- if (is.finite(lo) && is.finite(hi)) paste0("(", num(lo), ", ", num(v), ", ", num(hi), ")")
@@ -358,7 +572,8 @@ nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
             else if (is.finite(hi)) paste0("(-INF, ", num(v), ", ", num(hi), ")")
             else num(v)
       if (r$fixed) sp <- paste(sp, "FIX")
-      lines[r$line] <- paste0("  ", sp, " ; log(", r$comment, ")")
+      lines[r$line] <- paste0("  ", sp, " ; log(", r$comment, ")",
+                              if (zero) " (log(1) = 0 replaced by 0.0001: NONMEM refuses an initial value of 0)" else "")
     }
   }
   for (i in seq_len(nrow(cand))) {
@@ -675,27 +890,40 @@ nm_ctl_m3 <- function(ctl, bql = "BQL", lloq = NULL, lloq_col = NULL,
   E <- lines[er[1]:er[2]]; header <- E[1]; body <- E[-1]
   y_idx <- grep("(^|\\s)Y\\s*=", .nm_ctl_strip_comments(body), ignore.case = TRUE)
   if (!length(y_idx)) stop("M3: no Y = line found in $ERROR.")
-  cond <- if (isTRUE(npde_mode)) paste0("IF (", bql, ".EQ.0.OR.NPDE_MODE.EQ.1.OR.ICALL.EQ.4) THEN")
-          else paste0("IF (", bql, ".EQ.0.OR.ICALL.EQ.4) THEN")
+  # One IF/THEN/ELSE around each Y line, the M3 quantities computed just
+  # before the first one. The former code put Y with ERR in a block written
+  # IF (BQL.EQ.0.OR.ICALL.EQ.4) THEN, which NM-TRAN 7.6 treats as simulation
+  # code: it refused the model ("EPS VARIABLES REQUIRED WITH POPULATION
+  # DATA", error 122) and gave warning 53. The censoring flag M3CENS keeps the
+  # test of ICALL out of the blocks defining Y; simulations (ICALL = 4) use
+  # the normal residual error.
+  m3 <- c("; --- M3 BQL likelihood ---", lloq_code,
+          paste0("M3SD = ", sd), "IF (M3SD.LE.0) M3SD = 1.0E-12",
+          paste0("M3Z = (M3LLOQ - ", pred, ")/M3SD"),
+          "M3PBQL = PHI(M3Z) + 1e-30",
+          "M3CENS = 0",
+          paste0("IF (", bql, ".EQ.1) M3CENS = 1"),
+          if (isTRUE(npde_mode)) "IF (NPDE_MODE.EQ.1) M3CENS = 0",
+          "IF (ICALL.EQ.4) M3CENS = 0",
+          if (isTRUE(npde_mode)) c(paste0("IF (", bql, ".EQ.1) DV_LOQ = M3LLOQ"),
+                                   "; NPDE_MODE/DV_LOQ: only for the NONMEM NPD/NPDE diagnostics."))
   new_body <- character(0)
   for (k in seq_along(body)) {
     if (k %in% y_idx) {
       indent <- sub("^(\\s*).*", "\\1", body[k])
-      new_body <- c(new_body, paste0(indent, cond), paste0(indent, "  F_FLAG = 0"),
-                    paste0(indent, "  ", trimws(body[k])), paste0(indent, "ENDIF"))
+      if (k == y_idx[1]) new_body <- c(new_body, paste0(indent, m3))
+      new_body <- c(new_body,
+                    paste0(indent, "IF (M3CENS.EQ.1) THEN"),
+                    paste0(indent, "  F_FLAG = 1"),
+                    paste0(indent, "  Y = M3PBQL"),
+                    paste0(indent, "  MDVRES = 1"),
+                    paste0(indent, "ELSE"),
+                    paste0(indent, "  F_FLAG = 0"),
+                    paste0(indent, "  ", trimws(body[k])),
+                    paste0(indent, "ENDIF"))
     } else new_body <- c(new_body, body[k])
   }
-  bql_if <- if (isTRUE(npde_mode)) paste0("IF (", bql, ".EQ.1.AND.NPDE_MODE.EQ.0.AND.ICALL.NE.4) THEN")
-            else paste0("IF (", bql, ".EQ.1.AND.ICALL.NE.4) THEN")
-  m3 <- c("", "; --- M3 BQL likelihood ---", lloq_code,
-          paste0("M3SD = ", sd), "IF (M3SD.LE.0) M3SD = 1.0E-12",
-          paste0("M3Z = (M3LLOQ - ", pred, ")/M3SD"),
-          "M3PBQL = PHI(M3Z) + 1e-30",
-          bql_if, "  F_FLAG = 1", "  Y = M3PBQL", "  MDVRES = 1", "ENDIF")
-  if (isTRUE(npde_mode))
-    m3 <- c(m3, paste0("IF (", bql, ".EQ.1) DV_LOQ = M3LLOQ"),
-            "; NPDE_MODE/DV_LOQ: only for the NONMEM NPD/NPDE diagnostics.")
-  lines <- c(lines[seq_len(er[1] - 1L)], header, new_body, m3,
+  lines <- c(lines[seq_len(er[1] - 1L)], header, new_body,
              if (er[2] < length(lines)) lines[(er[2] + 1L):length(lines)] else character(0))
 
   # F_FLAG requires a Laplacian estimation
@@ -707,8 +935,11 @@ nm_ctl_m3 <- function(ctl, bql = "BQL", lloq = NULL, lloq_col = NULL,
     } else if (!grepl("\\bLAPLAC", up)) lines[i] <- paste(lines[i], "LAPLACE")
   }
   ti <- grep("^\\s*\\$TABLE\\b", lines, ignore.case = TRUE)
-  if (length(ti)) for (x in c("M3LLOQ", "M3SD", "M3PBQL"))
-    if (!grepl(paste0("\\b", x, "\\b"), lines[ti[1]], ignore.case = TRUE)) lines[ti[1]] <- paste(lines[ti[1]], x)
+  if (length(ti)) {
+    new <- c("M3LLOQ", "M3SD", "M3PBQL")
+    new <- new[!vapply(new, function(x) grepl(paste0("\\b", x, "\\b"), lines[ti[1]], ignore.case = TRUE), logical(1))]
+    if (length(new)) lines[ti[1]] <- .nm_ctl_table_add_items(lines[ti[1]], new)
+  }
 
   .nm_ctl_output(lines, file = file, overwrite = overwrite, verbose = verbose)
 }
