@@ -1,5 +1,17 @@
 # nmpilot (development version)
 
+* New function `nm_model_diagram()` (point A.7): tree of the models tested in
+  a project. Each run is linked to the run it was derived from, read in its
+  control stream as a comment with the PsN and Pirana convention
+  (`;; 1. Based on: run3`, or `;; Based on: 3` for `run3`) or given with
+  `parents =`, which also corrects or removes links. Each run shows its OFV,
+  its dOFV and its change in the number of estimated parameters relative to
+  its parent, coloured by convergence state (covariance done, no
+  covariance, not converged, not completed, simulation). Returns the table
+  of the tree and a ggplot2 figure, which `nm_export_plot()` saves. Circular
+  links and parents absent from the project are reported. Tests in
+  `test-model-diagram.R`.
+
 Reading of real outputs of NONMEM 7.1 to 7.6 (point A.3): a sample of 43 runs
 (7.1, 7.2, 7.3, 7.4.1, 7.6, and a few NONMEM V/VI outputs; models with and
 without `$DES`, ADVAN1 to ADVAN13) was read with `nm_extract_runs()`; the
