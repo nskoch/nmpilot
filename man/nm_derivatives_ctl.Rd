@@ -4,13 +4,14 @@
 \alias{nm_derivatives_ctl}
 \title{Control stream of derivatives for the linearization of a base model}
 \usage{
-nm_derivatives_ctl(run, out_dir = NULL, name = NULL, extra = NULL)
+nm_derivatives_ctl(run, output_dir = NULL, name = NULL, extra = NULL, ...)
 }
 \arguments{
 \item{run}{Run directory of the base model (e.g. \code{"run1.reg"}) or path
 prefix (\code{"dir/run1"}) whose \code{.ctl} and \code{.ext} files are used.}
 
-\item{out_dir}{Directory of the new control stream. Default: the analysis
+\item{output_dir}{Directory of the new control stream (formerly \code{out_dir},
+still accepted with a warning). Default: the analysis
 directory (parent of a \code{.reg}/\code{.nm7} run directory), so that the \verb{$DATA}
 path keeps the convention of \code{\link[=nm_run]{nm_run()}}.}
 
@@ -19,6 +20,9 @@ path keeps the convention of \code{\link[=nm_run]{nm_run()}}.}
 \item{extra}{Additional data items to tabulate (e.g. an occasion column
 \code{"OCC"} for inter-occasion variability). Items absent from \verb{$INPUT} are
 dropped with a warning.}
+
+\item{...}{Former argument name, accepted with a warning until version
+1.0: \code{out_dir} (now \code{output_dir}).}
 }
 \value{
 Invisibly, the path of the control stream written. The table file

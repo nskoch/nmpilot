@@ -1107,26 +1107,28 @@
 #' standard deviations are derived from the variances (delta method for their
 #' SE); ETA correlations are derived from the OMEGA matrix.
 #'
-#' Two call forms are accepted:
-#' - `run_rep` (parent directory) + `run_name`;
-#' - `run_path`, the full path to the run directory (`.nm7`, `.reg`) or to
-#'   the run stem (e.g. `C:/project/run1` for `C:/project/run1.ext`).
+#' The run is given by its path, `run`: its run directory (`.nm7`, `.reg`),
+#' its control stream, or its stem (e.g. `C:/project/run1` for
+#' `C:/project/run1.ext`). The `.ext` file is looked for in `<run>.nm7/`,
+#' `<run>.reg/`, a folder named `<run>`, then directly in the folder of the
+#' run (flat layout, as produced by a plain nmfe call). Wings for NONMEM is
+#' not required.
 #'
-#' The `.ext` file is looked for in `<run>.nm7/`, `<run>.reg/`, a folder named
-#' `<run>`, then directly in `run_rep` (flat layout, as produced by a plain
-#' nmfe call). Wings for NONMEM is not required.
+#' The former call forms, `run_rep` (parent directory) + `run_name`, and
+#' `run_path`, are still accepted with a warning until version 1.0.
 #'
-#' @param run_rep     Parent directory containing the run directory, or the
-#'   run files themselves (flat layout).
-#' @param run_name    Run name (stem of the `.ext` file). A full path given
-#'   here by mistake is converted automatically.
-#' @param run_path    Full path to the run (alternative to `run_rep` +
-#'   `run_name`).
+#' @param run         Path of the run: run directory, control stream or stem.
+#' @param run_name    Deprecated: with `run_name`, `run` is read as the
+#'   parent directory (former argument `run_rep`) and `run_name` as the run
+#'   name. A full path given here by mistake is converted automatically.
+#' @param run_path    Deprecated: former name of `run`.
 #' @param output_name Name of the Word file, written in the run directory
 #'   (default `"nonmem_results.docx"`).
 #' @param extensions  Run directory extensions to try first, in order
 #'   (default `c("nm7", "reg")`), before the folder `<run>` and the flat
 #'   layout.
+#' @param ...         Former argument name, accepted with a warning until
+#'   version 1.0: `run_rep` (with `run_name`).
 #'
 #' @return Invisibly, a list with `flextable`, `params` (parameter table),
 #'   `ext` (parsed .ext, or estimates read in the .lst, with
@@ -1135,18 +1137,34 @@
 #'
 #' @examples
 #' \dontrun{
-#' res <- nm_extract_run_table(run_rep = "C:/nm76g64/run/para",
-#'                             run_name = "run_1_prop_kaBbloc")
-#' res <- nm_extract_run_table(run_path = "C:/nm76g64/run/para/run_1_prop_kaBbloc.reg")
+#' res <- nm_extract_run_table("C:/nm76g64/run/para/run_1_prop_kaBbloc.reg")
+#' res <- nm_extract_run_table("C:/nm76g64/run/para/run_1_prop_kaBbloc.ctl")
 #' res$params
 #' }
 #' @export
 
-nm_extract_run_table <- function(run_rep = NULL,
+nm_extract_run_table <- function(run = NULL,
                                  run_name = NULL,
                                  run_path = NULL,
                                  output_name = "nonmem_results.docx",
-                                 extensions = c("nm7", "reg")) {
+                                 extensions = c("nm7", "reg"),
+                                 ...) {
+  dep <- .nm_deprecated_args(list(...), c(run_rep = "run_rep"), "nm_extract_run_table")
+  run_rep <- dep$run_rep
+  if (is.null(run_rep) && !is.null(run_name)) {
+    # former positional form nm_extract_run_table(run_rep, run_name)
+    warning("In nm_extract_run_table(), `run_rep` + `run_name` is deprecated: give the path ",
+            "of the run, e.g. run = \"", file.path(run %||% ".", run_name), "\".", call. = FALSE)
+    run_rep <- run
+  } else if (!is.null(run_rep) && is.null(run_name)) {
+    stop("Supply `run`, the path of the run.", call. = FALSE)
+  }
+  if (!is.null(run_path)) {
+    warning("In nm_extract_run_table(), `run_path` is deprecated; use `run` instead.", call. = FALSE)
+  } else if (is.null(run_rep)) {
+    if (is.null(run)) stop("Supply `run`, the path of the run.", call. = FALSE)
+    run_path <- run
+  }
 
   for (pkg in c("flextable", "officer")) {
     if (!requireNamespace(pkg, quietly = TRUE))
@@ -1171,6 +1189,13 @@ nm_extract_run_table <- function(run_rep = NULL,
 
     # Remove a trailing slash
     run_path <- sub("/+$", "", run_path)
+
+    # A file of the run (control stream, .ext, .lst): run name and folder
+    if (grepl("\\.(ctl|mod|ext|lst)$", run_path, ignore.case = TRUE)) {
+      ra <- .nm_run_arg(run_path, extensions)
+      return(.nm_rt_export_run(run_rep = ra$analysis_dir, run_name = ra$run_name,
+                               output_name = output_name, extensions = extensions))
+    }
 
     # A path ending with .nm7 or .reg is taken as the Wings run directory
     # itself.

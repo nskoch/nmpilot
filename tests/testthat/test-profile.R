@@ -23,8 +23,8 @@ mock_launch <- function(nmfe_path, run_dir, run_name) {
 test_that("nm_profile runs the grid and derives the likelihood-profile CI", {
   root <- profile_setup()
   local_mocked_bindings(.nm_launch = mock_launch)
-  pr <- nm_profile(file.path(root, "nmfe.bat"), file.path(root, "base.ctl"),
-                   param = "CL", from = 1, to = 3, by = 0.5, quiet = TRUE)
+  pr <- nm_profile(file.path(root, "base.ctl"), file.path(root, "nmfe.bat"),
+                   param = "CL", from = 1, to = 3, by = 0.5, verbose = FALSE)
   expect_s3_class(pr, "nm_profile")
   expect_equal(pr$target$theta_index, 1L)
   expect_equal(pr$results$value, c(1, 1.5, 2, 2.5, 3))
@@ -42,8 +42,8 @@ test_that("nm_profile runs the grid and derives the likelihood-profile CI", {
 
 test_that("nm_profile (run = FALSE) only writes the control streams", {
   root <- profile_setup()
-  pr <- nm_profile(file.path(root, "nmfe.bat"), file.path(root, "base.ctl"),
-                   param = 2, from = 0.5, to = 1, by = 0.25, run = FALSE, quiet = TRUE)
+  pr <- nm_profile(file.path(root, "base.ctl"), file.path(root, "nmfe.bat"),
+                   param = 2, from = 0.5, to = 1, by = 0.25, run = FALSE, verbose = FALSE)
   expect_equal(pr$target$theta_index, 2L)
   expect_equal(nrow(pr$results), 3L)
   expect_true(all(is.na(pr$results$ofv)))
@@ -54,8 +54,8 @@ test_that("nm_profile checks its inputs", {
   root <- profile_setup()
   ctl <- file.path(root, "base.ctl")
   nmfe <- file.path(root, "nmfe.bat")
-  expect_error(nm_profile(file.path(root, "none.bat"), ctl, "CL", 1, 2, 0.5), "launcher not found")
-  expect_error(nm_profile(nmfe, file.path(root, "none.ctl"), "CL", 1, 2, 0.5), "Control file not found")
-  expect_error(nm_profile(nmfe, ctl, "CL", 3, 1, 0.5, run = FALSE), "must be <=")
-  expect_error(nm_profile(nmfe, ctl, "CL", 1, 2, -1, run = FALSE), "positive")
+  expect_error(nm_profile(ctl, file.path(root, "none.bat"), "CL", 1, 2, 0.5), "launcher not found")
+  expect_error(nm_profile(file.path(root, "none.ctl"), nmfe, "CL", 1, 2, 0.5), "Control file not found")
+  expect_error(nm_profile(ctl, nmfe, "CL", 3, 1, 0.5, run = FALSE), "must be <=")
+  expect_error(nm_profile(ctl, nmfe, "CL", 1, 2, -1, run = FALSE), "positive")
 })

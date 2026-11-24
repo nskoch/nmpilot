@@ -279,15 +279,18 @@
 #' NONMEM syntax, producing a control stream compatible with direct
 #' \code{nmfe} execution.
 #'
-#' @param ctl_file Path to the Wings extended control stream (\code{.ctl}).
+#' @param ctl Path to the Wings extended control stream (\code{.ctl}).
+#'   (Formerly \code{ctl_file}, still accepted with a warning.)
 #' @param out_file Output path for the converted control stream. If
 #'   \code{NULL} (default), the output file is named
-#'   \code{<run>_converted.ctl} in the same directory as \code{ctl_file}.
+#'   \code{<run>_converted.ctl} in the same directory as \code{ctl}.
 #' @param overwrite Logical. If \code{TRUE}, overwrite \code{out_file} if it
 #'   already exists (default \code{FALSE}).
 #' @param verbose Logical. If \code{TRUE} (default), print a summary of
 #'   substitutions made.
 #'
+#' @param ... Former argument name, accepted with a warning until version
+#'   1.0: \code{ctl_file} (now \code{ctl}).
 #' @return Invisibly returns the path to the converted control stream.
 #'
 #' @details
@@ -311,8 +314,8 @@
 #'
 #' # Then run with nmpilot
 #' log <- nm_run(
+#'   ctl          = out,
 #'   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
-#'   ctl_files    = out,
 #'   analysis_dir = "C:/analyses"
 #' )
 #' }
@@ -320,10 +323,14 @@
 #' @seealso \code{\link{nm_run}}
 #'
 #' @export
-nm_convert_ctl <- function(ctl_file,
+nm_convert_ctl <- function(ctl,
                            out_file  = NULL,
                            overwrite = FALSE,
-                           verbose   = TRUE) {
+                           verbose   = TRUE,
+                           ...) {
+  dep <- .nm_deprecated_args(list(...), c(ctl_file = "ctl"), "nm_convert_ctl")
+  if (!is.null(dep$ctl)) ctl <- dep$ctl
+  ctl_file <- ctl
 
   if (!file.exists(ctl_file))
     stop("Control stream not found: ", ctl_file)

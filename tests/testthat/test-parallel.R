@@ -73,7 +73,7 @@ test_that("nm_run runs several control streams in parallel, at most n_cores at a
                                "$PRED", " Y = THETA(1) + EPS(1)", "$THETA 1", "$SIGMA 1",
                                "$EST METHOD=1"), file.path(root, f))
   t0 <- Sys.time()
-  log <- nm_run(fk$nmfe, ctls, root, n_cores = 2, verbose = FALSE)
+  log <- nm_run(ctls, fk$nmfe, root, n_cores = 2, verbose = FALSE)
   el <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
   expect_equal(nrow(log), 6L)
   expect_true(all(log$action == "launched"))
@@ -84,10 +84,10 @@ test_that("nm_run runs several control streams in parallel, at most n_cores at a
   expect_lt(el, 6 * 2)                          # faster than one after the other
   expect_true(file.exists(file.path(root, "r1.reg", "r1_nmpilot.log")))
   # finished runs are skipped on a second call
-  log2 <- nm_run(fk$nmfe, ctls, root, n_cores = 2, verbose = FALSE)
+  log2 <- nm_run(ctls, fk$nmfe, root, n_cores = 2, verbose = FALSE)
   expect_true(all(log2$action == "skipped_done"))
   # a flat layout falls back to one run after the other
-  expect_warning(nm_run(fk$nmfe, ctls[1:2], root, run_subdir = "", n_cores = 2,
+  expect_warning(nm_run(ctls[1:2], fk$nmfe, root, run_subdir = "", n_cores = 2,
                         skip_terminated = FALSE, verbose = FALSE), "one after the other")
 })
 
@@ -100,8 +100,8 @@ test_that("nm_profile, nm_jackknife and nm_bootstrap run in parallel", {
   writeLines(c("$PROB x", "$INPUT ID TIME DV", "$DATA data.csv IGNORE=@", "$PRED",
                "  CL = THETA(1)", "  Y = CL + EPS(1)", "$THETA (0, 2) ; CL", "$SIGMA 1",
                "$EST METHOD=1"), file.path(root, "base.ctl"))
-  pr <- nm_profile(fk$nmfe, file.path(root, "base.ctl"), param = "CL",
-                   from = 1, to = 3, by = 0.5, quiet = TRUE, n_cores = 2)
+  pr <- nm_profile(file.path(root, "base.ctl"), fk$nmfe, param = "CL",
+                   from = 1, to = 3, by = 0.5, verbose = FALSE, n_cores = 2)
   expect_equal(pr$results$ofv, rep(123.456, 5))
   expect_equal(max_conc(fk), 2L)
   # jackknife: one subdirectory per run

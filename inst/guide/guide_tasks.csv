@@ -44,8 +44,8 @@ ctl  <- nm_write_ctl(input = cols, error = ""combined"")
 nm_ctl_m3(ctl, bql = ""BQL"", lloq = 0.02)","available"
 17,"ctl","3. Control streams","Convert a Wings label control stream","nm_convert_ctl","Converts a Wings for NONMEM 'extended' control stream, where the model uses the parameter labels, into a standard one (THETA(n), ETA(n), ERR(n)).","# a Wings control stream of your own (not in the example project)
 nm_convert_ctl(""C:/myproject/run_wings.ctl"")   # -> run_wings_converted.ctl","available"
-18,"run","4. Running NONMEM","Run one or several models","nm_run","Runs control streams with nmfe, without Wings or PsN, each in its own run directory; finished runs are skipped. n_cores runs several models at the same time.","log <- nm_run(nmfe_path    = nmfe,
-              ctl_files    = c(""run1.ctl"", ""run2.ctl""),
+18,"run","4. Running NONMEM","Run one or several models","nm_run","Runs control streams with nmfe, without Wings or PsN, each in its own run directory; finished runs are skipped. n_cores runs several models at the same time.","log <- nm_run(ctl          = c(""run1.ctl"", ""run2.ctl""),
+              nmfe_path    = nmfe,
               analysis_dir = ex,
               n_cores      = 2)
 log[, c(""run"", ""action"", ""ofv"", ""min_ok"", ""cov_status"")]","available"
@@ -55,7 +55,7 @@ runs                                  # one line per run
 nm_filter_runs(runs, ""successful"")$runs","available"
 21,"results","5. Results","Parameters side by side","nm_compare_runs","One row per parameter and one column per run, aligned by name or by NONMEM index; values, RSE, SE or shrinkage.","nm_compare_runs(runs, format = TRUE)         # value (RSE%)
 nm_compare_runs(runs, what = ""shrinkage"")","available"
-22,"results","5. Results","Parameter table of one run (Word)","nm_extract_run_table","Parameter table of a run (estimates, SE, RSE, 95% CI, SD of ETAs and EPS, ETA correlations) exported to a Word document in the run directory.","res <- nm_extract_run_table(run_path = file.path(ex, ""run2.reg""))
+22,"results","5. Results","Parameter table of one run (Word)","nm_extract_run_table","Parameter table of a run (estimates, SE, RSE, 95% CI, SD of ETAs and EPS, ETA correlations) exported to a Word document in the run directory.","res <- nm_extract_run_table(file.path(ex, ""run2.reg""))
 res$params          # the table in R
 res$output_file     # the Word file","available"
 23,"results","5. Results","Identify the role of THETAs and ETAs","nm_identify_parameters, nm_identify_directory","Reads $PK or $PRED and links each THETA and ETA to the PK parameter it acts on, with its role (typical value, covariate effect, IIV, residual error).","x <- nm_identify_parameters(file.path(ex, ""run2.ctl""))
@@ -77,7 +77,7 @@ plot(cmp, which = c(""overlay_gof"", ""iofv_caterpillar"", ""eta_scatter""))","a
 nm_optimize_base(file.path(ex, ""run1.reg""), covariates = c(""WT"", ""GENO""), level = 1)
 # level 2: one evaluation run, then the linearised model
 p <- nm_derivatives_ctl(file.path(ex, ""run1.reg""))   # -> run1_deriv.ctl
-nm_run(nmfe, basename(p), dirname(p))
+nm_run(basename(p), nmfe, dirname(p))
 o <- nm_optimize_base(file.path(ex, ""run1.reg""), covariates = c(""WT"", ""GENO""))
 o
 plot(o)","available"
@@ -87,11 +87,11 @@ plot(o)","available"
 w
 plot(w)
 plot(w, type = ""r2w"")","available"
-31,"validation","8. Model validation","VPC","nm_vpc_ctl, nm_vpc","Writes and runs the _orig and _sim control streams of a VPC from an estimated run, then draws observed percentiles against the confidence intervals of simulated percentiles.","nm_vpc_ctl(""run2"", ex, nmfe_path = nmfe, n_sim = 500, n_cores = 2)
+31,"validation","8. Model validation","VPC","nm_vpc_ctl, nm_vpc","Writes and runs the _orig and _sim control streams of a VPC from an estimated run, then draws observed percentiles against the confidence intervals of simulated percentiles.","nm_vpc_ctl(file.path(ex, ""run2.ctl""), nmfe_path = nmfe, n_sim = 500, n_cores = 2)
 cols <- c(""NSIM"", ""ID"", ""TIME"", ""AMT"", ""MDV"", ""DV"", ""PRED"", ""IPRED"")
-nm_vpc(""run2"", ex, col_names = cols)","available"
+nm_vpc(file.path(ex, ""run2.ctl""), col_names = cols)","available"
 32,"validation","8. Model validation","pcVPC","nm_vpc","Prediction-corrected VPC (Bergstrand 2011) from the same simulation runs as the VPC.","cols <- c(""NSIM"", ""ID"", ""TIME"", ""AMT"", ""MDV"", ""DV"", ""PRED"", ""IPRED"")
-nm_vpc(""run2"", ex, col_names = cols, type = 2, bin_method = 3)  # nominal times","available"
+nm_vpc(file.path(ex, ""run2.ctl""), col_names = cols, type = 2, bin_method = 3)  # nominal times","available"
 33,"validation","8. Model validation","Bootstrap","nm_bootstrap","Non-parametric bootstrap by subject: reproducible and optionally stratified resampling, resume after interruption, percentile confidence intervals and success rate.","boot <- nm_bootstrap(file.path(ex, ""run2.reg"", ""run2.ctl""),
                      nmfe_path = nmfe, n = 500, seed = 1,
                      strata = ""GENO"", n_cores = ""auto"")
@@ -102,7 +102,7 @@ plot(boot)","available"
 jk
 plot(jk, ""bar"")
 plot(jk, ""scatter"")","available"
-35,"validation","8. Model validation","Likelihood profile","nm_profile","Fixes a THETA at each value of a grid, re-runs the model and reads the OFV; the confidence interval is where dOFV crosses 3.84.","prof <- nm_profile(nmfe, file.path(ex, ""run2.reg"", ""run2.ctl""),
+35,"validation","8. Model validation","Likelihood profile","nm_profile","Fixes a THETA at each value of a grid, re-runs the model and reads the OFV; the confidence interval is where dOFV crosses 3.84.","prof <- nm_profile(file.path(ex, ""run2.reg"", ""run2.ctl""), nmfe,
                    param = ""CL"", from = 4.6, to = 5.7, by = 0.1,
                    n_cores = ""auto"")
 prof

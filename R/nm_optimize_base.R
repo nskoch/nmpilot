@@ -104,13 +104,16 @@
 #'
 #' @param run Run directory of the base model (e.g. `"run1.reg"`) or path
 #'   prefix (`"dir/run1"`) whose `.ctl` and `.ext` files are used.
-#' @param out_dir Directory of the new control stream. Default: the analysis
+#' @param output_dir Directory of the new control stream (formerly `out_dir`,
+#'   still accepted with a warning). Default: the analysis
 #'   directory (parent of a `.reg`/`.nm7` run directory), so that the `$DATA`
 #'   path keeps the convention of [nm_run()].
 #' @param name Name of the new run. Default `"<run>_deriv"`.
 #' @param extra Additional data items to tabulate (e.g. an occasion column
 #'   `"OCC"` for inter-occasion variability). Items absent from `$INPUT` are
 #'   dropped with a warning.
+#' @param ... Former argument name, accepted with a warning until version
+#'   1.0: `out_dir` (now `output_dir`).
 #' @return Invisibly, the path of the control stream written. The table file
 #'   is `<name>.dtab`.
 #' @details Not testable without NONMEM: the verbatim code follows the
@@ -120,7 +123,10 @@
 #'   (M3 likelihood) or simulation-only records are not supported.
 #' @seealso [nm_optimize_base()]
 #' @export
-nm_derivatives_ctl <- function(run, out_dir = NULL, name = NULL, extra = NULL) {
+nm_derivatives_ctl <- function(run, output_dir = NULL, name = NULL, extra = NULL, ...) {
+  dep <- .nm_deprecated_args(list(...), c(out_dir = "output_dir"), "nm_derivatives_ctl")
+  if (!is.null(dep$output_dir)) output_dir <- dep$output_dir
+  out_dir <- output_dir
   f <- .nm_w_run_files(run)
   if (is.na(f$ctl)) stop("No .ctl found for run: ", run, call. = FALSE)
   if (is.na(f$ext)) stop("No .ext found for run: ", run, call. = FALSE)
@@ -922,7 +928,7 @@ nm_optimize_base <- function(run, covariates = NULL, deriv = NULL, nmfe_path = N
       if (is.na(deriv) && !is.null(nmfe_path)) {
         say("Level 2: writing and running ", nm_d, ".ctl")
         ctl_d <- nm_derivatives_ctl(run, extra = occ)
-        nm_run(nmfe_path, ctl_files = basename(ctl_d), analysis_dir = ad,
+        nm_run(basename(ctl_d), nmfe_path, analysis_dir = ad,
                skip_terminated = FALSE, verbose = verbose)
         deriv <- cand[file.exists(cand)][1]
       }

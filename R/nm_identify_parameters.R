@@ -1354,10 +1354,14 @@
 #' replaced only if it is used but never assigned in a model record and is
 #' not a `$INPUT` item.
 #'
-#' @param file Path to a NONMEM control stream (`.ctl`).
+#' @param ctl Path to a NONMEM control stream (`.ctl`). (Formerly `file`,
+#'   still accepted with a warning.)
 #' @param likely_pk_only If `TRUE` (default), `mapping_detail` keeps only
 #'   variables that look like PK parameters (CL, V, Q, KA, F, ALAG...).
 #'   `mapping_detail_all` always keeps every variable.
+#'
+#' @param ... Former argument name, accepted with a warning until version
+#'   1.0: `file` (now `ctl`).
 #'
 #' @return An object of class `nm_parameter_map`, a list with, among others:
 #'   `parameter_table` (one row per PK parameter with its THETA/ETA by role;
@@ -1386,7 +1390,10 @@
 #' }
 #' @seealso [nm_identify_directory()], [nm_extract_runs()]
 #' @export
-nm_identify_parameters <- function(file, likely_pk_only = TRUE) {
+nm_identify_parameters <- function(ctl, likely_pk_only = TRUE, ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "ctl"), "nm_identify_parameters")
+  if (!is.null(dep$ctl)) ctl <- dep$ctl
+  file <- ctl
   stopifnot(length(file) == 1L, file.exists(file))
   lines <- readLines(file, warn = FALSE)
   lab <- .nm_ip_expand_labels(lines)

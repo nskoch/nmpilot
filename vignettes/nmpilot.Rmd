@@ -94,8 +94,8 @@ functions that write files are run here on a copy of the example folder.
 file.copy(ex, tempdir(), recursive = TRUE)
 proj <- file.path(tempdir(), "example")
 log <- nm_run(
+  ctl             = c("run1.ctl", "run2.ctl"),
   nmfe_path       = "C:/nm76g64/run/nmfe76.bat",
-  ctl_files       = c("run1.ctl", "run2.ctl"),
   analysis_dir    = proj,
   skip_terminated = FALSE
 )
@@ -124,7 +124,7 @@ A parameter table of one run can be exported to Word with
 `nm_extract_run_table()` (packages flextable and officer):
 
 ```{r run-table, eval = FALSE}
-nm_extract_run_table(run_rep = proj, run_name = "run2")
+nm_extract_run_table(file.path(proj, "run2.reg"))
 ```
 
 ## 5. Goodness-of-fit plots
@@ -154,9 +154,9 @@ simulations). `nm_vpc_ctl()` writes and launches them, then `nm_vpc()` draws
 the VPC or the prediction-corrected VPC.
 
 ```{r vpc, eval = FALSE}
-nm_vpc_ctl(run_name = "run2", analysis_dir = proj,
+nm_vpc_ctl(file.path(proj, "run2.ctl"),
            nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_sim = 500)
-nm_vpc(run_name = "run2", analysis_dir = proj,
+nm_vpc(file.path(proj, "run2.ctl"),
        col_names = c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED"),
        type = 2)
 ```
@@ -168,7 +168,7 @@ nm_vpc(run_name = "run2", analysis_dir = proj,
 executed here.
 
 ```{r uncertainty, eval = FALSE}
-prof <- nm_profile("C:/nm76g64/run/nmfe76.bat", file.path(proj, "run2.ctl"),
+prof <- nm_profile(file.path(proj, "run2.ctl"), "C:/nm76g64/run/nmfe76.bat",
                    param = "THETA(6)", from = 0.1, to = 1, by = 0.1)
 boot <- nm_bootstrap(file.path(proj, "run2.ctl"), "C:/nm76g64/run/nmfe76.bat",
                      n = 500)

@@ -15,7 +15,7 @@ test_that("nm_data_previsual reads, summarises and plots a data set", {
 test_that("nm_data_previsual exports files only when asked", {
   out <- tempfile("pv")
   pv <- nm_data_previsual(write_data_csv(), export_jpg = TRUE, export_csv = TRUE,
-                          out_dir = out, verbose = FALSE)
+                          output_dir = out, verbose = FALSE)
   expect_gt(length(list.files(out)), 0L)
 })
 

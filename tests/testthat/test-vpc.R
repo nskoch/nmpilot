@@ -23,19 +23,19 @@ vpc_cols <- c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED")
 
 test_that("nm_vpc builds VPC and pc-VPC plots", {
   root <- vpc_root()
-  g1 <- suppressMessages(nm_vpc("run1", root, vpc_cols, show_hist = FALSE, bin_method = 3))
+  g1 <- suppressMessages(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, show_hist = FALSE, bin_method = 3))
   expect_s3_class(g1, "ggplot")
   expect_match(g1$labels$title, "^VPC")
-  g2 <- suppressMessages(nm_vpc("run1", root, vpc_cols, type = 2, show_hist = FALSE,
+  g2 <- suppressMessages(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, type = 2, show_hist = FALSE,
                                 bin_method = 2, n_bins_quantile = 4))
   expect_match(g2$labels$title, "^pc-VPC")
 })
 
 test_that("nm_vpc checks its arguments and inputs", {
   root <- vpc_root()
-  expect_error(nm_vpc("run1", root, vpc_cols, type = 3), "type")
-  expect_error(nm_vpc("run1", root, vpc_cols, bin_method = 5), "bin_method")
-  expect_error(nm_vpc("nope", root, vpc_cols, show_hist = FALSE), "nope_orig.fit not found")
+  expect_error(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, type = 3), "type")
+  expect_error(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, bin_method = 5), "bin_method")
+  expect_error(nm_vpc(file.path(root, "nope"), col_names = vpc_cols, show_hist = FALSE), "nope_orig.fit not found")
 })
 
 test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
@@ -57,9 +57,9 @@ test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
     called <<- list(...)
     data.frame(run = "mock")
   })
-  nm_vpc_ctl("est", root, nmfe_path = "nmfe.bat", n_sim = 100, seed = 7, verbose = FALSE)
+  nm_vpc_ctl(file.path(root, "est"), nmfe_path = "nmfe.bat", n_sim = 100, seed = 7, verbose = FALSE)
 
-  expect_equal(basename(called$ctl_files), c("est_orig.ctl", "est_sim.ctl"))
+  expect_equal(basename(called$ctl), c("est_orig.ctl", "est_sim.ctl"))
   sim <- readLines(file.path(root, "est_sim.ctl"))
   orig <- readLines(file.path(root, "est_orig.ctl"))
   expect_true(any(grepl("$SIMULATION (7) ONLYSIM SUBPROBLEMS=100", sim, fixed = TRUE)))
@@ -82,7 +82,7 @@ test_that("nm_vpc_ctl writes _orig and _sim control streams and calls nm_run", {
 test_that("nm_vpc_ctl stops when the estimation run is missing", {
   root <- tempfile("vpcctl2")
   dir.create(root)
-  expect_error(nm_vpc_ctl("est", root, nmfe_path = "nmfe.bat", verbose = FALSE),
+  expect_error(nm_vpc_ctl(file.path(root, "est"), nmfe_path = "nmfe.bat", verbose = FALSE),
                "not found for run 'est'")
 })
 
@@ -93,7 +93,7 @@ test_that("nm_vpc and nm_vpc_ctl work without .reg directories (flat layout)", {
     file.rename(f, file.path(root, basename(f)))
   }
   unlink(file.path(root, c("run1_orig.reg", "run1_sim.reg")), recursive = TRUE)
-  g <- suppressMessages(nm_vpc("run1", root, vpc_cols, show_hist = FALSE, bin_method = 3))
+  g <- suppressMessages(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, show_hist = FALSE, bin_method = 3))
   expect_s3_class(g, "ggplot")
 
   # Estimation run made directly in the analysis directory
@@ -113,7 +113,7 @@ test_that("nm_vpc and nm_vpc_ctl work without .reg directories (flat layout)", {
     called <<- list(...)
     data.frame(run = "mock")
   })
-  nm_vpc_ctl("est", root2, nmfe_path = "nmfe.bat", n_sim = 10, verbose = FALSE)
+  nm_vpc_ctl(file.path(root2, "est"), nmfe_path = "nmfe.bat", n_sim = 10, verbose = FALSE)
   expect_equal(called$run_subdir, "")
   expect_true(file.exists(file.path(root2, "est_sim.ctl")))
 })
@@ -137,7 +137,7 @@ test_that("bin midpoints stay right when a bin between two others is empty", {
 test_that("nm_vpc draws no line with missing points when a bin is empty", {
   root <- vpc_root()
   # breaks 0-2-...-12: the bins 4-6 and 8-10 are empty
-  g <- suppressMessages(nm_vpc("run1", root, vpc_cols, show_hist = FALSE,
+  g <- suppressMessages(nm_vpc(file.path(root, "run1"), col_names = vpc_cols, show_hist = FALSE,
                                bin_method = 1, TTIME_seq_manual = seq(0, 12, by = 2)))
   expect_no_warning(ggplot2::ggplot_build(g))
   obs_lines <- g$layers[vapply(g$layers, function(l) inherits(l$geom, "GeomLine"), TRUE)]

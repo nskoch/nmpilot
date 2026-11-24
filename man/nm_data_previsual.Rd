@@ -24,11 +24,12 @@ nm_data_previsual(
   blq_col = NULL,
   export_jpg = FALSE,
   export_csv = FALSE,
-  out_dir = NULL,
+  output_dir = NULL,
   jpg_width = 9,
   jpg_height = 5,
   jpg_dpi = 300,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -105,12 +106,13 @@ flag column is found, and for \code{"half_lloq"}.
 0 = quantified). If \code{NULL}, auto-detected among \code{"BLQ"},
 \code{"BQL"}, \code{"LLQ"}, \code{"CENS"}.}
 
-\item{export_jpg}{If \code{TRUE}, export the plots as JPG files in \code{out_dir}.}
+\item{export_jpg}{If \code{TRUE}, export the plots as JPG files in \code{output_dir}.}
 
 \item{export_csv}{If \code{TRUE}, export the final data.frame (relative TIME,
-DV_norm) as CSV in \code{out_dir}.}
+DV_norm) as CSV in \code{output_dir}.}
 
-\item{out_dir}{Output directory (default: directory of the source file).}
+\item{output_dir}{Output directory (default: directory of the source file).
+Formerly \code{out_dir}, still accepted with a warning.}
 
 \item{jpg_width}{Width in inches of the JPG export (default 9).}
 
@@ -119,6 +121,9 @@ DV_norm) as CSV in \code{out_dir}.}
 \item{jpg_dpi}{Resolution in dpi (default 300).}
 
 \item{verbose}{Print the identification report (default \code{TRUE}).}
+
+\item{...}{Former argument name, accepted with a warning until
+version 1.0: \code{out_dir} (now \code{output_dir}).}
 }
 \value{
 A list:

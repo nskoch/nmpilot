@@ -278,11 +278,13 @@
 #' directory (`$DATA ../data.csv`, Wings style), and written as an absolute
 #' path in the copied control stream.
 #'
+#' @param ctl Character vector of paths to `.ctl` files. May be absolute
+#'   paths or file names relative to `analysis_dir`. (Formerly `ctl_files`,
+#'   still accepted with a warning; the former order, `nmfe_path` first, is
+#'   also recognised.)
 #' @param nmfe_path Full path to the nmfe executable
 #'   (e.g. `"C:/nm76g64/run/nmfe76.bat"` on Windows, `"/opt/nm760/run/nmfe76"`
 #'   on Linux or macOS, where it is run directly and must be executable).
-#' @param ctl_files Character vector of paths to `.ctl` files. May be absolute
-#'   paths or file names relative to `analysis_dir`.
 #' @param analysis_dir Root directory of the analysis. One run subdirectory
 #'   is created here for each run (see `run_subdir`). A warning is issued
 #'   when it lies in a folder synchronised by a cloud client (Dropbox,
@@ -312,6 +314,8 @@
 #'   If R is interrupted, the runs already started go on in the background.
 #' @param verbose Logical. If `TRUE` (default), progress messages are printed
 #'   to the console.
+#' @param ... Former argument names, accepted with a warning until version
+#'   1.0: `ctl_files` (now `ctl`).
 #'
 #' @return A `data.frame` (run log) with one row per run and the following
 #'   columns:
@@ -351,8 +355,8 @@
 #' @examples
 #' \dontrun{
 #' log <- nm_run(
+#'   ctl             = c("run001.ctl", "run002.ctl", "run003.ctl"),
 #'   nmfe_path       = "C:/nm76g64/run/nmfe76.bat",
-#'   ctl_files       = c("run001.ctl", "run002.ctl", "run003.ctl"),
 #'   analysis_dir    = "C:/analyses/my_pk_project",
 #'   skip_terminated = TRUE,
 #'   accept_failed   = TRUE,
@@ -367,16 +371,31 @@
 #'
 #' @export
 nm_run <- function(
+    ctl,
     nmfe_path,
-    ctl_files,
     analysis_dir,
     skip_terminated = TRUE,
     accept_failed   = TRUE,
     overwrite_ctl   = TRUE,
     run_subdir      = ".reg",
     verbose         = TRUE,
-    n_cores         = 1L
+    n_cores         = 1L,
+    ...
 ) {
+  dep <- .nm_deprecated_args(list(...), c(ctl_files = "ctl"), "nm_run")
+  if (!is.null(dep$ctl)) {
+    # nm_run(nmfe_path = ..., ctl_files = ..., ...): the nmfe path is then
+    # in `ctl` when given by position
+    if (missing(nmfe_path) && !missing(ctl)) nmfe_path <- ctl
+    ctl <- dep$ctl
+  }
+  if (!missing(ctl) && !missing(nmfe_path) && .nm_looks_like_nmfe(ctl) &&
+      !.nm_looks_like_nmfe(nmfe_path)) {
+    warning("nm_run(): the control streams now come first, nm_run(ctl, nmfe_path, ...); ",
+            "the former order was recognised.", call. = FALSE)
+    tmp <- ctl; ctl <- nmfe_path; nmfe_path <- tmp
+  }
+  ctl_files <- ctl
 
   # --- Initial checks ---------------------------------------------------------
 

@@ -14,18 +14,19 @@ nm_bootstrap(
   strata = NULL,
   comment_char = NULL,
   sep = ",",
-  run_dir = NULL,
+  output_dir = NULL,
   keep_datasets = FALSE,
   keep_outputs = FALSE,
   strip_cov = TRUE,
-  strip_table = TRUE,
+  strip_tables = TRUE,
   add_warnings = TRUE,
   warnings_line = "$WARN WARN=NONE",
   include_rounding = FALSE,
   resume = TRUE,
   run = TRUE,
   verbose = TRUE,
-  n_cores = 1L
+  n_cores = 1L,
+  ...
 )
 }
 \arguments{
@@ -49,7 +50,8 @@ IGNORE in $DATA ("@", "#", a letter...); "" = none.}
 
 \item{sep}{Data-file field separator (default ",").}
 
-\item{run_dir}{Working directory (default "<ctl_dir>/\if{html}{\out{<base>}}_bootstrap").}
+\item{output_dir}{Working directory (default "<ctl_dir>/\if{html}{\out{<base>}}_bootstrap").
+Formerly \code{run_dir}, still accepted with a warning.}
 
 \item{keep_datasets}{Keep each replicate data file? (default FALSE = space-optimal).}
 
@@ -57,7 +59,8 @@ IGNORE in $DATA ("@", "#", a letter...); "" = none.}
 
 \item{strip_cov}{Remove $COVARIANCE (default TRUE; useless for a bootstrap).}
 
-\item{strip_table}{Remove $TABLE records (default TRUE; fixed FILE= names would collide).}
+\item{strip_tables}{Remove $TABLE records (default TRUE; fixed FILE= names would collide).
+Formerly \code{strip_table}, which still works.}
 
 \item{add_warnings}{Insert a warning-suppression record (default TRUE).}
 
@@ -79,9 +82,13 @@ session, then reused; \code{options(nmpilot.n_cores = NULL)} asks again).
 Each run is then started in the background in its own directory; if R
 is interrupted, the runs already started go on in the background and a
 later call with the same arguments picks up their results. In parallel, each run uses a
-working subdirectory \verb{slot<k>/} of \code{run_dir}; the estimates are appended
+working subdirectory \verb{slot<k>/} of \code{output_dir}; the estimates are appended
 to \code{bootstrap_estimates.csv} as the replicates end (the file is sorted
 by replicate when the result is assembled).}
+
+\item{...}{Former argument names, accepted with a warning until
+version 1.0: \code{run_dir} (now \code{output_dir}). The former name
+\code{strip_table} still works (R matches it to \code{strip_tables}).}
 }
 \value{
 An object of class "nm_bootstrap" (see print()/plot()).

@@ -22,7 +22,8 @@ An object of class \code{nm_model_diagram}: a list with \code{tree}, a
 data frame with one row per run (\code{run}, \code{parent}, \code{parent_source}:
 "control stream", "argument" or "none", \code{ofv}, \code{dofv_parent}, \code{n_par},
 \code{dpar_parent}, \code{status}, \code{description}, and the layout coordinates \code{x}
-and \code{y}), and \code{plot}, the ggplot2 tree. \code{plot()} draws it; it can be
+and \code{y}; rows in depth-first order, each run right after its parent),
+and \code{plot}, the ggplot2 tree. \code{plot()} draws it; it can be
 saved with \code{\link[=nm_export_plot]{nm_export_plot()}}.
 }
 \description{

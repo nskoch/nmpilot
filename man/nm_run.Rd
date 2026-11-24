@@ -5,24 +5,27 @@
 \title{Run one or more NONMEM models}
 \usage{
 nm_run(
+  ctl,
   nmfe_path,
-  ctl_files,
   analysis_dir,
   skip_terminated = TRUE,
   accept_failed = TRUE,
   overwrite_ctl = TRUE,
   run_subdir = ".reg",
   verbose = TRUE,
-  n_cores = 1L
+  n_cores = 1L,
+  ...
 )
 }
 \arguments{
+\item{ctl}{Character vector of paths to \code{.ctl} files. May be absolute
+paths or file names relative to \code{analysis_dir}. (Formerly \code{ctl_files},
+still accepted with a warning; the former order, \code{nmfe_path} first, is
+also recognised.)}
+
 \item{nmfe_path}{Full path to the nmfe executable
 (e.g. \code{"C:/nm76g64/run/nmfe76.bat"} on Windows, \code{"/opt/nm760/run/nmfe76"}
 on Linux or macOS, where it is run directly and must be executable).}
-
-\item{ctl_files}{Character vector of paths to \code{.ctl} files. May be absolute
-paths or file names relative to \code{analysis_dir}.}
 
 \item{analysis_dir}{Root directory of the analysis. One run subdirectory
 is created here for each run (see \code{run_subdir}). A warning is issued
@@ -59,6 +62,9 @@ parallel, each run is started in the background from its run directory;
 the console output of nmfe goes to \verb{<run>_nmpilot.log}. Runs written in
 the same folder (\code{run_subdir = ""}) are always run one after the other.
 If R is interrupted, the runs already started go on in the background.}
+
+\item{...}{Former argument names, accepted with a warning until version
+1.0: \code{ctl_files} (now \code{ctl}).}
 }
 \value{
 A \code{data.frame} (run log) with one row per run and the following
@@ -111,8 +117,8 @@ allowing safe re-use of \code{nm_run()} on a partially completed batch.
 \examples{
 \dontrun{
 log <- nm_run(
+  ctl             = c("run001.ctl", "run002.ctl", "run003.ctl"),
   nmfe_path       = "C:/nm76g64/run/nmfe76.bat",
-  ctl_files       = c("run001.ctl", "run002.ctl", "run003.ctl"),
   analysis_dir    = "C:/analyses/my_pk_project",
   skip_terminated = TRUE,
   accept_failed   = TRUE,

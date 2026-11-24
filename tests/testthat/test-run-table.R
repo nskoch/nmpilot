@@ -11,7 +11,7 @@ test_that("nm_extract_run_table builds the parameter table and the Word file", {
     ext_row(-1000000006, c(0, 0, 0, 1, 0, 0, 0, 0))),
     file.path(d, "run1.ext"))
   res <- NULL
-  invisible(capture.output(suppressMessages(res <- nm_extract_run_table(run_path = d))))
+  invisible(capture.output(suppressMessages(res <- nm_extract_run_table(d))))
   expect_true(file.exists(res$output_file))
   p <- res$params
   expect_equal(p$Estimate[p$Type == "THETA"], c(4.2, 45, 0.15))
@@ -34,16 +34,16 @@ test_that("nm_extract_run_table finds runs without .reg/.nm7 directories", {
   writeLines(ext_lines, file.path(root, "run1.ext"))
   res <- NULL
   invisible(capture.output(suppressMessages(
-    res <- nm_extract_run_table(run_rep = root, run_name = "run1"))))
+    res <- nm_extract_run_table(file.path(root, "run1")))))
   expect_equal(res$params$Estimate[res$params$Type == "THETA"], 4.2)
   expect_equal(normalizePath(res$run_dir), normalizePath(root))
   invisible(capture.output(suppressMessages(
-    res2 <- nm_extract_run_table(run_path = file.path(root, "run1")))))
+    res2 <- nm_extract_run_table(file.path(root, "run1.ctl")))))
   expect_equal(res2$extension, "flat")
   # Plain folder named after the run
   d <- file.path(tempfile("rtdir"), "run2"); dir.create(d, recursive = TRUE)
   writeLines(ext_lines, file.path(d, "run2.ext"))
   invisible(capture.output(suppressMessages(
-    res3 <- nm_extract_run_table(run_path = d))))
+    res3 <- nm_extract_run_table(d))))
   expect_equal(res3$extension, "dir")
 })

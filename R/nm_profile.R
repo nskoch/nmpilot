@@ -262,9 +262,11 @@
 #' stripped by default; every other record is preserved byte-for-byte. Each run
 #' is written to its own sub-directory under `output_dir/runs/`.
 #'
+#' @param ctl Path to the reference control file. (Formerly `ctl_path`,
+#'   still accepted with a warning; the former order, `nmfe_path` first, is
+#'   also recognised.)
 #' @param nmfe_path Path to the NONMEM launcher (e.g. `nmfe76.bat` on Windows,
 #'   the `nmfe76` script on Linux or macOS).
-#' @param ctl_path Path to the reference control file.
 #' @param param The parameter to profile: a `$THETA` label (matched whole-word,
 #'   case-insensitive, e.g. `"CL"`) or an index (`3`, `"3"`, or `"THETA(3)"`).
 #' @param from,to,by Numeric grid: first value, last value, and increment.
@@ -282,7 +284,10 @@
 #'   derived from `by` when `NULL`.
 #' @param run Logical; if `FALSE`, generate the control files without launching
 #'   NONMEM.
-#' @param quiet Logical; suppress progress messages.
+#' @param verbose Logical; print progress messages (default `TRUE`).
+#'   Formerly `quiet` (the opposite), still accepted with a warning.
+#' @param ... Former argument names, accepted with a warning until version
+#'   1.0: `ctl_path` (now `ctl`) and `quiet` (now `verbose`, the opposite).
 #' @param n_cores Number of grid values run at the same time (default 1). A
 #'   whole number,
 #'   `"auto"` (physical cores minus one, see [nm_cores()]) or `"ask"`
@@ -303,8 +308,8 @@
 #' @examples
 #' \dontrun{
 #' prof <- nm_profile(
+#'   ctl       = "C:/nm76g64/run/test/run_test.reg/run_test.ctl",
 #'   nmfe_path = "C:/nm76g64/run/nmfe76.bat",
-#'   ctl_path  = "C:/nm76g64/run/test/run_test.reg/run_test.ctl",
 #'   param     = "CL", from = 0.1, to = 3, by = 0.05
 #' )
 #' prof                       # summary (print.nm_profile)
@@ -312,7 +317,7 @@
 #' plot(prof, type = "dofv")  # dOFV vs value, with the 3.84 threshold
 #' }
 #' @export
-nm_profile <- function(nmfe_path, ctl_path, param, from, to, by,
+nm_profile <- function(ctl, nmfe_path, param, from, to, by,
                        output_dir   = NULL,
                        strip_tables = TRUE,
                        strip_cov    = TRUE,
@@ -320,8 +325,23 @@ nm_profile <- function(nmfe_path, ctl_path, param, from, to, by,
                        ci_threshold = 3.84,
                        digits       = NULL,
                        run          = TRUE,
-                       quiet        = FALSE,
-                       n_cores      = 1L) {
+                       verbose      = TRUE,
+                       n_cores      = 1L,
+                       ...) {
+  dep <- .nm_deprecated_args(list(...), c(ctl_path = "ctl", quiet = "quiet"), "nm_profile")
+  if (!is.null(dep$quiet)) verbose <- !isTRUE(dep$quiet)
+  if (!is.null(dep$ctl)) {
+    if (missing(nmfe_path) && !missing(ctl)) nmfe_path <- ctl
+    ctl <- dep$ctl
+  }
+  if (!missing(ctl) && !missing(nmfe_path) && .nm_looks_like_nmfe(ctl) &&
+      !.nm_looks_like_nmfe(nmfe_path)) {
+    warning("nm_profile(): the control stream now comes first, nm_profile(ctl, nmfe_path, ...); ",
+            "the former order was recognised.", call. = FALSE)
+    tmp <- ctl; ctl <- nmfe_path; nmfe_path <- tmp
+  }
+  ctl_path <- ctl
+  quiet <- !verbose
 
   say <- function(...) if (!quiet) message(...)
 

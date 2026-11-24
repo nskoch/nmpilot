@@ -45,11 +45,13 @@
 #' @param comment_char   Data-file comment/ignore character. NULL = auto-derive from the single-char
 #'                       IGNORE in $DATA ("@", "#", a letter...); "" = none.
 #' @param sep            Data-file field separator (default ",").
-#' @param run_dir        Working directory (default "<ctl_dir>/<base>_bootstrap").
+#' @param output_dir     Working directory (default "<ctl_dir>/<base>_bootstrap").
+#'   Formerly `run_dir`, still accepted with a warning.
 #' @param keep_datasets  Keep each replicate data file? (default FALSE = space-optimal).
 #' @param keep_outputs   Keep each replicate's NONMEM outputs? (default FALSE; .ext is read then removed).
 #' @param strip_cov      Remove $COVARIANCE (default TRUE; useless for a bootstrap).
-#' @param strip_table    Remove $TABLE records (default TRUE; fixed FILE= names would collide).
+#' @param strip_tables   Remove $TABLE records (default TRUE; fixed FILE= names would collide).
+#'   Formerly `strip_table`, which still works.
 #' @param add_warnings   Insert a warning-suppression record (default TRUE).
 #' @param warnings_line  Exact record inserted (default "$WARN WARN=NONE"; canonical form "$WARNINGS").
 #' @param include_rounding Count "minimisation successful, but rounding errors" runs as successful (default FALSE).
@@ -64,9 +66,12 @@
 #'   Each run is then started in the background in its own directory; if R
 #'   is interrupted, the runs already started go on in the background and a
 #'   later call with the same arguments picks up their results. In parallel, each run uses a
-#'   working subdirectory `slot<k>/` of `run_dir`; the estimates are appended
+#'   working subdirectory `slot<k>/` of `output_dir`; the estimates are appended
 #'   to `bootstrap_estimates.csv` as the replicates end (the file is sorted
 #'   by replicate when the result is assembled).
+#' @param ...            Former argument names, accepted with a warning until
+#'   version 1.0: `run_dir` (now `output_dir`). The former name
+#'   `strip_table` still works (R matches it to `strip_tables`).
 #'
 #' @return An object of class "nm_bootstrap" (see print()/plot()).
 #' @export
@@ -79,18 +84,24 @@ nm_bootstrap <- function(ctl,
                          strata           = NULL,
                          comment_char     = NULL,
                          sep              = ",",
-                         run_dir          = NULL,
+                         output_dir       = NULL,
                          keep_datasets    = FALSE,
                          keep_outputs     = FALSE,
                          strip_cov        = TRUE,
-                         strip_table      = TRUE,
+                         strip_tables     = TRUE,
                          add_warnings     = TRUE,
                          warnings_line    = "$WARN WARN=NONE",
                          include_rounding = FALSE,
                          resume           = TRUE,
                          run              = TRUE,
                          verbose          = TRUE,
-                         n_cores          = 1L) {
+                         n_cores          = 1L,
+                         ...) {
+  # `strip_table` (former name) is matched to `strip_tables` by partial matching
+  dep <- .nm_deprecated_args(list(...), c(run_dir = "output_dir"), "nm_bootstrap")
+  if (!is.null(dep$output_dir)) output_dir <- dep$output_dir
+  run_dir <- output_dir
+  strip_table <- strip_tables
 
   stopifnot(file.exists(ctl))
   n  <- as.integer(n)

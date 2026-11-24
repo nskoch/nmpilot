@@ -97,8 +97,8 @@ nm_write_ctl("C:/nm76g64/run/study/run2.ctl",
 #    A relative $DATA path is read from the control stream folder
 #    ($DATA data.csv) or from the run directory ($DATA ../data.csv).
 log <- nm_run(
+  ctl          = c("run1.ctl", "run2.ctl"),
   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
-  ctl_files    = c("run1.ctl", "run2.ctl"),
   analysis_dir = "C:/nm76g64/run/study"
 )
 
@@ -106,7 +106,7 @@ log <- nm_run(
 runs <- nm_extract_runs("C:/nm76g64/run/study")
 runs                          # OFV, dOFV, minimisation and covariance status
 nm_compare_runs(runs)         # parameters side by side
-nm_extract_run_table(run_path = "C:/nm76g64/run/study/run2.reg")   # Word table
+nm_extract_run_table("C:/nm76g64/run/study/run2.reg")   # Word table
 
 # 5. Diagnostics, and comparison of two models
 gof <- nm_gof("C:/nm76g64/run/study/run2.reg/sdtab2")
@@ -117,15 +117,15 @@ cmp <- nm_compare("C:/nm76g64/run/study/run1.reg",
 plot(cmp)
 
 # 6. VPC / pc-VPC
-nm_vpc_ctl("run2", "C:/nm76g64/run/study",
+nm_vpc_ctl("C:/nm76g64/run/study/run2.ctl",
            nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_sim = 500)
-nm_vpc("run2", "C:/nm76g64/run/study",
+nm_vpc("C:/nm76g64/run/study/run2.ctl",
        col_names = c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED"),
        type = 2)
 
 # 7. Uncertainty
-prof <- nm_profile("C:/nm76g64/run/nmfe76.bat",
-                   "C:/nm76g64/run/study/run2.reg/run2.ctl",
+prof <- nm_profile("C:/nm76g64/run/study/run2.reg/run2.ctl",
+                   "C:/nm76g64/run/nmfe76.bat",
                    param = "CL", from = 2, to = 6, by = 0.25)
 plot(prof, type = "dofv")
 boot <- nm_bootstrap("C:/nm76g64/run/study/run2.reg/run2.ctl",
@@ -165,7 +165,7 @@ number once per R session.
 
 ```r
 nm_cores()          # logical and physical cores
-log <- nm_run("C:/nm76g64/run/nmfe76.bat", sprintf("run%d.ctl", 1:4),
+log <- nm_run(sprintf("run%d.ctl", 1:4), "C:/nm76g64/run/nmfe76.bat",
               "C:/nm76g64/run/study", n_cores = 4)
 jk  <- nm_jackknife("C:/nm76g64/run/study/run2.reg/run2.ctl",
                     nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_cores = "auto")

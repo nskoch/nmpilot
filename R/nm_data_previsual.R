@@ -84,14 +84,17 @@
 #' @param blq_col     Name of the censoring flag column (1 = BLQ,
 #'                    0 = quantified). If `NULL`, auto-detected among `"BLQ"`,
 #'                    `"BQL"`, `"LLQ"`, `"CENS"`.
-#' @param export_jpg  If `TRUE`, export the plots as JPG files in `out_dir`.
+#' @param export_jpg  If `TRUE`, export the plots as JPG files in `output_dir`.
 #' @param export_csv  If `TRUE`, export the final data.frame (relative TIME,
-#'                    DV_norm) as CSV in `out_dir`.
-#' @param out_dir     Output directory (default: directory of the source file).
+#'                    DV_norm) as CSV in `output_dir`.
+#' @param output_dir  Output directory (default: directory of the source file).
+#'                    Formerly `out_dir`, still accepted with a warning.
 #' @param jpg_width   Width in inches of the JPG export (default 9).
 #' @param jpg_height  Height in inches of the JPG export (default 5).
 #' @param jpg_dpi     Resolution in dpi (default 300).
 #' @param verbose     Print the identification report (default `TRUE`).
+#' @param ...         Former argument name, accepted with a warning until
+#'                    version 1.0: `out_dir` (now `output_dir`).
 #'
 #' @return A list:
 #'   - `data`: data.frame with TIME (relative if rebuilt) and DV_norm
@@ -145,11 +148,15 @@ nm_data_previsual <- function(file,
                               blq_col          = NULL,
                               export_jpg       = FALSE,
                               export_csv       = FALSE,
-                              out_dir          = NULL,
+                              output_dir       = NULL,
                               jpg_width        = 9,
                               jpg_height       = 5,
                               jpg_dpi          = 300,
-                              verbose          = TRUE) {
+                              verbose          = TRUE,
+                              ...) {
+  dep <- .nm_deprecated_args(list(...), c(out_dir = "output_dir"), "nm_data_previsual")
+  if (!is.null(dep$output_dir)) output_dir <- dep$output_dir
+  out_dir <- output_dir
 
   time_unit    <- match.arg(time_unit)
   scales       <- match.arg(scales)

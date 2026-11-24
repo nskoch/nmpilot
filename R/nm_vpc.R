@@ -92,12 +92,16 @@ NULL
 #' \code{\link{nm_vpc_ctl}}, computes observed and simulated percentiles in
 #' time bins, and returns a \code{ggplot2} VPC or pc-VPC plot.
 #'
-#' @param run_name Name of the estimation run without extension
-#'   (e.g. \code{"run001"}). The function looks for
+#' @param run Path of the estimation run, as given to
+#'   \code{\link{nm_vpc_ctl}}: its control stream
+#'   (\code{"C:/project/run001.ctl"}), its run directory or its stem
+#'   (\code{"C:/project/run001"}). The function looks for
 #'   \code{run001_orig.fit} and \code{run001_sim.fit}, looked for in
 #'   \code{run001_orig.reg/} (resp. \code{_sim.reg/}), \code{.nm7/}, a folder
-#'   of the same name, then directly in \code{analysis_dir}.
-#' @param analysis_dir Root directory of the analysis.
+#'   of the same name, then directly in the folder of the run.
+#' @param analysis_dir Deprecated (former form \code{run_name} +
+#'   \code{analysis_dir}): when given, \code{run} is read as the run name in
+#'   this directory, with a warning.
 #' @param col_names Character vector of column names matching the \code{$TABLE}
 #'   output columns in the \code{.fit} files
 #'   (e.g. \code{c("NSIM","ID","TIME","AMT","MDV","DV","PRED","IPRED")}).
@@ -119,12 +123,14 @@ NULL
 #' @param bin_rule Rule for automatic binning (\code{bin_method = 4}):
 #'   \code{"Sturges"}, \code{"Scott"}, or \code{"FD"} (default).
 #' @param plot_title Character. Title of the VPC plot. If \code{NULL}
-#'   (default), a title is generated from \code{run_name} and \code{type}.
+#'   (default), a title is generated from the run name and \code{type}.
 #' @param plot_file Character. If provided, the plot is saved to this path
 #'   (e.g. \code{"vpc_run001.jpeg"}) through \code{\link{nm_export_plot}}
 #'   (\code{.jpg}, \code{.png}, \code{.pdf} or \code{.tiff}).
 #' @param show_hist Logical. If \code{TRUE} (default), prints a diagnostic
 #'   histogram of observed TIME with bin boundaries before the VPC plot.
+#' @param ... Former argument name, accepted with a warning until version
+#'   1.0: \code{run_name} (now \code{run}).
 #'
 #' @return A \code{ggplot2} object, displayed when not assigned.
 #'
@@ -144,8 +150,7 @@ NULL
 #'
 #' # Standard VPC
 #' p <- nm_vpc(
-#'   run_name     = "run001",
-#'   analysis_dir = "C:/analyses/my_pk_project",
+#'   run          = "C:/analyses/my_pk_project/run001.ctl",
 #'   col_names    = col_names,
 #'   type         = 1,
 #'   bin_method   = 4
@@ -153,8 +158,7 @@ NULL
 #'
 #' # pc-VPC with manual bins, saved to file
 #' p <- nm_vpc(
-#'   run_name         = "run001",
-#'   analysis_dir     = "C:/analyses/my_pk_project",
+#'   run              = "C:/analyses/my_pk_project/run001.ctl",
 #'   col_names        = col_names,
 #'   type             = 2,
 #'   bin_method       = 1,
@@ -167,8 +171,8 @@ NULL
 #'
 #' @export
 nm_vpc <- function(
-    run_name,
-    analysis_dir,
+    run,
+    analysis_dir     = NULL,
     col_names,
     type             = 1,
     pi_low           = 0.05,
@@ -181,8 +185,19 @@ nm_vpc <- function(
     bin_rule         = "FD",
     plot_title       = NULL,
     plot_file        = NULL,
-    show_hist        = TRUE
+    show_hist        = TRUE,
+    ...
 ) {
+  dep <- .nm_deprecated_args(list(...), c(run_name = "run"), "nm_vpc")
+  if (!is.null(dep$run)) run <- dep$run
+  if (!is.null(analysis_dir)) {
+    warning("In nm_vpc(), `analysis_dir` is deprecated: give the path of the run, ",
+            "e.g. run = \"", file.path(analysis_dir, run), ".ctl\".", call. = FALSE)
+    run_name <- run
+  } else {
+    ra <- .nm_run_arg(run)
+    run_name <- ra$run_name; analysis_dir <- ra$analysis_dir
+  }
 
   # --- Checks -----------------------------------------------------------------
   if (!type %in% c(1, 2)) stop("type must be 1 (VPC) or 2 (pc-VPC).")

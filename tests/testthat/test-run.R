@@ -25,17 +25,17 @@ fake_nmfe <- function(dir) {
 test_that("nm_run checks its inputs", {
   root <- run_setup()
   nmfe <- fake_nmfe(root)
-  expect_error(nm_run(file.path(root, "none.bat"), "r1.ctl", root), "nmfe executable not found")
-  expect_error(nm_run(nmfe, "r1.ctl", file.path(root, "nodir")), "does not exist")
-  expect_error(nm_run(nmfe, character(0), root), "No .ctl")
-  log <- nm_run(nmfe, "absent.ctl", root, verbose = FALSE)
+  expect_error(nm_run("r1.ctl", file.path(root, "none.bat"), root), "nmfe executable not found")
+  expect_error(nm_run("r1.ctl", nmfe, file.path(root, "nodir")), "does not exist")
+  expect_error(nm_run(character(0), nmfe, root), "No .ctl")
+  log <- nm_run("absent.ctl", nmfe, root, verbose = FALSE)
   expect_equal(log$action, "skipped_no_ctl")
 })
 
 test_that("nm_run copies the control stream, fixes $DATA and launches nmfe", {
   root <- run_setup()
   nmfe <- fake_nmfe(root)
-  expect_silent(log <- nm_run(nmfe, "r1.ctl", root, verbose = FALSE))
+  expect_silent(log <- nm_run("r1.ctl", nmfe, root, verbose = FALSE))
   expect_equal(log$action, "launched")
   expect_equal(log$exit_status, 0L)
   reg <- file.path(root, "r1.reg")
@@ -47,7 +47,7 @@ test_that("nm_run copies the control stream, fixes $DATA and launches nmfe", {
   expect_true(log$min_ok)
 
   # A terminated run is skipped the second time.
-  log2 <- nm_run(nmfe, "r1.ctl", root, verbose = FALSE)
+  log2 <- nm_run("r1.ctl", nmfe, root, verbose = FALSE)
   expect_equal(log2$action, "skipped_done")
 })
 
@@ -66,7 +66,7 @@ test_that("nm_run accepts $DATA relative to the control stream folder", {
   ctl <- file.path(root, "r1.ctl")
   l <- readLines(ctl); l[grepl("^\\$DATA", l)] <- "$DATA data.csv IGNORE=@"
   writeLines(l, ctl)
-  log <- nm_run(fake_nmfe(root), "r1.ctl", root, verbose = FALSE)
+  log <- nm_run("r1.ctl", fake_nmfe(root), root, verbose = FALSE)
   data_line <- grep("^\\$DATA", readLines(file.path(root, "r1.reg", "r1.ctl")), value = TRUE)
   data_path <- strsplit(trimws(data_line), "\\s+")[[1]][2]
   expect_true(file.exists(data_path))
@@ -79,15 +79,15 @@ test_that("nm_run can run in the control stream folder (run_subdir = \"\")", {
   l <- readLines(ctl); l[grepl("^\\$DATA", l)] <- "$DATA data.csv IGNORE=@"
   writeLines(l, ctl)
   before <- readLines(ctl)
-  log <- nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = "", verbose = FALSE)
+  log <- nm_run("r1.ctl", fake_nmfe(root), root, run_subdir = "", verbose = FALSE)
   expect_equal(log$action, "launched")
   expect_false(dir.exists(file.path(root, "r1.reg")))
   expect_true(file.exists(file.path(root, "r1.lst")))
   expect_identical(readLines(ctl), before)       # control stream left untouched
-  expect_equal(nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = "",
+  expect_equal(nm_run("r1.ctl", fake_nmfe(root), root, run_subdir = "",
                       verbose = FALSE)$action, "skipped_done")
   # Other suffix
-  log3 <- nm_run(fake_nmfe(root), "r1.ctl", root, run_subdir = ".run", verbose = FALSE)
+  log3 <- nm_run("r1.ctl", fake_nmfe(root), root, run_subdir = ".run", verbose = FALSE)
   expect_true(file.exists(file.path(root, "r1.run", "r1.lst")))
 })
 
@@ -96,7 +96,7 @@ test_that("nm_run refuses a Wings label control stream in the flat layout", {
   writeLines(c("$PROB x", "$INPUT ID TIME AMT DV", "$DATA data.csv IGNORE=@",
                "$PRED", "  Y = POPA + EPS(1)", "$THETA 1 ;POPA", "$SIGMA 1"),
              file.path(root, "w1.ctl"))
-  expect_error(nm_run(fake_nmfe(root), "w1.ctl", root, run_subdir = "", verbose = FALSE),
+  expect_error(nm_run("w1.ctl", fake_nmfe(root), root, run_subdir = "", verbose = FALSE),
                "Wings label syntax")
 })
 

@@ -168,12 +168,16 @@ NULL
 #' }
 #' Both control streams are then launched via \code{\link{nm_run}}.
 #'
-#' @param run_name Name of the estimation run, without extension
-#'   (e.g. \code{"run001"}). Its \code{.ctl}, \code{.ext} and \code{.lst}
-#'   files are looked for in \code{run001.reg/}, \code{run001.nm7/},
-#'   \code{run001/}, then directly in \code{analysis_dir} (flat layout).
-#' @param analysis_dir Root directory of the analysis, containing the
-#'   estimation run (in a subdirectory or directly).
+#' @param run Path of the estimation run: its control stream
+#'   (\code{"C:/project/run001.ctl"}), its run directory
+#'   (\code{"C:/project/run001.reg"}) or its stem (\code{"C:/project/run001"}).
+#'   Its \code{.ctl}, \code{.ext} and \code{.lst} files are looked for in
+#'   \code{run001.reg/}, \code{run001.nm7/}, \code{run001/}, then directly in
+#'   the folder of the run (flat layout); this folder is the analysis
+#'   directory, where the VPC control streams are written.
+#' @param analysis_dir Deprecated (former form \code{run_name} +
+#'   \code{analysis_dir}): when given, \code{run} is read as the run name in
+#'   this directory, with a warning.
 #' @param nmfe_path Full path to the nmfe executable
 #'   (e.g. \code{"C:/nm76g64/run/nmfe76.bat"} on Windows,
 #'   \code{"/opt/nm760/run/nmfe76"} on Linux or macOS).
@@ -184,10 +188,12 @@ NULL
 #' @param run_subdir Layout of the two VPC runs, passed to
 #'   \code{\link{nm_run}}. By default (\code{NULL}) the layout of the
 #'   estimation run is reused: \code{""} (flat) if its files were found
-#'   directly in \code{analysis_dir}, \code{".reg"} otherwise.
+#'   directly in the analysis directory, \code{".reg"} otherwise.
 #' @param verbose Passed to \code{\link{nm_run}} and used locally for messages.
 #' @param n_cores Passed to \code{\link{nm_run}}: 2 runs the \code{_orig} and
 #'   \code{_sim} control streams at the same time (default 1).
+#' @param ... Former argument name, accepted with a warning until version
+#'   1.0: \code{run_name} (now \code{run}).
 #'
 #' @return A \code{data.frame} run log (from \code{\link{nm_run}}) with one
 #'   row per VPC run (\code{_orig} and \code{_sim}).
@@ -201,38 +207,48 @@ NULL
 #' estimation run (row \code{-1000000000}) and written as \code{FIX} values
 #' in both generated control streams.
 #'
-#' The generated \code{.ctl} files are written to \code{analysis_dir} (not
+#' The generated \code{.ctl} files are written to the analysis directory (not
 #' inside a run subdirectory). They can be inspected or edited before running
 #' if needed. Wings for NONMEM is not required.
 #'
 #' @examples
 #' \dontrun{
 #' log <- nm_vpc_ctl(
-#'   run_name     = "run001",
-#'   analysis_dir = "C:/analyses/my_pk_project",
+#'   run          = "C:/analyses/my_pk_project/run001.ctl",
 #'   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
 #'   n_sim        = 500,
 #'   seed         = 12345
 #' )
 #' print(log)
 #' # Then run the VPC:
-#' # fig <- nm_vpc("C:/analyses/my_pk_project", run_name = "run001")
+#' # fig <- nm_vpc("C:/analyses/my_pk_project/run001.ctl")
 #' }
 #'
 #' @seealso \code{\link{nm_run}}
 #'
 #' @export
 nm_vpc_ctl <- function(
-    run_name,
-    analysis_dir,
+    run,
+    analysis_dir     = NULL,
     nmfe_path,
     n_sim            = 500,
     seed             = 12345,
     skip_terminated  = TRUE,
     run_subdir       = NULL,
     verbose          = TRUE,
-    n_cores          = 1L
+    n_cores          = 1L,
+    ...
 ) {
+  dep <- .nm_deprecated_args(list(...), c(run_name = "run"), "nm_vpc_ctl")
+  if (!is.null(dep$run)) run <- dep$run
+  if (!is.null(analysis_dir)) {
+    warning("In nm_vpc_ctl(), `analysis_dir` is deprecated: give the path of the run, ",
+            "e.g. run = \"", file.path(analysis_dir, run), ".ctl\".", call. = FALSE)
+    run_name <- run
+  } else {
+    ra <- .nm_run_arg(run)
+    run_name <- ra$run_name; analysis_dir <- ra$analysis_dir
+  }
 
   analysis_dir <- normalizePath(analysis_dir, mustWork = TRUE)
 
@@ -272,7 +288,7 @@ nm_vpc_ctl <- function(
 
   nm_run(
     nmfe_path       = nmfe_path,
-    ctl_files       = c(orig_ctl, sim_ctl),
+    ctl             = c(orig_ctl, sim_ctl),
     analysis_dir    = analysis_dir,
     skip_terminated = skip_terminated,
     run_subdir      = run_subdir,

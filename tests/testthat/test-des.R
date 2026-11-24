@@ -51,7 +51,7 @@ test_that("nm_derivatives_ctl keeps $DES and adds the derivative tables", {
   file.copy(file.path(ex, "run2.lst"), file.path(reg, "run3_des.lst"))
   file.copy(file.path(ex, "run2.phi"), file.path(reg, "run3_des.phi"))
   out <- file.path(root, "deriv"); dir.create(out)
-  suppressMessages(nm_derivatives_ctl(reg, out_dir = out))
+  suppressMessages(nm_derivatives_ctl(reg, output_dir = out))
   d <- readLines(list.files(out, "\\.ctl$", full.names = TRUE)[1])
   expect_true(keeps_des(d))
   expect_true(any(grepl("G_ETA1 = G\\(1,1\\)", d)))

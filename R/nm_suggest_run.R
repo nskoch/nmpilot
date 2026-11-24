@@ -109,7 +109,7 @@ nm_suggest_run <- function(x, analysis_dir, nmfe_path = NULL, candidates = 1:3,
   if (run) {
     # with overwrite, the control streams have just been rewritten: previous
     # results of the same runs must not be reused
-    log <- nm_run(nmfe_path, ctl_files, analysis_dir, skip_terminated = !overwrite,
+    log <- nm_run(ctl_files, nmfe_path, analysis_dir, skip_terminated = !overwrite,
                   verbose = verbose, n_cores = n_cores)
     m <- match(tools::file_path_sans_ext(basename(ctl_files)), log$run)
     out$ofv <- log$ofv[m]

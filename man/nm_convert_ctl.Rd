@@ -4,20 +4,24 @@
 \alias{nm_convert_ctl}
 \title{Convert a Wings for NONMEM extended control stream to standard NONMEM}
 \usage{
-nm_convert_ctl(ctl_file, out_file = NULL, overwrite = FALSE, verbose = TRUE)
+nm_convert_ctl(ctl, out_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
 }
 \arguments{
-\item{ctl_file}{Path to the Wings extended control stream (\code{.ctl}).}
+\item{ctl}{Path to the Wings extended control stream (\code{.ctl}).
+(Formerly \code{ctl_file}, still accepted with a warning.)}
 
 \item{out_file}{Output path for the converted control stream. If
 \code{NULL} (default), the output file is named
-\code{<run>_converted.ctl} in the same directory as \code{ctl_file}.}
+\code{<run>_converted.ctl} in the same directory as \code{ctl}.}
 
 \item{overwrite}{Logical. If \code{TRUE}, overwrite \code{out_file} if it
 already exists (default \code{FALSE}).}
 
 \item{verbose}{Logical. If \code{TRUE} (default), print a summary of
 substitutions made.}
+
+\item{...}{Former argument name, accepted with a warning until version
+1.0: \code{ctl_file} (now \code{ctl}).}
 }
 \value{
 Invisibly returns the path to the converted control stream.
@@ -53,8 +57,8 @@ out <- nm_convert_ctl("C:/analyses/run001_wfn.ctl")
 
 # Then run with nmpilot
 log <- nm_run(
+  ctl          = out,
   nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
-  ctl_files    = out,
   analysis_dir = "C:/analyses"
 )
 }

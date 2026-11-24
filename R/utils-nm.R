@@ -88,3 +88,64 @@ utils::globalVariables(c(
        " not found for run '", run_name, "'. Folders tried:\n - ",
        paste(cand, collapse = "\n - "), call. = FALSE)
 }
+
+# -----------------------------------------------------------------------------
+# Deprecated argument names (action 11, interface harmonised before 1.0)
+# -----------------------------------------------------------------------------
+
+# Old argument names given by name land in `...`. `map` gives, for each old
+# name, the new one. Returns a named list (new name -> value) and warns once
+# per old name; any other name in `...` is an error, as for an unused
+# argument.
+.nm_deprecated_args <- function(dots, map, fun) {
+  if (!length(dots)) return(list())
+  nm <- names(dots)
+  if (is.null(nm) || any(!nzchar(nm)))
+    stop("Unnamed extra argument(s) in ", fun, "().", call. = FALSE)
+  bad <- setdiff(nm, names(map))
+  if (length(bad))
+    stop("unused argument(s) in ", fun, "(): ", paste(bad, collapse = ", "), call. = FALSE)
+  out <- list()
+  for (o in nm) {
+    n <- map[[o]]
+    warning("In ", fun, "(), `", o, "` is deprecated; use `", n, "` instead.", call. = FALSE)
+    out[[n]] <- dots[[o]]
+  }
+  out
+}
+
+# TRUE when `x` looks like the nmfe launcher rather than a control stream,
+# used to recognise the former argument order of nm_run() and nm_profile()
+# (nmfe_path first).
+.nm_looks_like_nmfe <- function(x) {
+  is.character(x) && length(x) == 1L && !is.na(x) &&
+    grepl("^nmfe", basename(x), ignore.case = TRUE) &&
+    !grepl("\\.(ctl|mod)$", x, ignore.case = TRUE)
+}
+
+# A finished run given as one path (`run`): its control stream
+# (".../run2.ctl"), its run directory (".../run2.reg", ".nm7", ".../run2/")
+# or its stem (".../run2"). Returns the analysis directory and the run name,
+# as expected by the functions that look for <run>.reg, <run>.nm7, <run>/ or
+# the flat layout.
+.nm_run_arg <- function(run, extensions = c("nm7", "reg")) {
+  if (!is.character(run) || length(run) != 1L || is.na(run) || !nzchar(trimws(run)))
+    stop("`run` must be the path of a run: its control stream, its run directory or its stem.",
+         call. = FALSE)
+  p <- sub("/+$", "", gsub("\\\\", "/", trimws(run)))
+  ext_pat <- paste0("\\.(", paste(extensions, collapse = "|"), ")$")
+  if (grepl("\\.(ctl|mod|ext|lst)$", p, ignore.case = TRUE)) {
+    name <- tools::file_path_sans_ext(basename(p))
+    dir <- dirname(p)
+    # control stream copied in its run directory (run2.reg/run2.ctl): the
+    # analysis directory is one level up. In a folder named like the run
+    # (run2/run2.ctl), the files are found there as a flat layout.
+    if (grepl(ext_pat, basename(dir), ignore.case = TRUE))
+      dir <- dirname(dir)
+    return(list(analysis_dir = dir, run_name = name))
+  }
+  if (grepl(ext_pat, p, ignore.case = TRUE))
+    return(list(analysis_dir = dirname(p),
+                run_name = sub(ext_pat, "", basename(p), ignore.case = TRUE)))
+  list(analysis_dir = dirname(p), run_name = basename(p))
+}

@@ -1,5 +1,27 @@
 # nmpilot (development version)
 
+* Argument names harmonised before version 1.0 (point A.11, first part). The
+  former names and forms still work until 1.0, with a warning that gives
+  the new one:
+  * the control stream is `ctl` everywhere: `nm_run(ctl, nmfe_path, ...)`
+    (formerly `ctl_files`, after `nmfe_path`), `nm_profile(ctl, nmfe_path,
+    ...)` (formerly `ctl_path`, after `nmfe_path`), `nm_identify_parameters(ctl)`
+    (formerly `file`), `nm_convert_ctl(ctl)` (formerly `ctl_file`). The
+    former order, with `nmfe_path` first, is recognised when the arguments
+    are given by position;
+  * a finished run is given by its path, `run` (control stream, run
+    directory or stem): `nm_vpc(run, ...)` and `nm_vpc_ctl(run, ...)`
+    (formerly `run_name` + `analysis_dir`), `nm_extract_run_table(run)`
+    (formerly `run_rep` + `run_name`, or `run_path`);
+  * the output directory is `output_dir`: `nm_bootstrap()` (formerly
+    `run_dir`), `nm_derivatives_ctl()` and `nm_data_previsual()` (formerly
+    `out_dir`);
+  * `nm_profile()` takes `verbose` (formerly `quiet`, the opposite), and
+    `nm_bootstrap()` `strip_tables` (formerly `strip_table`), as the other
+    functions.
+  The README, the vignettes, the guide and the tests use the new names.
+  Tests in `test-deprecated-args.R`.
+
 * New function `nm_model_diagram()` (point A.7): tree of the models tested in
   a project. Each run is linked to the run it was derived from, read in its
   control stream as a comment with the PsN and Pirana convention

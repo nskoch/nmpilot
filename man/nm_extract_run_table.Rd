@@ -5,22 +5,22 @@
 \title{Parameter table of one NONMEM run, exported to Word}
 \usage{
 nm_extract_run_table(
-  run_rep = NULL,
+  run = NULL,
   run_name = NULL,
   run_path = NULL,
   output_name = "nonmem_results.docx",
-  extensions = c("nm7", "reg")
+  extensions = c("nm7", "reg"),
+  ...
 )
 }
 \arguments{
-\item{run_rep}{Parent directory containing the run directory, or the
-run files themselves (flat layout).}
+\item{run}{Path of the run: run directory, control stream or stem.}
 
-\item{run_name}{Run name (stem of the \code{.ext} file). A full path given
-here by mistake is converted automatically.}
+\item{run_name}{Deprecated: with \code{run_name}, \code{run} is read as the
+parent directory (former argument \code{run_rep}) and \code{run_name} as the run
+name. A full path given here by mistake is converted automatically.}
 
-\item{run_path}{Full path to the run (alternative to \code{run_rep} +
-\code{run_name}).}
+\item{run_path}{Deprecated: former name of \code{run}.}
 
 \item{output_name}{Name of the Word file, written in the run directory
 (default \code{"nonmem_results.docx"}).}
@@ -28,6 +28,9 @@ here by mistake is converted automatically.}
 \item{extensions}{Run directory extensions to try first, in order
 (default \code{c("nm7", "reg")}), before the folder \verb{<run>} and the flat
 layout.}
+
+\item{...}{Former argument name, accepted with a warning until
+version 1.0: \code{run_rep} (with \code{run_name}).}
 }
 \value{
 Invisibly, a list with \code{flextable}, \code{params} (parameter table),
@@ -45,22 +48,20 @@ standard deviations are derived from the variances (delta method for their
 SE); ETA correlations are derived from the OMEGA matrix.
 }
 \details{
-Two call forms are accepted:
-\itemize{
-\item \code{run_rep} (parent directory) + \code{run_name};
-\item \code{run_path}, the full path to the run directory (\code{.nm7}, \code{.reg}) or to
-the run stem (e.g. \verb{C:/project/run1} for \verb{C:/project/run1.ext}).
-}
+The run is given by its path, \code{run}: its run directory (\code{.nm7}, \code{.reg}),
+its control stream, or its stem (e.g. \verb{C:/project/run1} for
+\verb{C:/project/run1.ext}). The \code{.ext} file is looked for in \verb{<run>.nm7/},
+\verb{<run>.reg/}, a folder named \verb{<run>}, then directly in the folder of the
+run (flat layout, as produced by a plain nmfe call). Wings for NONMEM is
+not required.
 
-The \code{.ext} file is looked for in \verb{<run>.nm7/}, \verb{<run>.reg/}, a folder named
-\verb{<run>}, then directly in \code{run_rep} (flat layout, as produced by a plain
-nmfe call). Wings for NONMEM is not required.
+The former call forms, \code{run_rep} (parent directory) + \code{run_name}, and
+\code{run_path}, are still accepted with a warning until version 1.0.
 }
 \examples{
 \dontrun{
-res <- nm_extract_run_table(run_rep = "C:/nm76g64/run/para",
-                            run_name = "run_1_prop_kaBbloc")
-res <- nm_extract_run_table(run_path = "C:/nm76g64/run/para/run_1_prop_kaBbloc.reg")
+res <- nm_extract_run_table("C:/nm76g64/run/para/run_1_prop_kaBbloc.reg")
+res <- nm_extract_run_table("C:/nm76g64/run/para/run_1_prop_kaBbloc.ctl")
 res$params
 }
 }

@@ -4,14 +4,18 @@
 \alias{nm_identify_parameters}
 \title{Identify the semantic role of THETA and ETA in a NONMEM control stream}
 \usage{
-nm_identify_parameters(file, likely_pk_only = TRUE)
+nm_identify_parameters(ctl, likely_pk_only = TRUE, ...)
 }
 \arguments{
-\item{file}{Path to a NONMEM control stream (\code{.ctl}).}
+\item{ctl}{Path to a NONMEM control stream (\code{.ctl}). (Formerly \code{file},
+still accepted with a warning.)}
 
 \item{likely_pk_only}{If \code{TRUE} (default), \code{mapping_detail} keeps only
 variables that look like PK parameters (CL, V, Q, KA, F, ALAG...).
 \code{mapping_detail_all} always keeps every variable.}
+
+\item{...}{Former argument name, accepted with a warning until version
+1.0: \code{file} (now \code{ctl}).}
 }
 \value{
 An object of class \code{nm_parameter_map}, a list with, among others:

@@ -7,8 +7,8 @@
 \title{Profile the objective function over one model parameter}
 \usage{
 nm_profile(
+  ctl,
   nmfe_path,
-  ctl_path,
   param,
   from,
   to,
@@ -20,8 +20,9 @@ nm_profile(
   ci_threshold = 3.84,
   digits = NULL,
   run = TRUE,
-  quiet = FALSE,
-  n_cores = 1L
+  verbose = TRUE,
+  n_cores = 1L,
+  ...
 )
 
 \method{print}{nm_profile}(x, ...)
@@ -29,10 +30,12 @@ nm_profile(
 \method{plot}{nm_profile}(x, type = c("ofv", "dofv"), ...)
 }
 \arguments{
+\item{ctl}{Path to the reference control file. (Formerly \code{ctl_path},
+still accepted with a warning; the former order, \code{nmfe_path} first, is
+also recognised.)}
+
 \item{nmfe_path}{Path to the NONMEM launcher (e.g. \code{nmfe76.bat} on Windows,
 the \code{nmfe76} script on Linux or macOS).}
-
-\item{ctl_path}{Path to the reference control file.}
 
 \item{param}{The parameter to profile: a \verb{$THETA} label (matched whole-word,
 case-insensitive, e.g. \code{"CL"}) or an index (\code{3}, \code{"3"}, or \code{"THETA(3)"}).}
@@ -59,7 +62,8 @@ derived from \code{by} when \code{NULL}.}
 \item{run}{Logical; if \code{FALSE}, generate the control files without launching
 NONMEM.}
 
-\item{quiet}{Logical; suppress progress messages.}
+\item{verbose}{Logical; print progress messages (default \code{TRUE}).
+Formerly \code{quiet} (the opposite), still accepted with a warning.}
 
 \item{n_cores}{Number of grid values run at the same time (default 1). A
 whole number,
@@ -70,9 +74,9 @@ Each run is then started in the background in its own directory; if R
 is interrupted, the runs already started go on in the background and a
 later call with the same arguments picks up their results.}
 
-\item{x}{An \code{nm_profile} object.}
-
 \item{...}{Ignored.}
+
+\item{x}{An \code{nm_profile} object.}
 
 \item{type}{Which figure to draw: \code{"ofv"} (OFV vs value) or \code{"dofv"}
 (delta-OFV vs value, with the \code{ci_threshold} line).}
@@ -100,8 +104,8 @@ is written to its own sub-directory under \verb{output_dir/runs/}.
 \examples{
 \dontrun{
 prof <- nm_profile(
+  ctl       = "C:/nm76g64/run/test/run_test.reg/run_test.ctl",
   nmfe_path = "C:/nm76g64/run/nmfe76.bat",
-  ctl_path  = "C:/nm76g64/run/test/run_test.reg/run_test.ctl",
   param     = "CL", from = 0.1, to = 3, by = 0.05
 )
 prof                       # summary (print.nm_profile)

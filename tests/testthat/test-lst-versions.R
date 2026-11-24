@@ -183,12 +183,12 @@ test_that("nm_extract_run_table uses the .lst when the .ext is missing or empty"
   ex_dir <- system.file("extdata", "example", "run2.reg", package = "nmpilot")
   ref_root <- tempfile(); dir.create(file.path(ref_root, "run2.reg"), recursive = TRUE)
   file.copy(list.files(ex_dir, full.names = TRUE), file.path(ref_root, "run2.reg"))
-  ref <- suppressMessages(nm_extract_run_table(run_rep = ref_root, run_name = "run2"))
+  ref <- suppressMessages(nm_extract_run_table(file.path(ref_root, "run2")))
   expect_identical(ref$ext$source %||% "ext", "ext")
 
   # no .ext: only the .lst
   root <- tempfile(); d <- make_run2(root, "run2", ex_lst2())
-  r <- suppressMessages(nm_extract_run_table(run_rep = root, run_name = "run2"))
+  r <- suppressMessages(nm_extract_run_table(file.path(root, "run2")))
   expect_true(file.exists(file.path(d, "nonmem_results.docx")))
   expect_identical(r$ext$source, "lst")
   expect_true(is.na(r$ext_file))
@@ -200,9 +200,9 @@ test_that("nm_extract_run_table uses the .lst when the .ext is missing or empty"
 
   # empty .ext: the .lst is used as well
   file.create(file.path(d, "run2.ext"))
-  r2 <- suppressMessages(nm_extract_run_table(run_rep = root, run_name = "run2"))
+  r2 <- suppressMessages(nm_extract_run_table(file.path(root, "run2")))
   expect_identical(r2$ext$source, "lst")
 
   # neither .ext nor .lst
-  expect_error(nm_extract_run_table(run_rep = tempfile(), run_name = "none"), "No .ext or .lst")
+  expect_error(nm_extract_run_table(file.path(tempfile(), "none")), "No .ext or .lst")
 })
