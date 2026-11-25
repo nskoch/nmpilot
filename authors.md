@@ -8,7 +8,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/nskoch/nmpilot/blob/main/inst/CITATION)
+[`inst/CITATION`](https://github.com/nskoch/nmpilot/blob/v0.9.0/inst/CITATION)
 
 Simon N (2026). nmpilot: R Tools for Direct NONMEM Workflow Automation.
 R package version 0.9.0. https://github.com/nskoch/nmpilot
