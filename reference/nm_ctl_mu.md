@@ -14,9 +14,10 @@ nm_ctl_mu(
   ctl,
   parameters = NULL,
   mode = c("readable", "linear"),
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 ```
 
@@ -40,9 +41,10 @@ nm_ctl_mu(
   value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses
   an initial estimate of 0 unless it is fixed).
 
-- file:
+- output_file:
 
-  Output path. If `NULL` (default), nothing is written.
+  Output path. If `NULL` (default), nothing is written. (Formerly
+  `file`, still accepted with a warning.)
 
 - overwrite:
 
@@ -51,6 +53,10 @@ nm_ctl_mu(
 - verbose:
 
   Logical. Print a message when the file is written.
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

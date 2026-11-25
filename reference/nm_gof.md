@@ -22,10 +22,11 @@ nm_gof(
   log_pred = FALSE,
   stem = NULL,
   save_docx = FALSE,
-  docx_file = NULL,
+  output_file = NULL,
   width = 6.5,
   height = 5,
-  dpi = 150
+  dpi = 150,
+  ...
 )
 ```
 
@@ -84,14 +85,19 @@ nm_gof(
   If TRUE, write all plots to a .docx in the analysis directory (default
   FALSE).
 
-- docx_file:
+- output_file:
 
   Output .docx path. If NULL and `save_docx=TRUE`, a name is derived
-  from the table file, written next to it.
+  from the table file, written next to it. (Formerly `docx_file`, still
+  accepted with a warning.)
 
 - width, height, dpi:
 
   Image size (inches) and resolution for the docx export.
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

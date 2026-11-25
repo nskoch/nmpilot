@@ -43,7 +43,7 @@ Add a RATE column
 
 Export in NONMEM format
 
-Check NONMEM compatibility planned
+Check NONMEM compatibility
 
 Suggest a structural model and initial values
 
@@ -214,15 +214,25 @@ Copy
       file.path(ex, "data_nm.csv")    # file: output path (folder created if needed)
     )
 
-## Check NONMEM compatibility planned
+## Check NONMEM compatibility
 
 `nm_check_dataset`
 
 Checks that a dataset can be read by NONMEM: missing ID or TIME,
-non-increasing times, inconsistent EVID/MDV/AMT, duplicates, non-numeric
-columns, outliers.
+non-numeric values, decreasing times, inconsistent EVID/MDV/AMT,
+duplicates, outliers. Report only: the data are never modified.
 
-Not available yet: this task is planned for a future version of nmpilot.
+Help in R: `?nm_check_dataset`
+
+Copy
+
+    chk <- nm_check_dataset(
+      file.path(ex, "example_data.csv")   # data: CSV path (or a data frame)
+    )
+    chk$ok          # TRUE when no error was found
+    chk$findings    # one row per problem: check, severity, rows, IDs, message
+    summary(chk)    # number of findings per check
+    # columns with other names: cols = c(ID = "SUBJ", DV = "CONC")
 
 ## Suggest a structural model and initial values
 

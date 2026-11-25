@@ -1,5 +1,45 @@
 # Changelog
 
+## nmpilot (development version)
+
+- New function
+  [`nm_check_dataset()`](https://nskoch.github.io/nmpilot/reference/nm_check_dataset.md)
+  (point B5): checks that a dataset can be read by NONMEM (ID, TIME and
+  DV columns; missing ID or TIME; non-numeric values; decreasing times
+  within a subject, except at reset records; inconsistent EVID, MDV and
+  AMT; duplicated records or observations; negative DV and outliers
+  compared with the observations taken at the same time after dose). It
+  reads the file as NONMEM does and only reports: the data are never
+  modified. Listed in the task guide (stage 1).
+
+- Output files are named `output_file` everywhere (point B11): in
+  [`nm_write_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_write_ctl.md),
+  [`nm_ctl_mu()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_mu.md),
+  [`nm_ctl_iov()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_iov.md),
+  [`nm_ctl_m3()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_m3.md),
+  [`nm_export_data()`](https://nskoch.github.io/nmpilot/reference/nm_export_data.md),
+  [`nm_export_plot()`](https://nskoch.github.io/nmpilot/reference/nm_export_plot.md)
+  and
+  [`nm_guide()`](https://nskoch.github.io/nmpilot/reference/nm_guide.md)
+  (formerly `file`),
+  [`nm_add_rate()`](https://nskoch.github.io/nmpilot/reference/nm_add_rate.md)
+  and
+  [`nm_convert_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_convert_ctl.md)
+  (formerly `out_file`),
+  [`nm_gof()`](https://nskoch.github.io/nmpilot/reference/nm_gof.md)
+  (formerly `docx_file`),
+  [`nm_extract_run_table()`](https://nskoch.github.io/nmpilot/reference/nm_extract_run_table.md)
+  (formerly `output_name`) and
+  [`nm_vpc()`](https://nskoch.github.io/nmpilot/reference/nm_vpc.md)
+  (formerly `plot_file`). The former names are still accepted, with a
+  warning, until version 1.0. `overwrite` was already used everywhere.
+
+- Every figure written by the package goes through
+  [`nm_export_plot()`](https://nskoch.github.io/nmpilot/reference/nm_export_plot.md)
+  (point B9): `nm_gof(save_docx = TRUE)` no longer calls `ggsave()`
+  directly. Formats: `.jpg`, `.png`, `.pdf` and `.tiff`, chosen from the
+  extension.
+
 ## nmpilot 0.9.0
 
 - Task guide

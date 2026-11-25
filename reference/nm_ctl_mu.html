@@ -67,9 +67,10 @@ transformed.</p>
 <span>  <span class="va">ctl</span>,</span>
 <span>  parameters <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mode <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"readable"</span>, <span class="st">"linear"</span><span class="op">)</span>,</span>
-<span>  file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -95,8 +96,8 @@ value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses an
 initial estimate of 0 unless it is fixed).</p></dd>
 
 
-<dt id="arg-file">file<a class="anchor" aria-label="anchor" href="#arg-file"></a></dt>
-<dd><p>Output path. If <code>NULL</code> (default), nothing is written.</p></dd>
+<dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
+<dd><p>Output path. If <code>NULL</code> (default), nothing is written. (Formerly <code>file</code>, still accepted with a warning.)</p></dd>
 
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
@@ -105,6 +106,10 @@ initial estimate of 0 unless it is fixed).</p></dd>
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Logical. Print a message when the file is written.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Former argument name, accepted with a warning until version 1.0.</p></dd>
 
 </dl></div>
     <div class="section level2">

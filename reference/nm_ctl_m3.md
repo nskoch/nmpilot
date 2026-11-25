@@ -21,9 +21,10 @@ nm_ctl_m3(
   method_lloq = NULL,
   residual_sd = NULL,
   npde_mode = FALSE,
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 ```
 
@@ -67,9 +68,10 @@ nm_ctl_m3(
   Logical. Add `NPDE_MODE` and `DV_LOQ` handling for the NONMEM NPDE
   diagnostics.
 
-- file:
+- output_file:
 
-  Output path. If `NULL` (default), nothing is written.
+  Output path. If `NULL` (default), nothing is written. (Formerly
+  `file`, still accepted with a warning.)
 
 - overwrite:
 
@@ -78,6 +80,10 @@ nm_ctl_m3(
 - verbose:
 
   Logical. Print a message when the file is written.
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

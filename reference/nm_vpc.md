@@ -22,7 +22,7 @@ nm_vpc(
   n_bins_quantile = 8,
   bin_rule = "FD",
   plot_title = NULL,
-  plot_file = NULL,
+  output_file = NULL,
   show_hist = TRUE,
   ...
 )
@@ -97,12 +97,13 @@ nm_vpc(
   Character. Title of the VPC plot. If `NULL` (default), a title is
   generated from the run name and `type`.
 
-- plot_file:
+- output_file:
 
   Character. If provided, the plot is saved to this path (e.g.
   `"vpc_run001.jpeg"`) through
   [`nm_export_plot`](https://nskoch.github.io/nmpilot/reference/nm_export_plot.md)
-  (`.jpg`, `.png`, `.pdf` or `.tiff`).
+  (`.jpg`, `.png`, `.pdf` or `.tiff`). (Formerly `plot_file`, still
+  accepted with a warning.)
 
 - show_hist:
 
@@ -155,7 +156,7 @@ p <- nm_vpc(
   type             = 2,
   bin_method       = 1,
   TTIME_seq_manual = c(0, 1, 2, 4, 8, 12, 24),
-  plot_file        = "pcvpc_run001.jpeg"
+  output_file      = "pcvpc_run001.jpeg"
 )
 } # }
 ```

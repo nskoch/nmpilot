@@ -16,7 +16,7 @@ nm_extract_run_table(
   run = NULL,
   run_name = NULL,
   run_path = NULL,
-  output_name = "nonmem_results.docx",
+  output_file = "nonmem_results.docx",
   extensions = c("nm7", "reg"),
   ...
 )
@@ -38,10 +38,11 @@ nm_extract_run_table(
 
   Deprecated: former name of `run`.
 
-- output_name:
+- output_file:
 
   Name of the Word file, written in the run directory (default
-  `"nonmem_results.docx"`).
+  `"nonmem_results.docx"`). (Formerly `output_name`, still accepted with
+  a warning.)
 
 - extensions:
 

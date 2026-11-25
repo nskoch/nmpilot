@@ -11,20 +11,25 @@ available yet are shown as "planned".
 ## Usage
 
 ``` r
-nm_guide(file = NULL, open = interactive())
+nm_guide(output_file = NULL, open = interactive(), ...)
 ```
 
 ## Arguments
 
-- file:
+- output_file:
 
   Output path of the HTML page. Default: `nmpilot_guide.html` in the
-  temporary directory of the R session.
+  temporary directory of the R session. (Formerly `file`, still accepted
+  with a warning.)
 
 - open:
 
   Open the page in the web browser (default: in interactive sessions
   only).
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

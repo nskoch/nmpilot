@@ -63,21 +63,25 @@ be copied. Tasks whose function is not available yet are shown as
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">nm_guide</span><span class="op">(</span>file <span class="op">=</span> <span class="cn">NULL</span>, open <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">nm_guide</span><span class="op">(</span>output_file <span class="op">=</span> <span class="cn">NULL</span>, open <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-file">file<a class="anchor" aria-label="anchor" href="#arg-file"></a></dt>
+<dl><dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
 <dd><p>Output path of the HTML page. Default: <code>nmpilot_guide.html</code> in
-the temporary directory of the R session.</p></dd>
+the temporary directory of the R session. (Formerly <code>file</code>, still accepted with a warning.)</p></dd>
 
 
 <dt id="arg-open">open<a class="anchor" aria-label="anchor" href="#arg-open"></a></dt>
 <dd><p>Open the page in the web browser (default: in interactive
 sessions only).</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Former argument name, accepted with a warning until version 1.0.</p></dd>
 
 </dl></div>
     <div class="section level2">

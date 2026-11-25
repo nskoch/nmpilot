@@ -11,7 +11,7 @@ the actual column order of the dataset when `input` is given.
 
 ``` r
 nm_write_ctl(
-  file = NULL,
+  output_file = NULL,
   data = "data.csv",
   input = NULL,
   cols = NULL,
@@ -44,15 +44,17 @@ nm_write_ctl(
   verbose = TRUE,
   from = NULL,
   candidate = 1L,
-  conc_factor = 1
+  conc_factor = 1,
+  ...
 )
 ```
 
 ## Arguments
 
-- file:
+- output_file:
 
-  Output path. If `NULL` (default), nothing is written.
+  Output path. If `NULL` (default), nothing is written. (Formerly
+  `file`, still accepted with a warning.)
 
 - data:
 
@@ -207,6 +209,10 @@ nm_write_ctl(
   and concentrations in ng/mL). Default 1 (`S = V`). With `from`, the
   `dose_conc_factor` of the suggestion is used, so that its initial
   values (volumes in L, KM in amount/L) match the DV units.
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

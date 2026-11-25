@@ -56,7 +56,7 @@ unchanged.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">nm_add_rate</span><span class="op">(</span></span>
 <span>  <span class="va">file</span>,</span>
-<span>  out_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  sep <span class="op">=</span> <span class="st">","</span>,</span>
 <span>  dose_value <span class="op">=</span> <span class="op">-</span><span class="fl">2</span>,</span>
 <span>  base_value <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -66,7 +66,8 @@ unchanged.</p>
 <span>  evid_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  amt_col <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -78,11 +79,11 @@ unchanged.</p>
 <dd><p>Path to the original CSV.</p></dd>
 
 
-<dt id="arg-out-file">out_file<a class="anchor" aria-label="anchor" href="#arg-out-file"></a></dt>
+<dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
 <dd><p>Name (or path) of the output CSV. <code>NULL</code> (default) -&gt;
 <code>"&lt;base&gt;_rate.csv"</code> in the same directory as <code>file</code>.
 If only a file name is given (no directory), it is
-placed next to the source file.</p></dd>
+placed next to the source file. (Formerly <code>out_file</code>, still accepted with a warning.)</p></dd>
 
 
 <dt id="arg-sep">sep<a class="anchor" aria-label="anchor" href="#arg-sep"></a></dt>
@@ -133,6 +134,10 @@ when no EVID column is found).</p></dd>
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>Print a diagnostic report (default <code>TRUE</code>).</p></dd>
 
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Former argument name, accepted with a warning until version 1.0.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -153,7 +158,7 @@ when no EVID column is found).</p></dd>
 <span class="r-in"><span><span class="fu">nm_add_rate</span><span class="op">(</span><span class="st">"data.csv"</span>, dose_cmt <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Chosen output name (placed next to the source file)</span></span></span>
-<span class="r-in"><span><span class="fu">nm_add_rate</span><span class="op">(</span><span class="st">"data.csv"</span>, out_file <span class="op">=</span> <span class="st">"data_dur.csv"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">nm_add_rate</span><span class="op">(</span><span class="st">"data.csv"</span>, output_file <span class="op">=</span> <span class="st">"data_dur.csv"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

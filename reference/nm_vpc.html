@@ -65,7 +65,7 @@ time bins, and returns a <code>ggplot2</code> VPC or pc-VPC plot.</p>
 <span>  n_bins_quantile <span class="op">=</span> <span class="fl">8</span>,</span>
 <span>  bin_rule <span class="op">=</span> <span class="st">"FD"</span>,</span>
 <span>  plot_title <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  plot_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  show_hist <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -146,10 +146,10 @@ percentiles (default: 0.975).</p></dd>
 (default), a title is generated from the run name and <code>type</code>.</p></dd>
 
 
-<dt id="arg-plot-file">plot_file<a class="anchor" aria-label="anchor" href="#arg-plot-file"></a></dt>
+<dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
 <dd><p>Character. If provided, the plot is saved to this path
 (e.g. <code>"vpc_run001.jpeg"</code>) through <code><a href="nm_export_plot.html">nm_export_plot</a></code>
-(<code>.jpg</code>, <code>.png</code>, <code>.pdf</code> or <code>.tiff</code>).</p></dd>
+(<code>.jpg</code>, <code>.png</code>, <code>.pdf</code> or <code>.tiff</code>). (Formerly <code>plot_file</code>, still accepted with a warning.)</p></dd>
 
 
 <dt id="arg-show-hist">show_hist<a class="anchor" aria-label="anchor" href="#arg-show-hist"></a></dt>
@@ -201,7 +201,7 @@ installed (listed in <code>Imports</code>).</p>
 <span class="r-in"><span>  type             <span class="op">=</span> <span class="fl">2</span>,</span></span>
 <span class="r-in"><span>  bin_method       <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  TTIME_seq_manual <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">4</span>, <span class="fl">8</span>, <span class="fl">12</span>, <span class="fl">24</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  plot_file        <span class="op">=</span> <span class="st">"pcvpc_run001.jpeg"</span></span></span>
+<span class="r-in"><span>  output_file      <span class="op">=</span> <span class="st">"pcvpc_run001.jpeg"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

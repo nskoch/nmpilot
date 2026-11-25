@@ -19,9 +19,10 @@ nm_ctl_iov(
   structure = c("independent", "correlated"),
   rho = 0.1,
   data = NULL,
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 ```
 
@@ -63,9 +64,10 @@ nm_ctl_iov(
   Optional dataset (data frame or CSV path) used to check that `occ`
   holds the integers 1 to `n_occ`.
 
-- file:
+- output_file:
 
-  Output path. If `NULL` (default), nothing is written.
+  Output path. If `NULL` (default), nothing is written. (Formerly
+  `file`, still accepted with a warning.)
 
 - overwrite:
 
@@ -74,6 +76,10 @@ nm_ctl_iov(
 - verbose:
 
   Logical. Print a message when the file is written.
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 

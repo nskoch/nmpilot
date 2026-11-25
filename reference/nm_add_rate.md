@@ -10,7 +10,7 @@ unchanged.
 ``` r
 nm_add_rate(
   file,
-  out_file = NULL,
+  output_file = NULL,
   sep = ",",
   dose_value = -2,
   base_value = 0,
@@ -20,7 +20,8 @@ nm_add_rate(
   evid_col = NULL,
   amt_col = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 ```
 
@@ -30,11 +31,12 @@ nm_add_rate(
 
   Path to the original CSV.
 
-- out_file:
+- output_file:
 
   Name (or path) of the output CSV. `NULL` (default) -\>
   `"<base>_rate.csv"` in the same directory as `file`. If only a file
   name is given (no directory), it is placed next to the source file.
+  (Formerly `out_file`, still accepted with a warning.)
 
 - sep:
 
@@ -84,6 +86,10 @@ nm_add_rate(
 
   Print a diagnostic report (default `TRUE`).
 
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
+
 ## Value
 
 The path of the written file (invisibly).
@@ -103,6 +109,6 @@ nm_add_rate("data.csv", dose_value = -1)
 nm_add_rate("data.csv", dose_cmt = 1)
 
 # Chosen output name (placed next to the source file)
-nm_add_rate("data.csv", out_file = "data_dur.csv")
+nm_add_rate("data.csv", output_file = "data_dur.csv")
 } # }
 ```

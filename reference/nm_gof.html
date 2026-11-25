@@ -72,10 +72,11 @@ analysis directory.</p>
 <span>  log_pred <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  stem <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  save_docx <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  docx_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  output_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  width <span class="op">=</span> <span class="fl">6.5</span>,</span>
 <span>  height <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  dpi <span class="op">=</span> <span class="fl">150</span></span>
+<span>  dpi <span class="op">=</span> <span class="fl">150</span>,</span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -136,14 +137,18 @@ directory (e.g. "sdtab", "patab"). Not required to be "sdtab".</p></dd>
 directory (default FALSE).</p></dd>
 
 
-<dt id="arg-docx-file">docx_file<a class="anchor" aria-label="anchor" href="#arg-docx-file"></a></dt>
+<dt id="arg-output-file">output_file<a class="anchor" aria-label="anchor" href="#arg-output-file"></a></dt>
 <dd><p>Output .docx path. If NULL and <code>save_docx=TRUE</code>, a name
-is derived from the table file, written next to it.</p></dd>
+is derived from the table file, written next to it. (Formerly <code>docx_file</code>, still accepted with a warning.)</p></dd>
 
 
 <dt id="arg-width-height-dpi">width, height, dpi<a class="anchor" aria-label="anchor" href="#arg-width-height-dpi"></a></dt>
 <dd><p>Image size (inches) and resolution for the docx
 export.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Former argument name, accepted with a warning until version 1.0.</p></dd>
 
 </dl></div>
     <div class="section level2">

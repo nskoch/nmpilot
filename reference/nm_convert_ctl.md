@@ -11,7 +11,7 @@ with direct `nmfe` execution.
 ## Usage
 
 ``` r
-nm_convert_ctl(ctl, out_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
+nm_convert_ctl(ctl, output_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
 ```
 
 ## Arguments
@@ -21,16 +21,16 @@ nm_convert_ctl(ctl, out_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
   Path to the Wings extended control stream (`.ctl`). (Formerly
   `ctl_file`, still accepted with a warning.)
 
-- out_file:
+- output_file:
 
   Output path for the converted control stream. If `NULL` (default), the
   output file is named `<run>_converted.ctl` in the same directory as
-  `ctl`.
+  `ctl`. (Formerly `out_file`, still accepted with a warning.)
 
 - overwrite:
 
-  Logical. If `TRUE`, overwrite `out_file` if it already exists (default
-  `FALSE`).
+  Logical. If `TRUE`, overwrite `output_file` if it already exists
+  (default `FALSE`).
 
 - verbose:
 

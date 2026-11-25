@@ -173,7 +173,7 @@ nm_ctl_check(mu, reference = ctl)
 #> + KA = EXP(MU_3 + ETA(3))
 ```
 
-Use `file = "run3.ctl"` to write the result to disk.
+Use `output_file = "run3.ctl"` to write the result to disk.
 
 ## 3. Running NONMEM
 

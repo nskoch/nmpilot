@@ -338,6 +338,8 @@ Data preparation & inspection
 
 - [`nm_read_csv()`](https://nskoch.github.io/nmpilot/reference/nm_read_csv.md)
   : Read and normalise a NONMEM-like dataset
+- [`nm_check_dataset()`](https://nskoch.github.io/nmpilot/reference/nm_check_dataset.md)
+  : Check that a dataset is compatible with NONMEM
 - [`nm_summary()`](https://nskoch.github.io/nmpilot/reference/nm_summary.md)
   : Diagnostic summary of a NONMEM-like dataset
 - [`nm_plot_dv()`](https://nskoch.github.io/nmpilot/reference/nm_plot_dv.md)

@@ -6,7 +6,15 @@ ggplot object and leave saving to this function.
 ## Usage
 
 ``` r
-nm_export_plot(plot, file, width = 9, height = 5, dpi = 300, verbose = TRUE)
+nm_export_plot(
+  plot,
+  output_file,
+  width = 9,
+  height = 5,
+  dpi = 300,
+  verbose = TRUE,
+  ...
+)
 ```
 
 ## Arguments
@@ -15,11 +23,11 @@ nm_export_plot(plot, file, width = 9, height = 5, dpi = 300, verbose = TRUE)
 
   A ggplot (or patchwork) object.
 
-- file:
+- output_file:
 
   Output path. The file type is taken from the extension:
   `.jpg`/`.jpeg`, `.png`, `.pdf` or `.tif`/`.tiff`. The directory is
-  created if needed.
+  created if needed. (Formerly `file`, still accepted with a warning.)
 
 - width:
 
@@ -36,6 +44,10 @@ nm_export_plot(plot, file, width = 9, height = 5, dpi = 300, verbose = TRUE)
 - verbose:
 
   Print the path of the written file (default `TRUE`).
+
+- ...:
+
+  Former argument name, accepted with a warning until version 1.0.
 
 ## Value
 
