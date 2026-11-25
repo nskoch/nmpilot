@@ -1,0 +1,320 @@
+# nmpilot
+
+**nmpilot** is an R package that drives a population pharmacokinetic
+(popPK) analysis with NONMEM from R, from the data set to the final
+model diagnostics. It calls the NONMEM `nmfe` launcher directly and does
+not need PsN or Wings for NONMEM. Wings is optional: runs can sit next
+to their control streams or in run subdirectories, and the Wings
+conventions (`.reg` run directories, `.smr` files, extended control
+streams with parameter labels) are also read, so that projects started
+with Wings can be continued.
+
+> **Status:** version 0.8.1, under active development. The interface may
+> still change. Bug reports and suggestions are welcome in the
+> [issues](https://github.com/nskoch/nmpilot/issues).
+
+> **New name:** the package was called **nmtools** up to version 0.7.1.
+> It was renamed **nmpilot** to avoid confusion with an unrelated GitHub
+> repository of the same name in the same field. If you installed
+> nmtools, remove it with `remove.packages("nmtools")`, install nmpilot
+> as below, and replace
+> [`library(nmtools)`](https://rdrr.io/r/base/library.html) by
+> [`library(nmpilot)`](https://github.com/nskoch/nmpilot) in your
+> scripts.
+
+## Installation
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("nskoch/nmpilot")
+
+# with the vignettes:
+remotes::install_github("nskoch/nmpilot", build_vignettes = TRUE)
+```
+
+Running models requires a working NONMEM installation. The package is
+developed and used on Windows with NONMEM 7.4 and 7.6 (`nmfe74.bat`,
+`nmfe76.bat`). On Linux and macOS, give the path of the nmfe script (for
+example `/opt/nm760/run/nmfe76`, which must be executable): every
+function that runs NONMEM calls it directly. This was checked on Linux
+with a simulated nmfe, not yet with a real NONMEM installation. Reading
+outputs, diagnostics and plots work without NONMEM, on outputs of NONMEM
+7.1 to 7.6.
+
+## What the package covers
+
+| Step | Functions |
+|----|----|
+| Read and explore the data set | [`nm_read_csv()`](https://nskoch.github.io/nmpilot/reference/nm_read_csv.md), [`nm_data_previsual()`](https://nskoch.github.io/nmpilot/reference/nm_data_previsual.md), [`nm_plot_dv()`](https://nskoch.github.io/nmpilot/reference/nm_plot_dv.md), [`nm_summary()`](https://nskoch.github.io/nmpilot/reference/nm_summary.md), [`nm_add_rate()`](https://nskoch.github.io/nmpilot/reference/nm_add_rate.md), [`nm_export_data()`](https://nskoch.github.io/nmpilot/reference/nm_export_data.md) |
+| Suggest a structural model before any run | [`nm_suggest_model()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_model.md) (compartments, input, elimination, error model, initial values, hard-to-estimate parameters, alerts), [`nm_suggest_design()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_design.md) (expected RSE and shrinkage), [`nm_suggest_run()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_run.md) (run and rank the candidates), [`nm_suggest_covariates()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_covariates.md) (covariate screening on individual estimates) |
+| Write a control stream | [`nm_write_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_write_ctl.md) (compartmental PK model), [`nm_ctl_mu()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_mu.md) (MU referencing), [`nm_ctl_iov()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_iov.md) (inter-occasion variability), [`nm_ctl_m3()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_m3.md) (M3 method for BQL data), [`nm_ctl_check()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_check.md) (static check) |
+| Run NONMEM | [`nm_run()`](https://nskoch.github.io/nmpilot/reference/nm_run.md) (`n_cores`: several runs at the same time), [`nm_cores()`](https://nskoch.github.io/nmpilot/reference/nm_cores.md), [`nm_convert_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_convert_ctl.md) (Wings extended control stream to standard NONMEM) |
+| Read the results of one or several runs | [`nm_extract_runs()`](https://nskoch.github.io/nmpilot/reference/nm_extract_runs.md) (also several `$EST` or `$PROB`, IOV, `$MIX`, failed or interrupted runs), [`nm_filter_runs()`](https://nskoch.github.io/nmpilot/reference/nm_filter_runs.md), [`nm_compare_runs()`](https://nskoch.github.io/nmpilot/reference/nm_compare_runs.md), [`nm_extract_run_table()`](https://nskoch.github.io/nmpilot/reference/nm_extract_run_table.md) (Word table) |
+| Identify what each THETA / ETA means | [`nm_identify_parameters()`](https://nskoch.github.io/nmpilot/reference/nm_identify_parameters.md), [`nm_identify_directory()`](https://nskoch.github.io/nmpilot/reference/nm_identify_directory.md) |
+| Goodness-of-fit diagnostics | [`nm_gof()`](https://nskoch.github.io/nmpilot/reference/nm_gof.md) |
+| Compare two runs | [`nm_compare()`](https://nskoch.github.io/nmpilot/reference/nm_compare.md) (paired CWRES / NPDE, individual OFV; Vuong and Clarke tests for non-nested models, bootstrap, gain map, overlaid diagnostics) |
+| Improve a base model from one evaluation run | [`nm_optimize_base()`](https://nskoch.github.io/nmpilot/reference/nm_optimize_base.md) (residual error, random effects and covariates ranked on a linearised model), [`nm_derivatives_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_derivatives_ctl.md) |
+| VPC and pc-VPC | [`nm_vpc_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_vpc_ctl.md), [`nm_vpc()`](https://nskoch.github.io/nmpilot/reference/nm_vpc.md) |
+| Parameter uncertainty | [`nm_profile()`](https://nskoch.github.io/nmpilot/reference/nm_profile.md) (likelihood profile), [`nm_bootstrap()`](https://nskoch.github.io/nmpilot/reference/nm_bootstrap.md) (case bootstrap); both accept `n_cores` |
+| Influential subjects | [`nm_jackknife()`](https://nskoch.github.io/nmpilot/reference/nm_jackknife.md) (leave-one-subject-out jackknife: OFV change and THETA shifts) |
+| Covariate assessment on the ETA distributions | [`nm_wasserstein()`](https://nskoch.github.io/nmpilot/reference/nm_wasserstein.md) (Wasserstein distance, Simon et al. 2026) |
+| Export figures | [`nm_export_plot()`](https://nskoch.github.io/nmpilot/reference/nm_export_plot.md) |
+
+## Example project and vignettes
+
+The package ships a small example project, with simulated data (60
+fictitious subjects, one-compartment oral model) and the NONMEM outputs
+of a BASE and a FINAL model, so that every function that reads results
+can be tried without NONMEM:
+
+``` r
+
+ex <- system.file("extdata", "example", package = "nmpilot")
+runs <- nm_extract_runs(ex)
+```
+
+Two vignettes use it:
+[`vignette("nmpilot")`](https://nskoch.github.io/nmpilot/articles/nmpilot.md)
+(getting started, from the data set to the comparison of two models) and
+[`vignette("wasserstein")`](https://nskoch.github.io/nmpilot/articles/wasserstein.md).
+
+## A typical workflow
+
+``` r
+
+library(nmpilot)
+
+# 1. Data set: read, summarise, plot
+dat <- nm_read_csv("C:/nm76g64/run/study/data.csv")
+nm_summary(dat$data)
+nm_plot_dv(dat$data, scales = "both")
+
+# 2. Suggest a structural model and write its control stream
+s <- nm_suggest_model("C:/nm76g64/run/study/data.csv", dose_conc_factor = 1000)
+s                                   # ranked candidates, initial values, alerts
+nm_write_ctl("C:/nm76g64/run/study/run1.ctl", from = s, candidate = 1)
+#    or write a control stream from the columns of the data set
+nm_write_ctl("C:/nm76g64/run/study/run2.ctl",
+             input = "C:/nm76g64/run/study/data.csv", error = "combined")
+
+# 3. Run one or several models. By default each run goes to <run>.reg/ in the
+#    analysis directory; run_subdir = "" runs it next to its control stream.
+#    A relative $DATA path is read from the control stream folder
+#    ($DATA data.csv) or from the run directory ($DATA ../data.csv).
+log <- nm_run(
+  ctl          = c("run1.ctl", "run2.ctl"),
+  nmfe_path    = "C:/nm76g64/run/nmfe76.bat",
+  analysis_dir = "C:/nm76g64/run/study"
+)
+
+# 4. Results of all the runs of the project
+runs <- nm_extract_runs("C:/nm76g64/run/study")
+runs                          # OFV, dOFV, minimisation and covariance status
+nm_compare_runs(runs)         # parameters side by side
+nm_extract_run_table("C:/nm76g64/run/study/run2.reg")   # Word table
+
+# 5. Diagnostics, and comparison of two models
+gof <- nm_gof("C:/nm76g64/run/study/run2.reg/sdtab2")
+plot(gof)
+cmp <- nm_compare("C:/nm76g64/run/study/run1.reg",
+                  "C:/nm76g64/run/study/run2.reg",
+                  labels = c("Base", "+ WT on CL"))
+plot(cmp)
+
+# 6. VPC / pc-VPC
+nm_vpc_ctl("C:/nm76g64/run/study/run2.ctl",
+           nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_sim = 500)
+nm_vpc("C:/nm76g64/run/study/run2.ctl",
+       col_names = c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED"),
+       type = 2)
+
+# 7. Uncertainty
+prof <- nm_profile("C:/nm76g64/run/study/run2.reg/run2.ctl",
+                   "C:/nm76g64/run/nmfe76.bat",
+                   param = "CL", from = 2, to = 6, by = 0.25)
+plot(prof, type = "dofv")
+boot <- nm_bootstrap("C:/nm76g64/run/study/run2.reg/run2.ctl",
+                     nmfe_path = "C:/nm76g64/run/nmfe76.bat",
+                     n = 500, seed = 1)
+```
+
+## Run layouts (Wings not required)
+
+[`nm_run()`](https://nskoch.github.io/nmpilot/reference/nm_run.md)
+writes each run either in its own subdirectory or directly in the folder
+of its control stream:
+
+| `run_subdir` | Outputs of `run1.ctl` |
+|----|----|
+| `".reg"` (default) | `run1.reg/run1.lst`, `run1.reg/run1.ext`… (same layout as Wings) |
+| `".run"` or any suffix | `run1.run/run1.lst`… |
+| `""` | `run1.lst`, `run1.ext`… next to `run1.ctl` (as a manual nmfe call) |
+
+[`nm_extract_run_table()`](https://nskoch.github.io/nmpilot/reference/nm_extract_run_table.md),
+[`nm_vpc_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_vpc_ctl.md)
+and [`nm_vpc()`](https://nskoch.github.io/nmpilot/reference/nm_vpc.md)
+find a run in `<run>.reg/`, `<run>.nm7/`, a folder named `<run>`, or
+directly in the analysis directory.
+[`nm_extract_runs()`](https://nskoch.github.io/nmpilot/reference/nm_extract_runs.md)
+reads every run of a folder, in subdirectories or not.
+[`nm_wasserstein()`](https://nskoch.github.io/nmpilot/reference/nm_wasserstein.md)
+and
+[`nm_compare()`](https://nskoch.github.io/nmpilot/reference/nm_compare.md)
+take a run directory of any name or a run prefix (`"C:/study/run1"` for
+`C:/study/run1.ext`, `run1.phi`…), and
+[`nm_gof()`](https://nskoch.github.io/nmpilot/reference/nm_gof.md) a
+table file or the folder that holds it. Control streams in Wings label
+syntax are converted automatically by
+[`nm_run()`](https://nskoch.github.io/nmpilot/reference/nm_run.md) (this
+needs a run subdirectory) or by
+[`nm_convert_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_convert_ctl.md).
+
+## Several NONMEM runs at the same time
+
+[`nm_run()`](https://nskoch.github.io/nmpilot/reference/nm_run.md),
+[`nm_profile()`](https://nskoch.github.io/nmpilot/reference/nm_profile.md),
+[`nm_jackknife()`](https://nskoch.github.io/nmpilot/reference/nm_jackknife.md),
+[`nm_bootstrap()`](https://nskoch.github.io/nmpilot/reference/nm_bootstrap.md),
+[`nm_vpc_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_vpc_ctl.md)
+and
+[`nm_suggest_run()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_run.md)
+take an `n_cores` argument (default 1: one run after the other). Each
+run is then started in the background from its own folder, at most
+`n_cores` at a time. `n_cores = "auto"` uses the physical cores minus
+one; `n_cores = "ask"` shows the cores and asks the number once per R
+session.
+
+``` r
+
+nm_cores()          # logical and physical cores
+log <- nm_run(sprintf("run%d.ctl", 1:4), "C:/nm76g64/run/nmfe76.bat",
+              "C:/nm76g64/run/study", n_cores = 4)
+jk  <- nm_jackknife("C:/nm76g64/run/study/run2.reg/run2.ctl",
+                    nmfe_path = "C:/nm76g64/run/nmfe76.bat", n_cores = "auto")
+```
+
+## Writing control streams
+
+[`nm_write_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_write_ctl.md)
+writes a complete control stream for a 1- to 3-compartment PK model: IV
+or extravascular administration; first-order, zero-order (modelled rate
+`R1 = K0` with `RATE = -1`, or modelled duration `D1` with `RATE = -2`)
+or transit-compartment absorption; linear or Michaelis-Menten
+elimination; analytic (`ADVAN`/`TRANS`) or ODE solution. `$INPUT`
+follows the column order of the data set. Three functions then transform
+a control stream, generated or written by hand, and
+[`nm_ctl_check()`](https://nskoch.github.io/nmpilot/reference/nm_ctl_check.md)
+looks for THETA/ETA/EPS used without a declaration and other static
+inconsistencies.
+
+``` r
+
+ctl <- nm_write_ctl(input = c("ID", "TIME", "DV", "AMT", "EVID", "MDV", "CMT", "OCC", "BQL"),
+                    cpts = 2, error = "combined",
+                    theta_init = c(CL = 3, V2 = 30), iiv = c(CL = 30, V2 = 25, KA = 50))
+ctl <- nm_ctl_iov(ctl, parameters = "CL", n_occ = 2)   # $ABBR REPLACE + BLOCK SAME
+ctl <- nm_ctl_m3(ctl, lloq = 0.1)                       # M3 likelihood, LAPLACE
+nm_ctl_check(ctl)
+nm_ctl_mu(nm_write_ctl())                               # MU referencing for SAEM/IMP
+```
+
+The same functions are available as a Shiny application:
+<https://nicolas-simon.shinyapps.io/nonmem_ctl_publi/>.
+
+## Suggesting a structural model
+
+[`nm_suggest_model()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_model.md)
+looks at the data before any NONMEM run: NCA and sums of exponentials on
+each rich dosing interval (or on naive pooled data when the sampling is
+sparse) give the support for 1, 2 or 3 compartments, for the input model
+(first-order, lag time, zero-order, transit), for linear or saturable
+elimination and for an additive, proportional or combined error.
+Candidates come with initial values in the names used by
+[`nm_write_ctl()`](https://nskoch.github.io/nmpilot/reference/nm_write_ctl.md),
+the parameters likely to be hard to estimate, and, for linear models,
+the expected RSE and eta-shrinkage for the sampling design.
+
+``` r
+
+s <- nm_suggest_model("data.csv", dose_conc_factor = 1000)   # mg and ng/mL
+s$candidates
+plot(s, "profiles")
+nm_suggest_design(s, candidate = 1, times = c(1, 4, 12))     # another design
+nm_suggest_covariates(s, covariates = c("WT", "SEX"))
+r <- nm_suggest_run(s, analysis_dir = "C:/nm76g64/run/study",
+                    nmfe_path = "C:/nm76g64/run/nmfe76.bat", candidates = 1:3)
+```
+
+The scores rank candidates; they are no substitute for model comparison
+in NONMEM. The validation script
+`inst/validation/validate_suggest_model.R` measures how often the true
+structure is recovered on simulated datasets.
+
+## Parameter names from the model code
+
+[`nm_identify_parameters()`](https://nskoch.github.io/nmpilot/reference/nm_identify_parameters.md)
+reads `$PK` (or `$PRED`) and links every THETA and ETA to the PK
+parameter it acts on, with a role: typical value, covariate effect
+(power, exponential, linear, saturable or conditional), IIV scale or
+residual error.
+[`nm_extract_runs()`](https://nskoch.github.io/nmpilot/reference/nm_extract_runs.md)
+uses it so that results are labelled `CL`, `V`, `KA`… rather than
+`THETA1`, `THETA2`. Wings control streams that use labels
+(`CL = POPCL*EXP(eta_cl)`) are handled.
+
+``` r
+
+x <- nm_identify_parameters("run2.ctl")
+x$parameter_table
+```
+
+## Wasserstein-based covariate assessment
+
+[`nm_wasserstein()`](https://nskoch.github.io/nmpilot/reference/nm_wasserstein.md)
+implements the method of Simon N, Hulot JS, von Fabeck K.
+Distribution-based covariate assessment using Wasserstein distance in
+population pharmacokinetic models. *Front Pharmacol.* 2026;17:1804989
+([doi:10.3389/fphar.2026.1804989](https://doi.org/10.3389/fphar.2026.1804989)).
+It compares the distribution of an ETA between groups of subjects
+defined by a covariate, for one or several runs, and reports a
+Wasserstein-based R2.
+
+``` r
+
+w <- nm_wasserstein(c(BASE = "base.reg", FINAL = "final.reg"),
+                    covariates = c("CLCR", "CT01"), eta = "CL")
+w
+plot(w)
+plot(w, type = "r2w")
+```
+
+## Citation
+
+``` r
+
+citation("nmpilot")
+```
+
+gives the reference of the package and, for
+[`nm_jackknife()`](https://nskoch.github.io/nmpilot/reference/nm_jackknife.md)
+and
+[`nm_wasserstein()`](https://nskoch.github.io/nmpilot/reference/nm_wasserstein.md),
+the reference of the original method. Each release is archived on Zenodo
+with its own DOI; the DOI badge above (10.5281/zenodo.24244339) cites
+all versions and resolves to the latest one. The archives up to v0.7.1
+(10.5281/zenodo.24406632) carry the former name, nmtools. The releases
+v0.6.0 and v0.7.0 were made by mistake on the commit of version 0.5.0
+and hold its code: use v0.7.1 or later.
+
+## License
+
+MIT © Nicolas Simon
+
+## Task guide
+
+Choose a stage of the analysis, then a task, to see the matching nmpilot
+function and an example of R code. The same guide opens in R with
+[`nm_guide()`](https://nskoch.github.io/nmpilot/reference/nm_guide.md)
+and in RStudio from the Addins menu ([full
+page](https://nskoch.github.io/nmpilot/guide.md)).
