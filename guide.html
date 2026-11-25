@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>nmpilot 0.8.1 — task guide</title>
+<title>nmpilot 0.9.0 — task guide</title>
 <style>
 
 :root{--bg:#ffffff;--fg:#1f2328;--muted:#5d6670;--line:#d8dee4;--panel:#f6f8fa;
@@ -54,7 +54,7 @@ footer{color:var(--muted);font-size:.85em;padding:0 28px 20px}
 </head>
 <body>
 <header>
-<h1>nmpilot 0.8.1 — task guide</h1>
+<h1>nmpilot 0.9.0 — task guide</h1>
 <p>Choose a stage of the analysis, then a task, to see the nmpilot function and an example of R code.</p>
 </header>
 <main>
@@ -120,119 +120,223 @@ nmfe &lt;- &quot;C:/nm76g64/run/nmfe76.bat&quot;   # path to your nmfe launcher<
 <button class="task" data-stage="report" data-task="37">Diagnostics in Word</button>
 </div>
 <div class="details">
-<article class="detail" data-task="1" hidden><h2>Read and standardise a dataset</h2><p class="funs"><code class="fun">nm_read_csv</code></p><p class="desc">Reads a NONMEM CSV file, recognises the reserved columns (ID, TIME, DV, AMT, EVID, MDV, CMT...), converts '.' to missing values, computes the relative time, the time after dose (TAD) and the dose-normalised DV, and flags BLQ records.</p><p class="help">Help in R: <code>?nm_read_csv</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>dat &lt;- nm_read_csv(file.path(ex, &quot;example_data.csv&quot;))
-head(dat$data)     # standardised data
+<article class="detail" data-task="1" hidden><h2>Read and standardise a dataset</h2><p class="funs"><code class="fun">nm_read_csv</code></p><p class="desc">Reads a NONMEM CSV file, recognises the reserved columns (ID, TIME, DV, AMT, EVID, MDV, CMT...), converts '.' to missing values, computes the relative time, the time after dose (TAD) and the dose-normalised DV, and flags BLQ records.</p><p class="help">Help in R: <code>?nm_read_csv</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>dat &lt;- nm_read_csv(
+  file.path(ex, &quot;example_data.csv&quot;)   # file: path of the NONMEM CSV data set
+)
+head(dat$data)     # standardised data (reserved NONMEM names)
 dat$mapping        # reserved labels -&gt; original column names</code></pre></div></article>
-<article class="detail" data-task="2" hidden><h2>Summarise the dataset</h2><p class="funs"><code class="fun">nm_summary</code></p><p class="desc">Number of subjects, records and observations, proportion of BLQ, time range, distinct doses and observed compartments.</p><p class="help">Help in R: <code>?nm_summary</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_summary(dat$data)</code></pre></div></article>
-<article class="detail" data-task="3" hidden><h2>Plot concentrations vs time</h2><p class="funs"><code class="fun">nm_plot_dv</code></p><p class="desc">Observed concentrations against TIME or TAD, with the median and an interval band, on linear and/or log scale, optionally stratified by a covariate.</p><p class="help">Help in R: <code>?nm_plot_dv</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_plot_dv(dat$data, scales = &quot;both&quot;)
-nm_plot_dv(dat$data, time_var = &quot;TAD&quot;, scales = &quot;log&quot;)
-nm_plot_dv(dat$data, y = &quot;DV_norm&quot;, strat = &quot;GENO&quot;)   # dose-normalised</code></pre></div></article>
-<article class="detail" data-task="4" hidden><h2>One-step preview (read, summary, plots)</h2><p class="funs"><code class="fun">nm_data_previsual</code></p><p class="desc">Reads the dataset, summarises it and draws the raw and dose-normalised profiles in one call, with configurable BLQ handling and optional JPEG/CSV export.</p><p class="help">Help in R: <code>?nm_data_previsual</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>pv &lt;- nm_data_previsual(file.path(ex, &quot;example_data.csv&quot;),
-                        scales = &quot;both&quot;, dose_norm = TRUE)
-pv$summary
-pv$plot_dv
-pv$plot_norm</code></pre></div></article>
-<article class="detail" data-task="5" hidden><h2>Add a RATE column</h2><p class="funs"><code class="fun">nm_add_rate</code></p><p class="desc">Adds a RATE column (e.g. -2 for an estimated zero-order duration) on all doses or only on some routes, keeping the exact format of the file.</p><p class="help">Help in R: <code>?nm_add_rate</code></p><div class="codebox"><button class="copy">Copy</button><pre><code># RATE = -2 on every dose -&gt; example_data_rate.csv next to the source file
-nm_add_rate(file.path(ex, &quot;example_data.csv&quot;), dose_value = -2)</code></pre></div></article>
-<article class="detail" data-task="6" hidden><h2>Export in NONMEM format</h2><p class="funs"><code class="fun">nm_export_data</code></p><p class="desc">Writes a data.frame as CSV with the NONMEM convention for missing values ('.').</p><p class="help">Help in R: <code>?nm_export_data</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_export_data(dat$data, file.path(ex, &quot;data_nm.csv&quot;))</code></pre></div></article>
+<article class="detail" data-task="2" hidden><h2>Summarise the dataset</h2><p class="funs"><code class="fun">nm_summary</code></p><p class="desc">Number of subjects, records and observations, proportion of BLQ, time range, distinct doses and observed compartments.</p><p class="help">Help in R: <code>?nm_summary</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_summary(
+  dat$data    # data: data frame returned by nm_read_csv() ($data)
+)</code></pre></div></article>
+<article class="detail" data-task="3" hidden><h2>Plot concentrations vs time</h2><p class="funs"><code class="fun">nm_plot_dv</code></p><p class="desc">Observed concentrations against TIME or TAD, with the median and an interval band, on linear and/or log scale, optionally stratified by a covariate.</p><p class="help">Help in R: <code>?nm_plot_dv</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_plot_dv(dat$data,          # data: data frame from nm_read_csv()
+           scales = &quot;both&quot;)   # y axis: &quot;linear&quot;, &quot;log&quot; or &quot;both&quot; (side by side)
+nm_plot_dv(dat$data,
+           time_var = &quot;TAD&quot;,  # x axis: &quot;TIME&quot; (default) or &quot;TAD&quot; (time after dose)
+           scales   = &quot;log&quot;)
+nm_plot_dv(dat$data,
+           y     = &quot;DV_norm&quot;, # y: &quot;DV&quot; (default) or &quot;DV_norm&quot; (DV / dose)
+           strat = &quot;GENO&quot;)    # column used to colour the profiles</code></pre></div></article>
+<article class="detail" data-task="4" hidden><h2>One-step preview (read, summary, plots)</h2><p class="funs"><code class="fun">nm_data_previsual</code></p><p class="desc">Reads the dataset, summarises it and draws the raw and dose-normalised profiles in one call, with configurable BLQ handling and optional JPEG/CSV export.</p><p class="help">Help in R: <code>?nm_data_previsual</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>pv &lt;- nm_data_previsual(
+  file.path(ex, &quot;example_data.csv&quot;),  # path of the CSV data set
+  scales    = &quot;both&quot;,                 # y axis: &quot;linear&quot;, &quot;log&quot; or &quot;both&quot;
+  dose_norm = TRUE                    # also plot DV_norm = DV / AMT
+)
+pv$summary     # summary table
+pv$plot_dv     # concentrations vs time
+pv$plot_norm   # dose-normalised concentrations</code></pre></div></article>
+<article class="detail" data-task="5" hidden><h2>Add a RATE column</h2><p class="funs"><code class="fun">nm_add_rate</code></p><p class="desc">Adds a RATE column (e.g. -2 for an estimated zero-order duration) on all doses or only on some routes, keeping the exact format of the file.</p><p class="help">Help in R: <code>?nm_add_rate</code></p><div class="codebox"><button class="copy">Copy</button><pre><code># writes example_data_rate.csv next to the source file
+nm_add_rate(
+  file.path(ex, &quot;example_data.csv&quot;),  # file: path of the original CSV
+  dose_value = -2                     # RATE on doses: -2 (duration estimated)
+)                                     #   or -1 (rate estimated)</code></pre></div></article>
+<article class="detail" data-task="6" hidden><h2>Export in NONMEM format</h2><p class="funs"><code class="fun">nm_export_data</code></p><p class="desc">Writes a data.frame as CSV with the NONMEM convention for missing values ('.').</p><p class="help">Help in R: <code>?nm_export_data</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_export_data(
+  dat$data,                       # data: data frame to write
+  file.path(ex, &quot;data_nm.csv&quot;)    # file: output path (folder created if needed)
+)</code></pre></div></article>
 <article class="detail" data-task="7" hidden><h2>Check NONMEM compatibility <span class="badge">planned</span></h2><p class="funs"><code class="fun">nm_check_dataset</code></p><p class="desc">Checks that a dataset can be read by NONMEM: missing ID or TIME, non-increasing times, inconsistent EVID/MDV/AMT, duplicates, non-numeric columns, outliers.</p><p class="planned">Not available yet: this task is planned for a future version of nmpilot.</p></article>
-<article class="detail" data-task="8" hidden><h2>Suggest a structural model and initial values</h2><p class="funs"><code class="fun">nm_suggest_model</code> <code class="fun">plot.nm_model_suggestion</code></p><p class="desc">Analyses the data before any NONMEM run and ranks candidate models (compartments, input, elimination, residual error), each with initial values for THETA, IIV and SIGMA and alerts on what no candidate describes.</p><p class="help">Help in R: <code>?nm_suggest_model</code>, <code>?plot.nm_model_suggestion</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>s &lt;- nm_suggest_model(file.path(ex, &quot;example_data.csv&quot;))
-s                       # ranked candidates, initial values, alerts
-plot(s, &quot;profiles&quot;)
+<article class="detail" data-task="8" hidden><h2>Suggest a structural model and initial values</h2><p class="funs"><code class="fun">nm_suggest_model</code> <code class="fun">plot.nm_model_suggestion</code></p><p class="desc">Analyses the data before any NONMEM run and ranks candidate models (compartments, input, elimination, residual error), each with initial values for THETA, IIV and SIGMA and alerts on what no candidate describes.</p><p class="help">Help in R: <code>?nm_suggest_model</code>, <code>?plot.nm_model_suggestion</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>s &lt;- nm_suggest_model(
+  file.path(ex, &quot;example_data.csv&quot;)   # data: path of the CSV (or a data frame)
+)
+s                  # ranked candidates, initial values, alerts
+plot(s, &quot;profiles&quot;)   # type: &quot;profiles&quot;, &quot;support&quot;, &quot;pooled&quot; or &quot;design&quot;
 plot(s, &quot;support&quot;)</code></pre></div></article>
-<article class="detail" data-task="9" hidden><h2>Expected precision of the design</h2><p class="funs"><code class="fun">nm_suggest_design</code></p><p class="desc">Expected RSE of the parameters and eta-shrinkage of a candidate for the sampling design of the dataset or for another design, from the population Fisher information matrix.</p><p class="help">Help in R: <code>?nm_suggest_design</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_suggest_design(s, candidate = 1)
+<article class="detail" data-task="9" hidden><h2>Expected precision of the design</h2><p class="funs"><code class="fun">nm_suggest_design</code></p><p class="desc">Expected RSE of the parameters and eta-shrinkage of a candidate for the sampling design of the dataset or for another design, from the population Fisher information matrix.</p><p class="help">Help in R: <code>?nm_suggest_design</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_suggest_design(s,              # s: result of nm_suggest_model()
+                  candidate = 1)  # candidate number (default 1)
 # sparse design: 3 samples, 100 subjects
-nm_suggest_design(s, times = c(1, 4, 12), n_subjects = 100)</code></pre></div></article>
-<article class="detail" data-task="10" hidden><h2>Run the top candidates</h2><p class="funs"><code class="fun">nm_suggest_run</code></p><p class="desc">Writes the control streams of the chosen candidates, runs them with nm_run(), reads their OFV and ranks them by BIC.</p><p class="help">Help in R: <code>?nm_suggest_run</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>r &lt;- nm_suggest_run(s, analysis_dir = ex, nmfe_path = nmfe,
-                    candidates = 1:3, n_cores = 3)
-r                       # OFV, BIC, ranks, Spearman correlation</code></pre></div></article>
-<article class="detail" data-task="11" hidden><h2>Pre-screen covariates</h2><p class="funs"><code class="fun">nm_suggest_covariates</code></p><p class="desc">Compares the individual estimates (CL, central volume, absorption) between covariate groups with the Wasserstein distance, before any modelling.</p><p class="help">Help in R: <code>?nm_suggest_covariates</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_suggest_covariates(s, covariates = c(&quot;WT&quot;, &quot;GENO&quot;))</code></pre></div></article>
+nm_suggest_design(s,
+                  times      = c(1, 4, 12),  # sampling times after the dose
+                  n_subjects = 100)          # number of subjects</code></pre></div></article>
+<article class="detail" data-task="10" hidden><h2>Run the top candidates</h2><p class="funs"><code class="fun">nm_suggest_run</code></p><p class="desc">Writes the control streams of the chosen candidates, runs them with nm_run(), reads their OFV and ranks them by BIC.</p><p class="help">Help in R: <code>?nm_suggest_run</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>r &lt;- nm_suggest_run(
+  s,                     # result of nm_suggest_model()
+  analysis_dir = ex,     # folder where the control streams are written and run
+  nmfe_path    = nmfe,   # path of the nmfe launcher
+  candidates   = 1:3,    # candidate numbers to run (default: the first 3)
+  n_cores      = 3       # number of runs at the same time
+)
+r                        # OFV, BIC, ranks, Spearman correlation</code></pre></div></article>
+<article class="detail" data-task="11" hidden><h2>Pre-screen covariates</h2><p class="funs"><code class="fun">nm_suggest_covariates</code></p><p class="desc">Compares the individual estimates (CL, central volume, absorption) between covariate groups with the Wasserstein distance, before any modelling.</p><p class="help">Help in R: <code>?nm_suggest_covariates</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_suggest_covariates(
+  s,                            # result of nm_suggest_model()
+  covariates = c(&quot;WT&quot;, &quot;GENO&quot;)  # covariate columns of the data set
+)</code></pre></div></article>
 <article class="detail" data-task="12" hidden><h2>Write a control stream</h2><p class="funs"><code class="fun">nm_write_ctl</code></p><p class="desc">Writes a complete control stream for a compartmental PK model (1 to 3 compartments, IV or extravascular, first-order, zero-order or transit absorption, linear or Michaelis-Menten elimination), possibly from a candidate of nm_suggest_model().</p><p class="help">Help in R: <code>?nm_write_ctl</code></p><div class="codebox"><button class="copy">Copy</button><pre><code># from candidate 1 of a suggestion
-nm_write_ctl(file.path(ex, &quot;run3.ctl&quot;), from = s, candidate = 1)
+nm_write_ctl(file.path(ex, &quot;run3.ctl&quot;),  # file: control stream to write
+             from      = s,              # result of nm_suggest_model()
+             candidate = 1)              # candidate number in `from`
 # or from the dataset columns
-nm_write_ctl(input = file.path(ex, &quot;example_data.csv&quot;), error = &quot;combined&quot;)</code></pre></div></article>
-<article class="detail" data-task="13" hidden><h2>Static check</h2><p class="funs"><code class="fun">nm_ctl_check</code></p><p class="desc">Checks a control stream without NM-TRAN: THETA, ETA and EPS used without declaration, items missing from $INPUT, M3 requirements; optional line differences from a reference.</p><p class="help">Help in R: <code>?nm_ctl_check</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_ctl_check(file.path(ex, &quot;run2.ctl&quot;))
+nm_write_ctl(input = file.path(ex, &quot;example_data.csv&quot;),  # data set (or its column names)
+             error = &quot;combined&quot;)   # &quot;additive&quot;, &quot;proportional&quot; or &quot;combined&quot;</code></pre></div></article>
+<article class="detail" data-task="13" hidden><h2>Static check</h2><p class="funs"><code class="fun">nm_ctl_check</code></p><p class="desc">Checks a control stream without NM-TRAN: THETA, ETA and EPS used without declaration, items missing from $INPUT, M3 requirements; optional line differences from a reference.</p><p class="help">Help in R: <code>?nm_ctl_check</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_ctl_check(
+  file.path(ex, &quot;run2.ctl&quot;)   # ctl: control stream (path or lines)
+)
 ctl &lt;- nm_write_ctl(input = file.path(ex, &quot;example_data.csv&quot;))
-nm_ctl_check(nm_ctl_mu(ctl), reference = ctl)</code></pre></div></article>
-<article class="detail" data-task="14" hidden><h2>MU referencing</h2><p class="funs"><code class="fun">nm_ctl_mu</code></p><p class="desc">Rewrites log-normal parameters as MU_m = LOG(THETA(n)) and P = EXP(MU_m + ETA(m)), as required by EM and Bayesian methods (SAEM, IMP, BAYES).</p><p class="help">Help in R: <code>?nm_ctl_mu</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>ctl &lt;- nm_write_ctl(input = file.path(ex, &quot;example_data.csv&quot;), error = &quot;combined&quot;)
-nm_ctl_mu(ctl)
-nm_ctl_mu(ctl, parameters = c(&quot;CL&quot;, &quot;V&quot;), mode = &quot;linear&quot;)</code></pre></div></article>
+nm_ctl_check(nm_ctl_mu(ctl),     # ctl: the transformed control stream
+             reference = ctl)    # original: line differences are added</code></pre></div></article>
+<article class="detail" data-task="14" hidden><h2>MU referencing</h2><p class="funs"><code class="fun">nm_ctl_mu</code></p><p class="desc">Rewrites log-normal parameters as MU_m = LOG(THETA(n)) and P = EXP(MU_m + ETA(m)), as required by EM and Bayesian methods (SAEM, IMP, BAYES).</p><p class="help">Help in R: <code>?nm_ctl_mu</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>ctl &lt;- nm_write_ctl(input = file.path(ex, &quot;example_data.csv&quot;),
+                    error = &quot;combined&quot;)
+nm_ctl_mu(ctl)       # ctl: control stream (path or lines); all parameters
+nm_ctl_mu(ctl,
+          parameters = c(&quot;CL&quot;, &quot;V&quot;),  # parameters to transform
+          mode       = &quot;linear&quot;)      # &quot;readable&quot; (default) or &quot;linear&quot;</code></pre></div></article>
 <article class="detail" data-task="15" hidden><h2>Inter-occasion variability</h2><p class="funs"><code class="fun">nm_ctl_iov</code></p><p class="desc">Adds IOV to chosen parameters with $ABBR REPLACE and $OMEGA BLOCK SAME; the occasion item must be in $INPUT.</p><p class="help">Help in R: <code>?nm_ctl_iov</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>cols &lt;- c(&quot;ID&quot;, &quot;TIME&quot;, &quot;AMT&quot;, &quot;DV&quot;, &quot;EVID&quot;, &quot;MDV&quot;, &quot;CMT&quot;, &quot;OCC&quot;, &quot;BQL&quot;)
-ctl  &lt;- nm_write_ctl(input = cols, error = &quot;combined&quot;)
-nm_ctl_iov(ctl, parameters = c(&quot;CL&quot;, &quot;V&quot;), n_occ = 3, occ = &quot;OCC&quot;)</code></pre></div></article>
+ctl  &lt;- nm_write_ctl(input = cols,         # column names of the data set
+                     error = &quot;combined&quot;)
+nm_ctl_iov(ctl,
+           parameters = c(&quot;CL&quot;, &quot;V&quot;),  # parameters receiving IOV
+           n_occ      = 3,             # number of occasions (at least 2)
+           occ        = &quot;OCC&quot;)         # occasion column, values 1 to n_occ</code></pre></div></article>
 <article class="detail" data-task="16" hidden><h2>M3 method for BLQ data</h2><p class="funs"><code class="fun">nm_ctl_m3</code></p><p class="desc">Applies the M3 method (Beal 2001): BLQ observations contribute P(DV &lt; LLOQ); the LLOQ is a constant, a dataset column or depends on the analytical method.</p><p class="help">Help in R: <code>?nm_ctl_m3</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>cols &lt;- c(&quot;ID&quot;, &quot;TIME&quot;, &quot;AMT&quot;, &quot;DV&quot;, &quot;EVID&quot;, &quot;MDV&quot;, &quot;CMT&quot;, &quot;OCC&quot;, &quot;BQL&quot;)
 ctl  &lt;- nm_write_ctl(input = cols, error = &quot;combined&quot;)
-nm_ctl_m3(ctl, bql = &quot;BQL&quot;, lloq = 0.02)</code></pre></div></article>
+nm_ctl_m3(ctl,
+          bql  = &quot;BQL&quot;,   # BQL flag column (0 = quantified, 1 = below LLOQ)
+          lloq = 0.02)    # LLOQ, on the DV scale</code></pre></div></article>
 <article class="detail" data-task="17" hidden><h2>Convert a Wings label control stream</h2><p class="funs"><code class="fun">nm_convert_ctl</code></p><p class="desc">Converts a Wings for NONMEM 'extended' control stream, where the model uses the parameter labels, into a standard one (THETA(n), ETA(n), ERR(n)).</p><p class="help">Help in R: <code>?nm_convert_ctl</code></p><div class="codebox"><button class="copy">Copy</button><pre><code># a Wings control stream of your own (not in the example project)
-nm_convert_ctl(&quot;C:/myproject/run_wings.ctl&quot;)   # -&gt; run_wings_converted.ctl</code></pre></div></article>
-<article class="detail" data-task="18" hidden><h2>Run one or several models</h2><p class="funs"><code class="fun">nm_run</code></p><p class="desc">Runs control streams with nmfe, without Wings or PsN, each in its own run directory; finished runs are skipped. n_cores runs several models at the same time.</p><p class="help">Help in R: <code>?nm_run</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>log &lt;- nm_run(ctl          = c(&quot;run1.ctl&quot;, &quot;run2.ctl&quot;),
-              nmfe_path    = nmfe,
-              analysis_dir = ex,
-              n_cores      = 2)
+nm_convert_ctl(
+  &quot;C:/myproject/run_wings.ctl&quot;   # ctl: Wings control stream with labels
+)                                # -&gt; run_wings_converted.ctl</code></pre></div></article>
+<article class="detail" data-task="18" hidden><h2>Run one or several models</h2><p class="funs"><code class="fun">nm_run</code></p><p class="desc">Runs control streams with nmfe, without Wings or PsN, each in its own run directory; finished runs are skipped. n_cores runs several models at the same time.</p><p class="help">Help in R: <code>?nm_run</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>log &lt;- nm_run(
+  ctl          = c(&quot;run1.ctl&quot;, &quot;run2.ctl&quot;),  # control streams (relative to analysis_dir)
+  nmfe_path    = nmfe,                       # path of the nmfe launcher
+  analysis_dir = ex,                         # analysis folder (one subfolder per run)
+  n_cores      = 2                           # runs at the same time (&quot;auto&quot;, &quot;ask&quot;)
+)
 log[, c(&quot;run&quot;, &quot;action&quot;, &quot;ofv&quot;, &quot;min_ok&quot;, &quot;cov_status&quot;)]</code></pre></div></article>
-<article class="detail" data-task="19" hidden><h2>Number of cores available</h2><p class="funs"><code class="fun">nm_cores</code></p><p class="desc">Logical and physical cores of the computer and the number of simultaneous runs used by n_cores = &quot;auto&quot;.</p><p class="help">Help in R: <code>?nm_cores</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_cores()</code></pre></div></article>
-<article class="detail" data-task="20" hidden><h2>Summarise all runs of a project</h2><p class="funs"><code class="fun">nm_extract_runs</code> <code class="fun">nm_filter_runs</code></p><p class="desc">Reads every run of an analysis folder: OFV, dOFV, AIC/BIC, minimisation and covariance status, warnings, and all parameters named from the model code (CL, V, KA...).</p><p class="help">Help in R: <code>?nm_extract_runs</code>, <code>?nm_filter_runs</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>runs &lt;- nm_extract_runs(ex)
-runs                                  # one line per run
-nm_filter_runs(runs, &quot;successful&quot;)$runs</code></pre></div></article>
-<article class="detail" data-task="21" hidden><h2>Parameters side by side</h2><p class="funs"><code class="fun">nm_compare_runs</code></p><p class="desc">One row per parameter and one column per run, aligned by name or by NONMEM index; values, RSE, SE or shrinkage.</p><p class="help">Help in R: <code>?nm_compare_runs</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_compare_runs(runs, format = TRUE)         # value (RSE%)
-nm_compare_runs(runs, what = &quot;shrinkage&quot;)</code></pre></div></article>
-<article class="detail" data-task="22" hidden><h2>Parameter table of one run (Word)</h2><p class="funs"><code class="fun">nm_extract_run_table</code></p><p class="desc">Parameter table of a run (estimates, SE, RSE, 95% CI, SD of ETAs and EPS, ETA correlations) exported to a Word document in the run directory.</p><p class="help">Help in R: <code>?nm_extract_run_table</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>res &lt;- nm_extract_run_table(file.path(ex, &quot;run2.reg&quot;))
+<article class="detail" data-task="19" hidden><h2>Number of cores available</h2><p class="funs"><code class="fun">nm_cores</code></p><p class="desc">Logical and physical cores of the computer and the number of simultaneous runs used by n_cores = &quot;auto&quot;.</p><p class="help">Help in R: <code>?nm_cores</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_cores()   # no argument: logical and physical cores of this computer</code></pre></div></article>
+<article class="detail" data-task="20" hidden><h2>Summarise all runs of a project</h2><p class="funs"><code class="fun">nm_extract_runs</code> <code class="fun">nm_filter_runs</code></p><p class="desc">Reads every run of an analysis folder: OFV, dOFV, AIC/BIC, minimisation and covariance status, warnings, and all parameters named from the model code (CL, V, KA...).</p><p class="help">Help in R: <code>?nm_extract_runs</code>, <code>?nm_filter_runs</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>runs &lt;- nm_extract_runs(
+  ex      # path: analysis folder (or the folder of a single run)
+)
+runs      # one line per run
+nm_filter_runs(runs,           # x: result of nm_extract_runs()
+               &quot;successful&quot;)$runs   # filter: &quot;all&quot;, &quot;successful&quot;,
+                                    #   &quot;successful_no_warning&quot;, &quot;clean&quot;...</code></pre></div></article>
+<article class="detail" data-task="21" hidden><h2>Parameters side by side</h2><p class="funs"><code class="fun">nm_compare_runs</code></p><p class="desc">One row per parameter and one column per run, aligned by name or by NONMEM index; values, RSE, SE or shrinkage.</p><p class="help">Help in R: <code>?nm_compare_runs</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_compare_runs(runs,           # result of nm_extract_runs()
+                format = TRUE)  # cells written &quot;value (RSE%)&quot;
+nm_compare_runs(runs,
+                what = &quot;shrinkage&quot;)   # &quot;value&quot;, &quot;rse_pct&quot;, &quot;se&quot; or &quot;shrinkage&quot;</code></pre></div></article>
+<article class="detail" data-task="22" hidden><h2>Parameter table of one run (Word)</h2><p class="funs"><code class="fun">nm_extract_run_table</code></p><p class="desc">Parameter table of a run (estimates, SE, RSE, 95% CI, SD of ETAs and EPS, ETA correlations) exported to a Word document in the run directory.</p><p class="help">Help in R: <code>?nm_extract_run_table</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>res &lt;- nm_extract_run_table(
+  file.path(ex, &quot;run2.reg&quot;)   # run: run folder, control stream or stem
+)
 res$params          # the table in R
 res$output_file     # the Word file</code></pre></div></article>
-<article class="detail" data-task="23" hidden><h2>Identify the role of THETAs and ETAs</h2><p class="funs"><code class="fun">nm_identify_parameters</code> <code class="fun">nm_identify_directory</code></p><p class="desc">Reads $PK or $PRED and links each THETA and ETA to the PK parameter it acts on, with its role (typical value, covariate effect, IIV, residual error).</p><p class="help">Help in R: <code>?nm_identify_parameters</code>, <code>?nm_identify_directory</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>x &lt;- nm_identify_parameters(file.path(ex, &quot;run2.ctl&quot;))
+<article class="detail" data-task="23" hidden><h2>Identify the role of THETAs and ETAs</h2><p class="funs"><code class="fun">nm_identify_parameters</code> <code class="fun">nm_identify_directory</code></p><p class="desc">Reads $PK or $PRED and links each THETA and ETA to the PK parameter it acts on, with its role (typical value, covariate effect, IIV, residual error).</p><p class="help">Help in R: <code>?nm_identify_parameters</code>, <code>?nm_identify_directory</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>x &lt;- nm_identify_parameters(
+  file.path(ex, &quot;run2.ctl&quot;)   # ctl: path of the control stream
+)
 x$parameter_table
-nm_identify_directory(ex)          # every control stream of a folder</code></pre></div></article>
+nm_identify_directory(ex)     # path: every control stream of a folder</code></pre></div></article>
 <article class="detail" data-task="24" hidden><h2>Project summary in Word <span class="badge">planned</span></h2><p class="funs"></p><p class="desc">Summary table of all runs of a project exported to Word (today nm_extract_runs() gives it in R only).</p><p class="planned">Not available yet: this task is planned for a future version of nmpilot.</p></article>
-<article class="detail" data-task="25" hidden><h2>Diagram of tested models</h2><p class="funs"><code class="fun">nm_model_diagram</code></p><p class="desc">Tree of the runs with, for each, its parent run, OFV, dOFV against the parent and convergence status. Parents are read from the &quot;;; Based on:&quot; comments of the control streams, or given with parents.</p><p class="help">Help in R: <code>?nm_model_diagram</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>d &lt;- nm_model_diagram(ex, parents = c(run2 = &quot;run1&quot;))
+<article class="detail" data-task="25" hidden><h2>Diagram of tested models</h2><p class="funs"><code class="fun">nm_model_diagram</code></p><p class="desc">Tree of the runs with, for each, its parent run, OFV, dOFV against the parent and convergence status. Parents are read from the &quot;;; Based on:&quot; comments of the control streams, or given with parents.</p><p class="help">Help in R: <code>?nm_model_diagram</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>d &lt;- nm_model_diagram(
+  ex,                         # x: analysis folder (or nm_extract_runs() result)
+  parents = c(run2 = &quot;run1&quot;)  # optional links run = parent, added to (or
+)                             #   replacing) the &quot;;; Based on:&quot; comments
 d                       # table of the runs
 plot(d)                 # the diagram</code></pre></div></article>
-<article class="detail" data-task="26" hidden><h2>Goodness-of-fit plots</h2><p class="funs"><code class="fun">nm_gof</code></p><p class="desc">Standard diagnostic plots from a NONMEM table: observations vs population and individual predictions, CWRES, NPDE and IWRES vs time and predictions.</p><p class="help">Help in R: <code>?nm_gof</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>gof &lt;- nm_gof(file.path(ex, &quot;run2.reg&quot;))
+<article class="detail" data-task="26" hidden><h2>Goodness-of-fit plots</h2><p class="funs"><code class="fun">nm_gof</code></p><p class="desc">Standard diagnostic plots from a NONMEM table: observations vs population and individual predictions, CWRES, NPDE and IWRES vs time and predictions.</p><p class="help">Help in R: <code>?nm_gof</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>gof &lt;- nm_gof(
+  file.path(ex, &quot;run2.reg&quot;)   # file: run folder, or the NONMEM table itself
+)
 plot(gof)
-nm_gof(file.path(ex, &quot;run2.reg&quot;), by = &quot;GENO&quot;)</code></pre></div></article>
-<article class="detail" data-task="27" hidden><h2>Compare two models (LRT, Vuong, Clarke, bootstrap, influence)</h2><p class="funs"><code class="fun">nm_compare</code> <code class="fun">summary.nm_compare</code></p><p class="desc">Paired comparison of two runs: CWRES and NPDE, individual OFVs, Vuong and Clarke tests for non-nested models, LRT if nested, subject bootstrap of dOFV, influence, paired parameters and ETAs; summary() gives a decision grid.</p><p class="help">Help in R: <code>?nm_compare</code>, <code>?summary.nm_compare</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>cmp &lt;- nm_compare(file.path(ex, &quot;run1.reg&quot;), file.path(ex, &quot;run2.reg&quot;),
-                  labels = c(&quot;Base&quot;, &quot;Final&quot;),
-                  covariates = c(&quot;WT&quot;, &quot;GENO&quot;))
+nm_gof(file.path(ex, &quot;run2.reg&quot;),
+       by = &quot;GENO&quot;)           # columns used to split the plots into panels</code></pre></div></article>
+<article class="detail" data-task="27" hidden><h2>Compare two models (LRT, Vuong, Clarke, bootstrap, influence)</h2><p class="funs"><code class="fun">nm_compare</code> <code class="fun">summary.nm_compare</code></p><p class="desc">Paired comparison of two runs: CWRES and NPDE, individual OFVs, Vuong and Clarke tests for non-nested models, LRT if nested, subject bootstrap of dOFV, influence, paired parameters and ETAs; summary() gives a decision grid.</p><p class="help">Help in R: <code>?nm_compare</code>, <code>?summary.nm_compare</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>cmp &lt;- nm_compare(
+  file.path(ex, &quot;run1.reg&quot;),      # run1: first run (folder or path prefix)
+  file.path(ex, &quot;run2.reg&quot;),      # run2: second run
+  labels     = c(&quot;Base&quot;, &quot;Final&quot;),   # display names of the two runs
+  covariates = c(&quot;WT&quot;, &quot;GENO&quot;)       # covariates examined against the
+)                                    #   per-subject difference of iOFV
 summary(cmp)            # decision grid
 cmp$tests$table</code></pre></div></article>
-<article class="detail" data-task="28" hidden><h2>Comparison plots (gain map, overlaid diagnostics)</h2><p class="funs"><code class="fun">plot.nm_compare</code></p><p class="desc">Where the second model improves or degrades the fit (gain map with bootstrap band), diagnostics of both runs overlaid, caterpillar of individual dOFV, parameters and ETAs.</p><p class="help">Help in R: <code>?plot.nm_compare</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>plot(cmp, type = &quot;gain_map&quot;, n_band = 200)
+<article class="detail" data-task="28" hidden><h2>Comparison plots (gain map, overlaid diagnostics)</h2><p class="funs"><code class="fun">plot.nm_compare</code></p><p class="desc">Where the second model improves or degrades the fit (gain map with bootstrap band), diagnostics of both runs overlaid, caterpillar of individual dOFV, parameters and ETAs.</p><p class="help">Help in R: <code>?plot.nm_compare</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>plot(cmp,                  # result of nm_compare()
+     type   = &quot;gain_map&quot;,  # figure(s) to draw (see ?plot.nm_compare)
+     n_band = 200)         # subject resamples for the confidence band
 plot(cmp, type = c(&quot;overlay_gof&quot;, &quot;iofv_caterpillar&quot;, &quot;eta_scatter&quot;))</code></pre></div></article>
 <article class="detail" data-task="29" hidden><h2>Optimise a base model without iterative runs</h2><p class="funs"><code class="fun">nm_derivatives_ctl</code> <code class="fun">nm_optimize_base</code> <code class="fun">plot.nm_optimize_base</code></p><p class="desc">Ranks the possible changes of a base model (residual error, random effects, covariates) by their expected dOFV, from its outputs (level 1) and one NONMEM evaluation run (level 2, linearised model).</p><p class="help">Help in R: <code>?nm_derivatives_ctl</code>, <code>?nm_optimize_base</code>, <code>?plot.nm_optimize_base</code></p><div class="codebox"><button class="copy">Copy</button><pre><code># level 1 only, no NONMEM run
-nm_optimize_base(file.path(ex, &quot;run1.reg&quot;), covariates = c(&quot;WT&quot;, &quot;GENO&quot;), level = 1)
+nm_optimize_base(file.path(ex, &quot;run1.reg&quot;),      # run: base run folder
+                 covariates = c(&quot;WT&quot;, &quot;GENO&quot;),   # covariate columns to test
+                 level      = 1)                 # 1 = residual analysis only
 # level 2: one evaluation run, then the linearised model
-p &lt;- nm_derivatives_ctl(file.path(ex, &quot;run1.reg&quot;))   # -&gt; run1_deriv.ctl
-nm_run(basename(p), nmfe, dirname(p))
+p &lt;- nm_derivatives_ctl(file.path(ex, &quot;run1.reg&quot;))  # writes run1_deriv.ctl
+nm_run(basename(p),   # ctl: the control stream written above
+       nmfe,          # nmfe_path
+       dirname(p))    # analysis_dir: the folder of that control stream
 o &lt;- nm_optimize_base(file.path(ex, &quot;run1.reg&quot;), covariates = c(&quot;WT&quot;, &quot;GENO&quot;))
 o
 plot(o)</code></pre></div></article>
-<article class="detail" data-task="30" hidden><h2>Covariate effects on ETAs (Wasserstein)</h2><p class="funs"><code class="fun">nm_wasserstein</code></p><p class="desc">Compares the distribution of an ETA between covariate groups with the Wasserstein distance and a permutation test, with the Wasserstein R2 between runs (Simon et al., Front Pharmacol 2026).</p><p class="help">Help in R: <code>?nm_wasserstein</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>w &lt;- nm_wasserstein(c(BASE  = file.path(ex, &quot;run1.reg&quot;),
-                      FINAL = file.path(ex, &quot;run2.reg&quot;)),
-                    covariates = c(&quot;WT&quot;, &quot;GENO&quot;), eta = &quot;CL&quot;)
+<article class="detail" data-task="30" hidden><h2>Covariate effects on ETAs (Wasserstein)</h2><p class="funs"><code class="fun">nm_wasserstein</code></p><p class="desc">Compares the distribution of an ETA between covariate groups with the Wasserstein distance and a permutation test, with the Wasserstein R2 between runs (Simon et al., Front Pharmacol 2026).</p><p class="help">Help in R: <code>?nm_wasserstein</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>w &lt;- nm_wasserstein(
+  c(BASE  = file.path(ex, &quot;run1.reg&quot;),   # runs: run folders, named
+    FINAL = file.path(ex, &quot;run2.reg&quot;)),  #   (the names label the results)
+  covariates = c(&quot;WT&quot;, &quot;GENO&quot;),          # covariate columns compared
+  eta        = &quot;CL&quot;                      # ETA analysed: a parameter name,
+)                                        #   &quot;ETA(n)&quot; or an index
 w
-plot(w)
+plot(w)                 # type = &quot;ecdf&quot; (default)
 plot(w, type = &quot;r2w&quot;)</code></pre></div></article>
-<article class="detail" data-task="31" hidden><h2>VPC</h2><p class="funs"><code class="fun">nm_vpc_ctl</code> <code class="fun">nm_vpc</code></p><p class="desc">Writes and runs the _orig and _sim control streams of a VPC from an estimated run, then draws observed percentiles against the confidence intervals of simulated percentiles.</p><p class="help">Help in R: <code>?nm_vpc_ctl</code>, <code>?nm_vpc</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_vpc_ctl(file.path(ex, &quot;run2.ctl&quot;), nmfe_path = nmfe, n_sim = 500, n_cores = 2)
+<article class="detail" data-task="31" hidden><h2>VPC</h2><p class="funs"><code class="fun">nm_vpc_ctl</code> <code class="fun">nm_vpc</code></p><p class="desc">Writes and runs the _orig and _sim control streams of a VPC from an estimated run, then draws observed percentiles against the confidence intervals of simulated percentiles.</p><p class="help">Help in R: <code>?nm_vpc_ctl</code>, <code>?nm_vpc</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_vpc_ctl(file.path(ex, &quot;run2.ctl&quot;),  # run: estimation run (ctl, folder or stem)
+           nmfe_path = nmfe,     # path of the nmfe launcher
+           n_sim     = 500,      # number of simulated replicates
+           n_cores   = 2)        # 2 = the _orig and _sim runs at the same time
 cols &lt;- c(&quot;NSIM&quot;, &quot;ID&quot;, &quot;TIME&quot;, &quot;AMT&quot;, &quot;MDV&quot;, &quot;DV&quot;, &quot;PRED&quot;, &quot;IPRED&quot;)
-nm_vpc(file.path(ex, &quot;run2.ctl&quot;), col_names = cols)</code></pre></div></article>
+nm_vpc(file.path(ex, &quot;run2.ctl&quot;),  # run: same as in nm_vpc_ctl()
+       col_names = cols)           # names of the $TABLE columns of the .fit files</code></pre></div></article>
 <article class="detail" data-task="32" hidden><h2>pcVPC</h2><p class="funs"><code class="fun">nm_vpc</code></p><p class="desc">Prediction-corrected VPC (Bergstrand 2011) from the same simulation runs as the VPC.</p><p class="help">Help in R: <code>?nm_vpc</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>cols &lt;- c(&quot;NSIM&quot;, &quot;ID&quot;, &quot;TIME&quot;, &quot;AMT&quot;, &quot;MDV&quot;, &quot;DV&quot;, &quot;PRED&quot;, &quot;IPRED&quot;)
-nm_vpc(file.path(ex, &quot;run2.ctl&quot;), col_names = cols, type = 2, bin_method = 3)  # nominal times</code></pre></div></article>
-<article class="detail" data-task="33" hidden><h2>Bootstrap</h2><p class="funs"><code class="fun">nm_bootstrap</code></p><p class="desc">Non-parametric bootstrap by subject: reproducible and optionally stratified resampling, resume after interruption, percentile confidence intervals and success rate.</p><p class="help">Help in R: <code>?nm_bootstrap</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>boot &lt;- nm_bootstrap(file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;),
-                     nmfe_path = nmfe, n = 500, seed = 1,
-                     strata = &quot;GENO&quot;, n_cores = &quot;auto&quot;)
+nm_vpc(file.path(ex, &quot;run2.ctl&quot;),
+       col_names  = cols,   # names of the $TABLE columns of the .fit files
+       type       = 2,      # 1 = VPC (default), 2 = prediction-corrected VPC
+       bin_method = 3)      # 3 = nominal times (1 manual, 2 quantiles, 4 auto)</code></pre></div></article>
+<article class="detail" data-task="33" hidden><h2>Bootstrap</h2><p class="funs"><code class="fun">nm_bootstrap</code></p><p class="desc">Non-parametric bootstrap by subject: reproducible and optionally stratified resampling, resume after interruption, percentile confidence intervals and success rate.</p><p class="help">Help in R: <code>?nm_bootstrap</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>boot &lt;- nm_bootstrap(
+  file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;),  # ctl: control stream of the final model
+  nmfe_path = nmfe,     # path of the nmfe launcher
+  n         = 500,      # number of replicates
+  seed      = 1,        # seed, for a reproducible resampling
+  strata    = &quot;GENO&quot;,   # optional column to stratify the resampling on
+  n_cores   = &quot;auto&quot;    # replicates at the same time (physical cores - 1)
+)
 boot
 plot(boot)</code></pre></div></article>
-<article class="detail" data-task="34" hidden><h2>Jackknife</h2><p class="funs"><code class="fun">nm_jackknife</code></p><p class="desc">Leave-one-subject-out runs ranked by |dOFV|, with relative and standardised THETA shifts. A descriptive influence diagnostic, not an outlier test.</p><p class="help">Help in R: <code>?nm_jackknife</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>jk &lt;- nm_jackknife(file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;),
-                   nmfe_path = nmfe, n_cores = &quot;auto&quot;)
+<article class="detail" data-task="34" hidden><h2>Jackknife</h2><p class="funs"><code class="fun">nm_jackknife</code></p><p class="desc">Leave-one-subject-out runs ranked by |dOFV|, with relative and standardised THETA shifts. A descriptive influence diagnostic, not an outlier test.</p><p class="help">Help in R: <code>?nm_jackknife</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>jk &lt;- nm_jackknife(
+  file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;),  # ctl: control stream, already run
+  nmfe_path = nmfe,     # path of the nmfe launcher
+  n_cores   = &quot;auto&quot;    # runs at the same time (physical cores - 1)
+)
 jk
-plot(jk, &quot;bar&quot;)
+plot(jk, &quot;bar&quot;)         # type: &quot;bar&quot; (default), &quot;rank&quot; or &quot;scatter&quot;
 plot(jk, &quot;scatter&quot;)</code></pre></div></article>
-<article class="detail" data-task="35" hidden><h2>Likelihood profile</h2><p class="funs"><code class="fun">nm_profile</code></p><p class="desc">Fixes a THETA at each value of a grid, re-runs the model and reads the OFV; the confidence interval is where dOFV crosses 3.84.</p><p class="help">Help in R: <code>?nm_profile</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>prof &lt;- nm_profile(file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;), nmfe,
-                   param = &quot;CL&quot;, from = 4.6, to = 5.7, by = 0.1,
-                   n_cores = &quot;auto&quot;)
+<article class="detail" data-task="35" hidden><h2>Likelihood profile</h2><p class="funs"><code class="fun">nm_profile</code></p><p class="desc">Fixes a THETA at each value of a grid, re-runs the model and reads the OFV; the confidence interval is where dOFV crosses 3.84.</p><p class="help">Help in R: <code>?nm_profile</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>prof &lt;- nm_profile(
+  file.path(ex, &quot;run2.reg&quot;, &quot;run2.ctl&quot;),  # ctl: reference control stream
+  nmfe,                  # nmfe_path: path of the nmfe launcher
+  param   = &quot;CL&quot;,        # parameter profiled: $THETA label or index
+  from    = 4.6,         # grid of fixed values: first value,
+  to      = 5.7,         #   last value,
+  by      = 0.1,         #   and step
+  n_cores = &quot;auto&quot;       # grid values run at the same time
+)
 prof
-plot(prof, type = &quot;dofv&quot;)</code></pre></div></article>
+plot(prof, type = &quot;dofv&quot;)   # &quot;ofv&quot; or &quot;dofv&quot; (with the CI threshold line)</code></pre></div></article>
 <article class="detail" data-task="36" hidden><h2>Export a figure</h2><p class="funs"><code class="fun">nm_export_plot</code></p><p class="desc">Saves a ggplot to JPEG, PNG, PDF or TIFF according to the file extension, creating the folder if needed.</p><p class="help">Help in R: <code>?nm_export_plot</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>g &lt;- nm_plot_dv(dat$data)
-nm_export_plot(g, file.path(ex, &quot;figures&quot;, &quot;dv_time.png&quot;), width = 8, height = 5)</code></pre></div></article>
-<article class="detail" data-task="37" hidden><h2>Diagnostics in Word</h2><p class="funs"><code class="fun">nm_gof</code></p><p class="desc">Writes all goodness-of-fit plots of a run to a Word document next to its table.</p><p class="help">Help in R: <code>?nm_gof</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_gof(file.path(ex, &quot;run2.reg&quot;), save_docx = TRUE)</code></pre></div></article>
+nm_export_plot(g,                                       # plot: the figure
+               file.path(ex, &quot;figures&quot;, &quot;dv_time.png&quot;), # file: type from the extension
+               width  = 8,                              # width in inches
+               height = 5)                              # height in inches</code></pre></div></article>
+<article class="detail" data-task="37" hidden><h2>Diagnostics in Word</h2><p class="funs"><code class="fun">nm_gof</code></p><p class="desc">Writes all goodness-of-fit plots of a run to a Word document next to its table.</p><p class="help">Help in R: <code>?nm_gof</code></p><div class="codebox"><button class="copy">Copy</button><pre><code>nm_gof(file.path(ex, &quot;run2.reg&quot;),  # file: run folder (or table)
+       save_docx = TRUE)            # write all the plots to a Word file
+                                    #   in the analysis folder</code></pre></div></article>
 </div>
 </div>
 </main>

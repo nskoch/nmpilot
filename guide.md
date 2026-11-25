@@ -118,8 +118,10 @@ Help in R: `?nm_read_csv`
 
 Copy
 
-    dat <- nm_read_csv(file.path(ex, "example_data.csv"))
-    head(dat$data)     # standardised data
+    dat <- nm_read_csv(
+      file.path(ex, "example_data.csv")   # file: path of the NONMEM CSV data set
+    )
+    head(dat$data)     # standardised data (reserved NONMEM names)
     dat$mapping        # reserved labels -> original column names
 
 ## Summarise the dataset
@@ -133,7 +135,9 @@ Help in R: `?nm_summary`
 
 Copy
 
-    nm_summary(dat$data)
+    nm_summary(
+      dat$data    # data: data frame returned by nm_read_csv() ($data)
+    )
 
 ## Plot concentrations vs time
 
@@ -147,9 +151,14 @@ Help in R: `?nm_plot_dv`
 
 Copy
 
-    nm_plot_dv(dat$data, scales = "both")
-    nm_plot_dv(dat$data, time_var = "TAD", scales = "log")
-    nm_plot_dv(dat$data, y = "DV_norm", strat = "GENO")   # dose-normalised
+    nm_plot_dv(dat$data,          # data: data frame from nm_read_csv()
+               scales = "both")   # y axis: "linear", "log" or "both" (side by side)
+    nm_plot_dv(dat$data,
+               time_var = "TAD",  # x axis: "TIME" (default) or "TAD" (time after dose)
+               scales   = "log")
+    nm_plot_dv(dat$data,
+               y     = "DV_norm", # y: "DV" (default) or "DV_norm" (DV / dose)
+               strat = "GENO")    # column used to colour the profiles
 
 ## One-step preview (read, summary, plots)
 
@@ -163,11 +172,14 @@ Help in R: `?nm_data_previsual`
 
 Copy
 
-    pv <- nm_data_previsual(file.path(ex, "example_data.csv"),
-                            scales = "both", dose_norm = TRUE)
-    pv$summary
-    pv$plot_dv
-    pv$plot_norm
+    pv <- nm_data_previsual(
+      file.path(ex, "example_data.csv"),  # path of the CSV data set
+      scales    = "both",                 # y axis: "linear", "log" or "both"
+      dose_norm = TRUE                    # also plot DV_norm = DV / AMT
+    )
+    pv$summary     # summary table
+    pv$plot_dv     # concentrations vs time
+    pv$plot_norm   # dose-normalised concentrations
 
 ## Add a RATE column
 
@@ -180,8 +192,11 @@ Help in R: `?nm_add_rate`
 
 Copy
 
-    # RATE = -2 on every dose -> example_data_rate.csv next to the source file
-    nm_add_rate(file.path(ex, "example_data.csv"), dose_value = -2)
+    # writes example_data_rate.csv next to the source file
+    nm_add_rate(
+      file.path(ex, "example_data.csv"),  # file: path of the original CSV
+      dose_value = -2                     # RATE on doses: -2 (duration estimated)
+    )                                     #   or -1 (rate estimated)
 
 ## Export in NONMEM format
 
@@ -194,7 +209,10 @@ Help in R: `?nm_export_data`
 
 Copy
 
-    nm_export_data(dat$data, file.path(ex, "data_nm.csv"))
+    nm_export_data(
+      dat$data,                       # data: data frame to write
+      file.path(ex, "data_nm.csv")    # file: output path (folder created if needed)
+    )
 
 ## Check NONMEM compatibility planned
 
@@ -219,9 +237,11 @@ Help in R: `?nm_suggest_model`, `?plot.nm_model_suggestion`
 
 Copy
 
-    s <- nm_suggest_model(file.path(ex, "example_data.csv"))
-    s                       # ranked candidates, initial values, alerts
-    plot(s, "profiles")
+    s <- nm_suggest_model(
+      file.path(ex, "example_data.csv")   # data: path of the CSV (or a data frame)
+    )
+    s                  # ranked candidates, initial values, alerts
+    plot(s, "profiles")   # type: "profiles", "support", "pooled" or "design"
     plot(s, "support")
 
 ## Expected precision of the design
@@ -236,9 +256,12 @@ Help in R: `?nm_suggest_design`
 
 Copy
 
-    nm_suggest_design(s, candidate = 1)
+    nm_suggest_design(s,              # s: result of nm_suggest_model()
+                      candidate = 1)  # candidate number (default 1)
     # sparse design: 3 samples, 100 subjects
-    nm_suggest_design(s, times = c(1, 4, 12), n_subjects = 100)
+    nm_suggest_design(s,
+                      times      = c(1, 4, 12),  # sampling times after the dose
+                      n_subjects = 100)          # number of subjects
 
 ## Run the top candidates
 
@@ -251,9 +274,14 @@ Help in R: `?nm_suggest_run`
 
 Copy
 
-    r <- nm_suggest_run(s, analysis_dir = ex, nmfe_path = nmfe,
-                        candidates = 1:3, n_cores = 3)
-    r                       # OFV, BIC, ranks, Spearman correlation
+    r <- nm_suggest_run(
+      s,                     # result of nm_suggest_model()
+      analysis_dir = ex,     # folder where the control streams are written and run
+      nmfe_path    = nmfe,   # path of the nmfe launcher
+      candidates   = 1:3,    # candidate numbers to run (default: the first 3)
+      n_cores      = 3       # number of runs at the same time
+    )
+    r                        # OFV, BIC, ranks, Spearman correlation
 
 ## Pre-screen covariates
 
@@ -267,7 +295,10 @@ Help in R: `?nm_suggest_covariates`
 
 Copy
 
-    nm_suggest_covariates(s, covariates = c("WT", "GENO"))
+    nm_suggest_covariates(
+      s,                            # result of nm_suggest_model()
+      covariates = c("WT", "GENO")  # covariate columns of the data set
+    )
 
 ## Write a control stream
 
@@ -283,9 +314,12 @@ Help in R: `?nm_write_ctl`
 Copy
 
     # from candidate 1 of a suggestion
-    nm_write_ctl(file.path(ex, "run3.ctl"), from = s, candidate = 1)
+    nm_write_ctl(file.path(ex, "run3.ctl"),  # file: control stream to write
+                 from      = s,              # result of nm_suggest_model()
+                 candidate = 1)              # candidate number in `from`
     # or from the dataset columns
-    nm_write_ctl(input = file.path(ex, "example_data.csv"), error = "combined")
+    nm_write_ctl(input = file.path(ex, "example_data.csv"),  # data set (or its column names)
+                 error = "combined")   # "additive", "proportional" or "combined"
 
 ## Static check
 
@@ -299,9 +333,12 @@ Help in R: `?nm_ctl_check`
 
 Copy
 
-    nm_ctl_check(file.path(ex, "run2.ctl"))
+    nm_ctl_check(
+      file.path(ex, "run2.ctl")   # ctl: control stream (path or lines)
+    )
     ctl <- nm_write_ctl(input = file.path(ex, "example_data.csv"))
-    nm_ctl_check(nm_ctl_mu(ctl), reference = ctl)
+    nm_ctl_check(nm_ctl_mu(ctl),     # ctl: the transformed control stream
+                 reference = ctl)    # original: line differences are added
 
 ## MU referencing
 
@@ -315,9 +352,12 @@ Help in R: `?nm_ctl_mu`
 
 Copy
 
-    ctl <- nm_write_ctl(input = file.path(ex, "example_data.csv"), error = "combined")
-    nm_ctl_mu(ctl)
-    nm_ctl_mu(ctl, parameters = c("CL", "V"), mode = "linear")
+    ctl <- nm_write_ctl(input = file.path(ex, "example_data.csv"),
+                        error = "combined")
+    nm_ctl_mu(ctl)       # ctl: control stream (path or lines); all parameters
+    nm_ctl_mu(ctl,
+              parameters = c("CL", "V"),  # parameters to transform
+              mode       = "linear")      # "readable" (default) or "linear"
 
 ## Inter-occasion variability
 
@@ -331,8 +371,12 @@ Help in R: `?nm_ctl_iov`
 Copy
 
     cols <- c("ID", "TIME", "AMT", "DV", "EVID", "MDV", "CMT", "OCC", "BQL")
-    ctl  <- nm_write_ctl(input = cols, error = "combined")
-    nm_ctl_iov(ctl, parameters = c("CL", "V"), n_occ = 3, occ = "OCC")
+    ctl  <- nm_write_ctl(input = cols,         # column names of the data set
+                         error = "combined")
+    nm_ctl_iov(ctl,
+               parameters = c("CL", "V"),  # parameters receiving IOV
+               n_occ      = 3,             # number of occasions (at least 2)
+               occ        = "OCC")         # occasion column, values 1 to n_occ
 
 ## M3 method for BLQ data
 
@@ -348,7 +392,9 @@ Copy
 
     cols <- c("ID", "TIME", "AMT", "DV", "EVID", "MDV", "CMT", "OCC", "BQL")
     ctl  <- nm_write_ctl(input = cols, error = "combined")
-    nm_ctl_m3(ctl, bql = "BQL", lloq = 0.02)
+    nm_ctl_m3(ctl,
+              bql  = "BQL",   # BQL flag column (0 = quantified, 1 = below LLOQ)
+              lloq = 0.02)    # LLOQ, on the DV scale
 
 ## Convert a Wings label control stream
 
@@ -363,7 +409,9 @@ Help in R: `?nm_convert_ctl`
 Copy
 
     # a Wings control stream of your own (not in the example project)
-    nm_convert_ctl("C:/myproject/run_wings.ctl")   # -> run_wings_converted.ctl
+    nm_convert_ctl(
+      "C:/myproject/run_wings.ctl"   # ctl: Wings control stream with labels
+    )                                # -> run_wings_converted.ctl
 
 ## Run one or several models
 
@@ -377,10 +425,12 @@ Help in R: `?nm_run`
 
 Copy
 
-    log <- nm_run(ctl          = c("run1.ctl", "run2.ctl"),
-                  nmfe_path    = nmfe,
-                  analysis_dir = ex,
-                  n_cores      = 2)
+    log <- nm_run(
+      ctl          = c("run1.ctl", "run2.ctl"),  # control streams (relative to analysis_dir)
+      nmfe_path    = nmfe,                       # path of the nmfe launcher
+      analysis_dir = ex,                         # analysis folder (one subfolder per run)
+      n_cores      = 2                           # runs at the same time ("auto", "ask")
+    )
     log[, c("run", "action", "ofv", "min_ok", "cov_status")]
 
 ## Number of cores available
@@ -394,7 +444,7 @@ Help in R: `?nm_cores`
 
 Copy
 
-    nm_cores()
+    nm_cores()   # no argument: logical and physical cores of this computer
 
 ## Summarise all runs of a project
 
@@ -408,9 +458,13 @@ Help in R: `?nm_extract_runs`, `?nm_filter_runs`
 
 Copy
 
-    runs <- nm_extract_runs(ex)
-    runs                                  # one line per run
-    nm_filter_runs(runs, "successful")$runs
+    runs <- nm_extract_runs(
+      ex      # path: analysis folder (or the folder of a single run)
+    )
+    runs      # one line per run
+    nm_filter_runs(runs,           # x: result of nm_extract_runs()
+                   "successful")$runs   # filter: "all", "successful",
+                                        #   "successful_no_warning", "clean"...
 
 ## Parameters side by side
 
@@ -423,8 +477,10 @@ Help in R: `?nm_compare_runs`
 
 Copy
 
-    nm_compare_runs(runs, format = TRUE)         # value (RSE%)
-    nm_compare_runs(runs, what = "shrinkage")
+    nm_compare_runs(runs,           # result of nm_extract_runs()
+                    format = TRUE)  # cells written "value (RSE%)"
+    nm_compare_runs(runs,
+                    what = "shrinkage")   # "value", "rse_pct", "se" or "shrinkage"
 
 ## Parameter table of one run (Word)
 
@@ -437,7 +493,9 @@ Help in R: `?nm_extract_run_table`
 
 Copy
 
-    res <- nm_extract_run_table(file.path(ex, "run2.reg"))
+    res <- nm_extract_run_table(
+      file.path(ex, "run2.reg")   # run: run folder, control stream or stem
+    )
     res$params          # the table in R
     res$output_file     # the Word file
 
@@ -453,9 +511,11 @@ Help in R: `?nm_identify_parameters`, `?nm_identify_directory`
 
 Copy
 
-    x <- nm_identify_parameters(file.path(ex, "run2.ctl"))
+    x <- nm_identify_parameters(
+      file.path(ex, "run2.ctl")   # ctl: path of the control stream
+    )
     x$parameter_table
-    nm_identify_directory(ex)          # every control stream of a folder
+    nm_identify_directory(ex)     # path: every control stream of a folder
 
 ## Project summary in Word planned
 
@@ -476,7 +536,10 @@ Help in R: `?nm_model_diagram`
 
 Copy
 
-    d <- nm_model_diagram(ex, parents = c(run2 = "run1"))
+    d <- nm_model_diagram(
+      ex,                         # x: analysis folder (or nm_extract_runs() result)
+      parents = c(run2 = "run1")  # optional links run = parent, added to (or
+    )                             #   replacing) the ";; Based on:" comments
     d                       # table of the runs
     plot(d)                 # the diagram
 
@@ -492,9 +555,12 @@ Help in R: `?nm_gof`
 
 Copy
 
-    gof <- nm_gof(file.path(ex, "run2.reg"))
+    gof <- nm_gof(
+      file.path(ex, "run2.reg")   # file: run folder, or the NONMEM table itself
+    )
     plot(gof)
-    nm_gof(file.path(ex, "run2.reg"), by = "GENO")
+    nm_gof(file.path(ex, "run2.reg"),
+           by = "GENO")           # columns used to split the plots into panels
 
 ## Compare two models (LRT, Vuong, Clarke, bootstrap, influence)
 
@@ -509,9 +575,12 @@ Help in R: `?nm_compare`, `?summary.nm_compare`
 
 Copy
 
-    cmp <- nm_compare(file.path(ex, "run1.reg"), file.path(ex, "run2.reg"),
-                      labels = c("Base", "Final"),
-                      covariates = c("WT", "GENO"))
+    cmp <- nm_compare(
+      file.path(ex, "run1.reg"),      # run1: first run (folder or path prefix)
+      file.path(ex, "run2.reg"),      # run2: second run
+      labels     = c("Base", "Final"),   # display names of the two runs
+      covariates = c("WT", "GENO")       # covariates examined against the
+    )                                    #   per-subject difference of iOFV
     summary(cmp)            # decision grid
     cmp$tests$table
 
@@ -527,7 +596,9 @@ Help in R: `?plot.nm_compare`
 
 Copy
 
-    plot(cmp, type = "gain_map", n_band = 200)
+    plot(cmp,                  # result of nm_compare()
+         type   = "gain_map",  # figure(s) to draw (see ?plot.nm_compare)
+         n_band = 200)         # subject resamples for the confidence band
     plot(cmp, type = c("overlay_gof", "iofv_caterpillar", "eta_scatter"))
 
 ## Optimise a base model without iterative runs
@@ -544,10 +615,14 @@ Help in R: `?nm_derivatives_ctl`, `?nm_optimize_base`,
 Copy
 
     # level 1 only, no NONMEM run
-    nm_optimize_base(file.path(ex, "run1.reg"), covariates = c("WT", "GENO"), level = 1)
+    nm_optimize_base(file.path(ex, "run1.reg"),      # run: base run folder
+                     covariates = c("WT", "GENO"),   # covariate columns to test
+                     level      = 1)                 # 1 = residual analysis only
     # level 2: one evaluation run, then the linearised model
-    p <- nm_derivatives_ctl(file.path(ex, "run1.reg"))   # -> run1_deriv.ctl
-    nm_run(basename(p), nmfe, dirname(p))
+    p <- nm_derivatives_ctl(file.path(ex, "run1.reg"))  # writes run1_deriv.ctl
+    nm_run(basename(p),   # ctl: the control stream written above
+           nmfe,          # nmfe_path
+           dirname(p))    # analysis_dir: the folder of that control stream
     o <- nm_optimize_base(file.path(ex, "run1.reg"), covariates = c("WT", "GENO"))
     o
     plot(o)
@@ -564,11 +639,14 @@ Help in R: `?nm_wasserstein`
 
 Copy
 
-    w <- nm_wasserstein(c(BASE  = file.path(ex, "run1.reg"),
-                          FINAL = file.path(ex, "run2.reg")),
-                        covariates = c("WT", "GENO"), eta = "CL")
+    w <- nm_wasserstein(
+      c(BASE  = file.path(ex, "run1.reg"),   # runs: run folders, named
+        FINAL = file.path(ex, "run2.reg")),  #   (the names label the results)
+      covariates = c("WT", "GENO"),          # covariate columns compared
+      eta        = "CL"                      # ETA analysed: a parameter name,
+    )                                        #   "ETA(n)" or an index
     w
-    plot(w)
+    plot(w)                 # type = "ecdf" (default)
     plot(w, type = "r2w")
 
 ## VPC
@@ -583,9 +661,13 @@ Help in R: `?nm_vpc_ctl`, `?nm_vpc`
 
 Copy
 
-    nm_vpc_ctl(file.path(ex, "run2.ctl"), nmfe_path = nmfe, n_sim = 500, n_cores = 2)
+    nm_vpc_ctl(file.path(ex, "run2.ctl"),  # run: estimation run (ctl, folder or stem)
+               nmfe_path = nmfe,     # path of the nmfe launcher
+               n_sim     = 500,      # number of simulated replicates
+               n_cores   = 2)        # 2 = the _orig and _sim runs at the same time
     cols <- c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED")
-    nm_vpc(file.path(ex, "run2.ctl"), col_names = cols)
+    nm_vpc(file.path(ex, "run2.ctl"),  # run: same as in nm_vpc_ctl()
+           col_names = cols)           # names of the $TABLE columns of the .fit files
 
 ## pcVPC
 
@@ -599,7 +681,10 @@ Help in R: `?nm_vpc`
 Copy
 
     cols <- c("NSIM", "ID", "TIME", "AMT", "MDV", "DV", "PRED", "IPRED")
-    nm_vpc(file.path(ex, "run2.ctl"), col_names = cols, type = 2, bin_method = 3)  # nominal times
+    nm_vpc(file.path(ex, "run2.ctl"),
+           col_names  = cols,   # names of the $TABLE columns of the .fit files
+           type       = 2,      # 1 = VPC (default), 2 = prediction-corrected VPC
+           bin_method = 3)      # 3 = nominal times (1 manual, 2 quantiles, 4 auto)
 
 ## Bootstrap
 
@@ -613,9 +698,14 @@ Help in R: `?nm_bootstrap`
 
 Copy
 
-    boot <- nm_bootstrap(file.path(ex, "run2.reg", "run2.ctl"),
-                         nmfe_path = nmfe, n = 500, seed = 1,
-                         strata = "GENO", n_cores = "auto")
+    boot <- nm_bootstrap(
+      file.path(ex, "run2.reg", "run2.ctl"),  # ctl: control stream of the final model
+      nmfe_path = nmfe,     # path of the nmfe launcher
+      n         = 500,      # number of replicates
+      seed      = 1,        # seed, for a reproducible resampling
+      strata    = "GENO",   # optional column to stratify the resampling on
+      n_cores   = "auto"    # replicates at the same time (physical cores - 1)
+    )
     boot
     plot(boot)
 
@@ -631,10 +721,13 @@ Help in R: `?nm_jackknife`
 
 Copy
 
-    jk <- nm_jackknife(file.path(ex, "run2.reg", "run2.ctl"),
-                       nmfe_path = nmfe, n_cores = "auto")
+    jk <- nm_jackknife(
+      file.path(ex, "run2.reg", "run2.ctl"),  # ctl: control stream, already run
+      nmfe_path = nmfe,     # path of the nmfe launcher
+      n_cores   = "auto"    # runs at the same time (physical cores - 1)
+    )
     jk
-    plot(jk, "bar")
+    plot(jk, "bar")         # type: "bar" (default), "rank" or "scatter"
     plot(jk, "scatter")
 
 ## Likelihood profile
@@ -648,11 +741,17 @@ Help in R: `?nm_profile`
 
 Copy
 
-    prof <- nm_profile(file.path(ex, "run2.reg", "run2.ctl"), nmfe,
-                       param = "CL", from = 4.6, to = 5.7, by = 0.1,
-                       n_cores = "auto")
+    prof <- nm_profile(
+      file.path(ex, "run2.reg", "run2.ctl"),  # ctl: reference control stream
+      nmfe,                  # nmfe_path: path of the nmfe launcher
+      param   = "CL",        # parameter profiled: $THETA label or index
+      from    = 4.6,         # grid of fixed values: first value,
+      to      = 5.7,         #   last value,
+      by      = 0.1,         #   and step
+      n_cores = "auto"       # grid values run at the same time
+    )
     prof
-    plot(prof, type = "dofv")
+    plot(prof, type = "dofv")   # "ofv" or "dofv" (with the CI threshold line)
 
 ## Export a figure
 
@@ -666,7 +765,10 @@ Help in R: `?nm_export_plot`
 Copy
 
     g <- nm_plot_dv(dat$data)
-    nm_export_plot(g, file.path(ex, "figures", "dv_time.png"), width = 8, height = 5)
+    nm_export_plot(g,                                       # plot: the figure
+                   file.path(ex, "figures", "dv_time.png"), # file: type from the extension
+                   width  = 8,                              # width in inches
+                   height = 5)                              # height in inches
 
 ## Diagnostics in Word
 
@@ -679,4 +781,6 @@ Help in R: `?nm_gof`
 
 Copy
 
-    nm_gof(file.path(ex, "run2.reg"), save_docx = TRUE)
+    nm_gof(file.path(ex, "run2.reg"),  # file: run folder (or table)
+           save_docx = TRUE)            # write all the plots to a Word file
+                                        #   in the analysis folder

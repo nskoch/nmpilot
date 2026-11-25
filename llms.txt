@@ -9,7 +9,7 @@ conventions (`.reg` run directories, `.smr` files, extended control
 streams with parameter labels) are also read, so that projects started
 with Wings can be continued.
 
-> **Status:** version 0.8.1, under active development. The interface may
+> **Status:** version 0.9.0, under active development. The interface may
 > still change. Bug reports and suggestions are welcome in the
 > [issues](https://github.com/nskoch/nmpilot/issues).
 

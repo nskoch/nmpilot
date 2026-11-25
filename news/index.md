@@ -1,6 +1,27 @@
 # Changelog
 
-## nmpilot (development version)
+## nmpilot 0.9.0
+
+- Task guide
+  ([`nm_guide()`](https://nskoch.github.io/nmpilot/reference/nm_guide.md)):
+  every argument of the code examples is explained by a comment at the
+  end of its line, and
+  [`nm_model_diagram()`](https://nskoch.github.io/nmpilot/reference/nm_model_diagram.md)
+  is listed as available, with an example. New test `test-guide.R`:
+  every function and every argument cited by the examples must exist (a
+  former argument name, accepted with a warning, is reported), and every
+  example must parse.
+
+- Automatic checks on GitHub (point A.14): `R CMD check` runs at each
+  push on Windows, macOS and Linux (current R), and on Linux with
+  R-devel and the previous R; test coverage is measured with covr and
+  sent to Codecov. Badges in the README.
+
+- Documentation website (point A.13):
+  <https://nskoch.github.io/nmpilot/>, built with pkgdown and published
+  at each push: the README and the task guide on the home page, the
+  functions grouped by stage of the analysis, the vignettes and this
+  file. Its address is in `DESCRIPTION`.
 
 - One reader for the records `$INPUT`, `$THETA`, `$OMEGA` and `$SIGMA`
   (point A.11, third part), shared by
@@ -13,6 +34,7 @@
   which had each their own (new internal file `R/nm_ctl_read.R`).
   Results are unchanged on the 186 control streams of the comparison
   corpus, except for the following corrections:
+
   - `$THETA`: all the `$THETA` records are read by the check of the
     transformations (only the first one before); `(0.5 FIX)`, with FIX
     inside the parentheses, and `(0 1 5)`, with blanks as separators,
@@ -33,7 +55,9 @@
     before `$DES` or `$ERROR`) is no longer replaced by
     `THETA(n)`/`ETA(n)`; control streams already in standard NONMEM
     syntax are left unchanged. Tests in `test-ctl-read.R`.
+
 - Print and plot methods harmonised (point A.11, second part):
+
   - every [`plot()`](https://rdrr.io/r/graphics/plot.default.html)
     method returns the figure (a ggplot, or a patchwork for the combined
     panels of `nm_gof`), shown when not assigned and ready for
@@ -57,9 +81,11 @@
     the class `nm_data_previsual`, each with a print method giving a
     short summary. They remain a data frame or a list: existing code
     that uses their columns or elements is unchanged.
+
 - Argument names harmonised before version 1.0 (point A.11, first part).
   The former names and forms still work until 1.0, with a warning that
   gives the new one:
+
   - the control stream is `ctl` everywhere:
     `nm_run(ctl, nmfe_path, ...)` (formerly `ctl_files`, after
     `nmfe_path`), `nm_profile(ctl, nmfe_path, ...)` (formerly
@@ -84,6 +110,7 @@
     `strip_tables` (formerly `strip_table`), as the other functions. The
     README, the vignettes, the guide and the tests use the new names.
     Tests in `test-deprecated-args.R`.
+
 - New function
   [`nm_model_diagram()`](https://nskoch.github.io/nmpilot/reference/nm_model_diagram.md)
   (point A.7): tree of the models tested in a project. Each run is

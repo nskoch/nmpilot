@@ -11,13 +11,13 @@ Source:
 [`inst/CITATION`](https://github.com/nskoch/nmpilot/blob/main/inst/CITATION)
 
 Simon N (2026). nmpilot: R Tools for Direct NONMEM Workflow Automation.
-R package version 0.8.1. https://github.com/nskoch/nmpilot
+R package version 0.9.0. https://github.com/nskoch/nmpilot
 
     @Manual{,
       title = {nmpilot: R Tools for Direct NONMEM Workflow Automation},
       author = {Nicolas Simon},
       year = {2026},
-      note = {R package version 0.8.1},
+      note = {R package version 0.9.0},
       url = {https://github.com/nskoch/nmpilot},
     }
 
