@@ -40,7 +40,10 @@
 #' 5. Elimination: dose proportionality (power model on AUC, or on
 #'    dose-normalised concentrations by time bin for sparse data) and
 #'    curvature of the log-concentration decline (concave = saturable).
-#' 6. Residual error: the best structural fit of each interval is refitted
+#' 6. Residual error (rich data; in sparse data the error model is not
+#'    assessable and the best structure is proposed with the three error
+#'    models, with equal support, to be compared in NONMEM by
+#'    [nm_suggest_run()]): the best structural fit of each interval is refitted
 #'    by iteratively reweighted least squares under a combined variance
 #'    `a^2 + b^2 f^2`; on these common, leverage-corrected (PRESS) residuals,
 #'    the variance models `a^2` (additive), `b^2 f^2` (proportional) and
@@ -302,7 +305,10 @@ nm_suggest_model <- function(data,
   grid$score <- p_cpt[as.character(grid$cpts)] * p_abs[grid$input] *
     p_el[grid$elimination] * p_err[grid$error]
   grid$score <- grid$score / sum(grid$score)
-  grid <- utils::head(grid[order(-grid$score), ], n_candidates)
+  # ties (equal error support in sparse designs): proportional, combined,
+  # then additive
+  grid <- utils::head(grid[order(-grid$score, match(grid$error, c("proportional", "combined", "additive"))), ],
+                      n_candidates)
   rownames(grid) <- NULL
 
   design_data <- list(doses = doses[, c("ID", "TIME", "AMT", "TINF")],
@@ -1412,8 +1418,15 @@ plot.nm_model_suggestion <- function(x, type = c("profiles", "support", "pooled"
                   combined = c(prop = 0.04, add = add_default))
   n_tot <- sum(vapply(fits, function(f) length(f$t), numeric(1)))
   if (source_ev != "individual" || length(fits) < 3 || n_tot < 20) {
-    return(list(support = stats::setNames(c(0.2, 0.4, 0.4), models), sigma = default, table = NULL,
-                note = "Residual error model not assessable without rich individual profiles: proportional or combined error assumed by default; SIGMA initial values are defaults."))
+    # without rich individual profiles the residual error model cannot be
+    # told apart from the inter-individual variability (a test on the
+    # residuals within subjects around the pooled fit was tried on
+    # 25/11/2026: false detections with a misfitted structure). The three
+    # models get the same support, so that the best structure is proposed
+    # with the three errors (candidates 1 to 3) and NONMEM decides
+    # (nm_suggest_run()).
+    return(list(support = stats::setNames(rep(1 / 3, 3), models), sigma = default, table = NULL,
+                note = "Residual error model not assessable without rich individual profiles: the best structure is proposed with additive, proportional and combined error (equal support), to be compared in NONMEM (nm_suggest_run()); SIGMA initial values are defaults."))
   }
   # Extended least squares: the best structural model of each interval is
   # refitted under the weighting of each error model, so that the residuals

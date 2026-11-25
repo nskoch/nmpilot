@@ -166,15 +166,32 @@ nm_gof <- function(file,
   if (!is.null(stem)) {
     cand <- cand[grepl(stem, basename(cand), fixed = TRUE)]
   }
-  is_tab <- vapply(cand, function(f) {
-    ln <- tryCatch(readLines(f, n = 1L, warn = FALSE), error = function(e) "")
-    length(ln) && grepl("^\\s*TABLE NO", ln)
-  }, logical(1))
-  cand <- cand[is_tab]
+  # estimation outputs of NONMEM also start with "TABLE NO." (.ext, .phi,
+  # .cov...): they are not $TABLE files
+  out_ext <- c("ext", "phi", "phm", "cov", "cor", "coi", "cnv", "shk", "grd", "smr",
+               "lst", "ctl", "mod", "xml", "msf", "coa", "rmt", "shm", "vpd", "imp", "npd",
+               "npe", "clt", "cpu")
+  cand <- cand[!tolower(tools::file_ext(cand)) %in% out_ext]
+  hdr <- lapply(cand, function(f) {
+    ln <- tryCatch(readLines(f, n = 2L, warn = FALSE), error = function(e) character(0))
+    if (length(ln) >= 2L && grepl("^\\s*TABLE NO", ln[1])) strsplit(trimws(ln[2]), "\\s+")[[1]]
+    else NULL
+  })
+  keep <- !vapply(hdr, is.null, logical(1))
+  cand <- cand[keep]; hdr <- hdr[keep]
 
   if (length(cand) == 0L)
     stop("No NONMEM table (\"TABLE NO.\" header) found in directory: ", file,
          if (!is.null(stem)) paste0(" (stem = '", stem, "')") else "", call. = FALSE)
+  if (length(cand) > 1L) {
+    # a diagnostic table holds DV; among several, sdtab* (Xpose convention)
+    has_dv <- vapply(hdr, function(h) "DV" %in% toupper(h), logical(1))
+    if (any(has_dv)) cand <- cand[has_dv]
+    if (length(cand) > 1L) {
+      sd <- grepl("^sdtab", basename(cand), ignore.case = TRUE)
+      if (sum(sd) == 1L) cand <- cand[sd]
+    }
+  }
   if (length(cand) > 1L)
     stop("Several NONMEM tables found; disambiguate with 'stem' or pass the file directly:\n  ",
          paste(basename(cand), collapse = "\n  "), call. = FALSE)

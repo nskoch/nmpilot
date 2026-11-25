@@ -353,3 +353,18 @@ test_that("nm_suggest_run runs a zero-order candidate on an adapted dataset", {
   expect_true(all(d$CMT == 1))
   expect_true(all(d$RATE[d$EVID == 1] == -2))
 })
+
+test_that("sparse design: the best structure is proposed with the three error models", {
+  val <- system.file("validation", "validate_suggest_model.R", package = "nmpilot")
+  skip_if(!nzchar(val))
+  env <- new.env(); sys.source(val, envir = env)
+  sc <- env$.val_scenarios()$S7                     # additive error, sparse design
+  f <- env$.val_simulate(sc, "sparse", seed = 1008)
+  on.exit(unlink(f))
+  s <- nm_suggest_model(f, verbose = FALSE, design_eval = FALSE, lloq = 0.02)
+  expect_equal(unname(s$support$error), rep(1 / 3, 3))
+  top <- s$candidates[1:3, ]
+  expect_equal(top$error, c("proportional", "combined", "additive"))
+  expect_equal(length(unique(paste(top$cpts, top$input, top$elimination))), 1L)
+  expect_equal(length(unique(top$score)), 1L)
+})

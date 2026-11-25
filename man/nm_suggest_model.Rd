@@ -133,7 +133,10 @@ censoring penalty (M3-like). BIC weights averaged.
 \item Elimination: dose proportionality (power model on AUC, or on
 dose-normalised concentrations by time bin for sparse data) and
 curvature of the log-concentration decline (concave = saturable).
-\item Residual error: the best structural fit of each interval is refitted
+\item Residual error (rich data; in sparse data the error model is not
+assessable and the best structure is proposed with the three error
+models, with equal support, to be compared in NONMEM by
+\code{\link[=nm_suggest_run]{nm_suggest_run()}}): the best structural fit of each interval is refitted
 by iteratively reweighted least squares under a combined variance
 \verb{a^2 + b^2 f^2}; on these common, leverage-corrected (PRESS) residuals,
 the variance models \code{a^2} (additive), \verb{b^2 f^2} (proportional) and
