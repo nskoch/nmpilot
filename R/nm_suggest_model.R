@@ -46,7 +46,8 @@
 #'    the variance models `a^2` (additive), `b^2 f^2` (proportional) and
 #'    `a^2 + b^2 f^2` (combined) are fitted by maximum likelihood and compared
 #'    by BIC, the combined model being kept only when its BIC is better by
-#'    more than 10. Points of leverage above 0.7 and predictions below twice
+#'    more than 15 (threshold chosen by simulation; 10 until version 0.9.0).
+#'    Points of leverage above 0.7 and predictions below twice
 #'    the LLOQ are left out. The estimates give the initial SIGMA values
 #'    (variances).
 #' 7. IIV: variance of the log of the individual estimates of CL, central
@@ -1490,9 +1491,13 @@ plot.nm_model_suggestion <- function(x, type = c("profiles", "support", "pooled"
   m_comb$value <- min(m_comb$value, m_add$value, m_prop$value)
   n <- m_add$n
   # the combined model must be strongly supported (BIC better by more than
-  # 10, Kass and Raftery 1995): misfit of individual profiles mimics an
-  # extra error component
-  bic <- c(2 * m_add$value + log(n), 2 * m_prop$value + log(n), 2 * m_comb$value + 2 * log(n) + 10)
+  # 15): misfit of individual profiles mimics an extra error component. The
+  # threshold (10 until 0.9.0, "very strong" for Kass and Raftery 1995) was
+  # set to 15 after the simulation validation (point E28): correct error
+  # model in rich designs 87% on average over the three true error models,
+  # as with 10, with the proportional model found more often (86% vs 82%)
+  # and the combined model a little less often (90% vs 95%).
+  bic <- c(2 * m_add$value + log(n), 2 * m_prop$value + log(n), 2 * m_comb$value + 2 * log(n) + 15)
   w <- exp(-0.5 * (bic - min(bic))); w <- w / sum(w)
   # degrees of freedom: individual parameters were estimated on the same data
   dfc <- 1
