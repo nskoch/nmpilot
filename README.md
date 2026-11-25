@@ -1,6 +1,8 @@
 # nmpilot
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/nskoch/nmpilot/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/nskoch/nmpilot/actions/workflows/R-CMD-check.yaml)
+[![Codecov test coverage](https://codecov.io/gh/nskoch/nmpilot/graph/badge.svg)](https://app.codecov.io/gh/nskoch/nmpilot)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24244339.svg)](https://doi.org/10.5281/zenodo.24244339)
 <!-- badges: end -->
 
