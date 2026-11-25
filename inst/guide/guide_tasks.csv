@@ -62,7 +62,9 @@ res$output_file     # the Word file","available"
 x$parameter_table
 nm_identify_directory(ex)          # every control stream of a folder","available"
 24,"results","5. Results","Project summary in Word","","Summary table of all runs of a project exported to Word (today nm_extract_runs() gives it in R only).","","planned"
-25,"results","5. Results","Diagram of tested models","nm_model_diagram","Tree of the runs with, for each, its parent run, OFV, dOFV and convergence status.","","planned"
+25,"results","5. Results","Diagram of tested models","nm_model_diagram","Tree of the runs with, for each, its parent run, OFV, dOFV against the parent and convergence status. Parents are read from the "";; Based on:"" comments of the control streams, or given with parents.","d <- nm_model_diagram(ex, parents = c(run2 = ""run1""))
+d                       # table of the runs
+plot(d)                 # the diagram","available"
 26,"diag","6. Diagnostics","Goodness-of-fit plots","nm_gof","Standard diagnostic plots from a NONMEM table: observations vs population and individual predictions, CWRES, NPDE and IWRES vs time and predictions.","gof <- nm_gof(file.path(ex, ""run2.reg""))
 plot(gof)
 nm_gof(file.path(ex, ""run2.reg""), by = ""GENO"")","available"
