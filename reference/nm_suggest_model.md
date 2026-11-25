@@ -208,7 +208,8 @@ model comparison in NONMEM):
     residuals, the variance models `a^2` (additive), `b^2 f^2`
     (proportional) and `a^2 + b^2 f^2` (combined) are fitted by maximum
     likelihood and compared by BIC, the combined model being kept only
-    when its BIC is better by more than 10. Points of leverage above 0.7
+    when its BIC is better by more than 15 (threshold chosen by
+    simulation; 10 until version 0.9.0). Points of leverage above 0.7
     and predictions below twice the LLOQ are left out. The estimates
     give the initial SIGMA values (variances).
 

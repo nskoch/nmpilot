@@ -2,6 +2,18 @@
 
 ## nmpilot (development version)
 
+- [`nm_suggest_model()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_model.md):
+  the combined residual error model is now retained only when its BIC is
+  better by more than 15 (10 before; point E28). The threshold was
+  chosen with the simulation validation
+  (`inst/validation/validate_suggest_model.R`, 8 scenarios, rich
+  designs): correct error model 87% on average over the three true error
+  models, as with 10, with the proportional model found more often (86%
+  vs 82%), the additive model as often (85%) and the combined model a
+  little less often (90% vs 95%); 20 replicates per scenario, one
+  combined-error scenario. In sparse designs no BIC is computed and the
+  threshold plays no role.
+
 - New function
   [`nm_check_dataset()`](https://nskoch.github.io/nmpilot/reference/nm_check_dataset.md)
   (point B5): checks that a dataset can be read by NONMEM (ID, TIME and
