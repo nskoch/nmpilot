@@ -39,166 +39,35 @@
   NA_character_
 }
 
-# Parse $OMEGA BLOCK lines: each ROW gets the name from its diagonal comment.
-# Returns a vector of names in ETA order (one per diagonal element).
-.nm_parse_omega_block <- function(block_lines) {
-  # Find BLOCK dimension
-  dim_m <- regmatches(block_lines[1],
-                      regexpr("BLOCK\\s*\\(\\s*([0-9]+)\\s*\\)",
-                              block_lines[1], ignore.case = TRUE))
-  if (length(dim_m) == 0L) return(character(0))
-  dim_n <- as.integer(gsub("[^0-9]", "", dim_m))
 
-  names_out <- character(dim_n)
-  row_idx   <- 0L
-  for (ln in block_lines[-1]) {
-    if (grepl("^\\s*;;", ln)) next   # SAME convention comment
-    # Count numeric tokens on this line (before comment)
-    code_part <- sub(";.*$", "", ln)
-    nums <- strsplit(trimws(code_part), "\\s+")[[1]]
-    nums <- nums[nums != "" & grepl("^[0-9\\.\\-\\+eE]+$", nums)]
-    if (length(nums) == 0L) next
-    row_idx <- row_idx + 1L
-    # Diagonal element = last numeric on row = name from comment
-    name <- .nm_extract_param_name(ln)
-    if (!is.na(name)) names_out[row_idx] <- name
-    if (row_idx >= dim_n) break
-  }
-  names_out
-}
 
-# Build mapping list from a record type
-# Returns list: name -> substitution string e.g. "POP_CL" -> "THETA(1)"
-.nm_build_mapping <- function(ctl_lines, record_pattern,
-                           sub_prefix, start_idx = 1L) {
+# Mappings name -> "THETA(n)", "ETA(n)", "ERR(n)", built on the shared readers
+# of $THETA, $OMEGA and $SIGMA (nm_ctl_read.R, action 11c). The name is read in
+# the comment of the line of each parameter (for a BLOCK, the line of its
+# diagonal value); a line holding several THETAs names the first one.
+.nm_theta_name_mapping <- function(ctl_lines) {
+  th <- .nm_ctl_theta_parse(ctl_lines)
   mapping <- list()
-  in_rec  <- FALSE
-  counter <- start_idx - 1L
-
-  for (ln in ctl_lines) {
-    # Detect record start ($THETA, $SIGMA)
-    if (grepl(record_pattern, ln, ignore.case = TRUE)) {
-      if (grepl("BLOCK", ln, ignore.case = TRUE) && sub_prefix == "ETA") {
-        next  # handled by .nm_build_eta_mapping
-      }
-      in_rec <- TRUE
-
-      # Format B (inline): "$THETA (0.1,10) ;POPV2 ;L" - value and name on same line
-      # Extract: everything after the $THETA keyword
-      m <- regexpr("\\$[A-Za-z]+\\s*", ln, ignore.case = TRUE)
-      if (m > 0) rest <- substring(ln, m + attr(m, "match.length"))
-      rest <- trimws(rest)
-
-      # Check if this line has a numeric value (not just $THETA alone)
-      code_part <- sub(";.*$", "", rest)
-      if (grepl("[0-9]", code_part) && grepl(";", rest)) {
-        counter <- counter + 1L
-        name <- .nm_extract_param_name(rest)
-        if (!is.na(name) && nchar(name) > 0L)
-          mapping[[name]] <- sprintf("%s(%d)", sub_prefix, counter)
-      }
-      next
-    }
-
-    # Detect next record (stop)
-    if (in_rec && grepl("^\\s*\\$[A-Za-z]", ln)) {
-      in_rec <- FALSE
-    }
-    if (!in_rec) next
-
-    # Skip pure comment or empty lines
-    if (grepl("^\\s*;", ln) || grepl("^\\s*$", ln)) next
-    # Skip SAME lines
-    if (grepl("SAME", ln, ignore.case = TRUE)) next
-
-    # Format A: value on its own line (multi-line $THETA block)
-    code_part <- sub(";.*$", "", ln)
-    if (!grepl("[0-9]", code_part)) next
-
-    counter <- counter + 1L
-    name    <- .nm_extract_param_name(ln)
-    if (!is.na(name) && nchar(name) > 0L) {
-      mapping[[name]] <- sprintf("%s(%d)", sub_prefix, counter)
-    }
+  first <- !duplicated(th$line)
+  for (i in which(first)) {
+    name <- .nm_extract_param_name(th$raw[i])
+    if (!is.na(name) && nchar(name) > 0L) mapping[[name]] <- sprintf("THETA(%d)", th$theta[i])
   }
   mapping
 }
-# Build ETA mapping handling both diagonal and BLOCK $OMEGA
-.nm_build_eta_mapping <- function(ctl_lines) {
-  mapping     <- list()
-  eta_counter <- 0L
-  i           <- 1L
 
-  while (i <= length(ctl_lines)) {
-    ln <- gsub("\r", "", ctl_lines[i], fixed = TRUE)
-
-    if (grepl("^\\s*\\$OMEGA", ln, ignore.case = TRUE)) {
-
-      if (grepl("SAME", ln, ignore.case = TRUE)) {
-        i <- i + 1L
-        next
-      }
-
-      if (grepl("BLOCK", ln, ignore.case = TRUE)) {
-        # Collect block lines until next $record
-        block <- ln
-        j <- i + 1L
-        while (j <= length(ctl_lines) &&
-               !grepl("^\\s*\\$[A-Za-z]", ctl_lines[j])) {
-          block <- c(block, gsub("\r", "", ctl_lines[j], fixed = TRUE))
-          j <- j + 1L
-        }
-        names_block <- .nm_parse_omega_block(block)
-        for (nm in names_block) {
-          eta_counter <- eta_counter + 1L
-          if (!is.na(nm) && nchar(nm) > 0L)
-            mapping[[nm]] <- sprintf("ETA(%d)", eta_counter)
-        }
-        i <- j
-        next
-      }
-
-      # Format B (inline): "$OMEGA 0.5 ; ETA_CL" - value and name on same line
-      m <- regexpr("\\$OMEGA\\s*", ln, ignore.case = TRUE)
-      rest <- if (m > 0) trimws(substring(ln, m + attr(m, "match.length"))) else ""
-      code_part <- sub(";.*$", "", rest)
-
-      if (grepl("[0-9]", code_part) && grepl(";", rest)) {
-        # Inline: one parameter on this line; further values of the same
-        # record on the following lines are read below (Format A).
-        eta_counter <- eta_counter + 1L
-        name <- .nm_extract_param_name(rest)
-        if (!is.na(name) && nchar(name) > 0L)
-          mapping[[name]] <- sprintf("ETA(%d)", eta_counter)
-      }
-
-      # Format A: multi-line $OMEGA block (diagonal, non-BLOCK)
-      j <- i + 1L
-      while (j <= length(ctl_lines) &&
-             !grepl("^\\s*\\$[A-Za-z]", ctl_lines[j])) {
-        cln <- gsub("\r", "", ctl_lines[j], fixed = TRUE)
-        if (!grepl("^\\s*;", cln) && !grepl("^\\s*$", cln) &&
-            !grepl("SAME", cln, ignore.case = TRUE)) {
-          code_j <- sub(";.*$", "", cln)
-          if (grepl("[0-9]", code_j)) {
-            eta_counter <- eta_counter + 1L
-            name <- .nm_extract_param_name(cln)
-            if (!is.na(name) && nchar(name) > 0L)
-              mapping[[name]] <- sprintf("ETA(%d)", eta_counter)
-          }
-        }
-        j <- j + 1L
-      }
-      i <- j
-      next
-    }
-    i <- i + 1L
+.nm_random_name_mapping <- function(ctl_lines, rec = c("OMEGA", "SIGMA")) {
+  rec <- match.arg(rec)
+  prefix <- if (rec == "OMEGA") "ETA" else "ERR"
+  et <- .nm_ctl_random_parse(gsub("\r", "", ctl_lines, fixed = TRUE), rec)$eta
+  mapping <- list()
+  for (i in seq_len(nrow(et))) {
+    cm <- et$omega_comment[i]
+    if (is.na(cm)) next
+    name <- .nm_extract_param_name(paste0(";", cm))
+    if (!is.na(name) && nchar(name) > 0L) mapping[[name]] <- sprintf("%s(%d)", prefix, et$eta[i])
   }
   mapping
-}
-# Build ERR mapping from $SIGMA
-.nm_build_err_mapping <- function(ctl_lines) {
-  .nm_build_mapping(ctl_lines, "^\\s*\\$SIGMA", "ERR")
 }
 
 # Apply mapping to model records ($PK, $PRED, $ERROR, $DES, $AES)
@@ -218,7 +87,8 @@
     # Detect model record start
     if (grepl(pattern_model, ln, ignore.case = TRUE)) {
       in_model <- TRUE
-      lhs_seen <- character(0)
+      # lhs_seen is kept across model records: a variable assigned in $PK
+      # is still a variable in $DES and $ERROR
       out_lines[i] <- ln
       next
     }
@@ -241,12 +111,15 @@
       comment_part <- substring(ln, sc_pos)
     }
 
-    # Detect LHS: word before "=" (ignoring spaces)
-    lhs_m <- regmatches(code_part,
-                        regexpr("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*=",
-                                code_part))
+    # Detect LHS: word before "=" (ignoring spaces), also after a leading
+    # IF(condition): "IF(PATIENT.EQ.1) SCALAR = ..."
+    lhs_txt <- .nm_ip_split_if(code_part)$rest
+    lhs_m <- regmatches(lhs_txt,
+                        regexpr("^\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(\\([^)]*\\))?\\s*=(?!=)",
+                                lhs_txt, perl = TRUE))
     if (length(lhs_m) > 0L) {
-      lhs_name <- trimws(sub("\\s*=\\s*$", "", trimws(lhs_m)))
+      # name only, without an index: MTIME(1) = ... -> MTIME
+      lhs_name <- sub("^\\s*([A-Za-z_][A-Za-z0-9_]*).*$", "\\1", lhs_m)
       lhs_seen <- unique(c(lhs_seen, lhs_name))
     }
 
@@ -350,9 +223,9 @@ nm_convert_ctl <- function(ctl,
   ctl_lines <- gsub("\r", "", ctl_lines, fixed = TRUE)
 
   # --- Build mappings ---------------------------------------------------------
-  theta_map <- .nm_build_mapping(ctl_lines, "^\\s*\\$THETA", "THETA")
-  eta_map   <- .nm_build_eta_mapping(ctl_lines)
-  err_map   <- .nm_build_err_mapping(ctl_lines)
+  theta_map <- .nm_theta_name_mapping(ctl_lines)
+  eta_map   <- .nm_random_name_mapping(ctl_lines, "OMEGA")
+  err_map   <- .nm_random_name_mapping(ctl_lines, "SIGMA")
   mapping   <- c(theta_map, eta_map, err_map)
 
   if (verbose) {

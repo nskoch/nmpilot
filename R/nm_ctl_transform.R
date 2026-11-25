@@ -27,21 +27,7 @@
 
 # Active data items of $INPUT (DROP/SKIP excluded), upper case. A renamed
 # item (CONC=DV) is returned under its NONMEM label (DV) and its own name.
-.nm_ctl_input_items <- function(lines) {
-  r <- .nm_ctl_record_range(lines, "INPUT")
-  if (is.null(r)) return(character(0))
-  z <- sub("^\\s*\\$INPUT\\w*", "", paste(.nm_ctl_strip_comments(lines[r[1]:r[2]]), collapse = " "),
-           ignore.case = TRUE)
-  tok <- unlist(strsplit(trimws(z), "[,[:space:]]+"))
-  tok <- toupper(tok[nzchar(tok)])
-  out <- character(0)
-  for (t in tok) {
-    p <- strsplit(t, "=", fixed = TRUE)[[1]]
-    if (length(p) >= 2L && p[2] %in% c("DROP", "SKIP")) next
-    out <- c(out, p)
-  }
-  unique(out)
-}
+# .nm_ctl_input_items(): see nm_ctl_read.R (shared reader, action 11c).
 
 # Lines of the control stream without the records that hold no abbreviated
 # code ($PROBLEM, $INPUT, $THETA, $OMEGA, $TABLE...), so that a title, an
@@ -273,43 +259,13 @@
 # block).
 .nm_ctl_n_random <- function(lines, rec = c("OMEGA", "SIGMA")) {
   rec <- match.arg(rec)
-  total <- 0L; last_dim <- NA_integer_
-  for (txt in .nm_ctl_records_text(lines, rec)) {
-    g <- regmatches(txt, regexec("\\b(BLOCK|DIAGONAL)\\s*\\(\\s*([0-9]+)\\s*\\)", txt, perl = TRUE))[[1]]
-    s <- regmatches(txt, regexec("\\bSAME\\b(\\s*\\(\\s*([0-9]+)\\s*\\))?", txt, perl = TRUE))[[1]]
-    mult <- if (length(s) && nzchar(s[3])) as.integer(s[3]) else 1L
-    if (length(g)) {
-      n <- as.integer(g[3]); total <- total + n * mult; last_dim <- n
-    } else if (length(s)) {
-      if (!is.na(last_dim)) total <- total + last_dim * mult
-    } else {
-      z <- gsub("\\b(FIX|FIXED|UNINT|VARIANCE|STANDARD|SD|COVARIANCE|CORRELATION|CORRELATON|CHOLESKY|VALUES)\\b",
-                " ", txt, perl = TRUE)
-      total <- total + length(regmatches(z, gregexpr(.nm_ctl_num_pattern, z, perl = TRUE))[[1]])
-      last_dim <- NA_integer_
-    }
-  }
-  as.integer(total)
+  nrow(.nm_ctl_random_parse(lines, rec)$eta)
 }
 
 # Number of THETAs declared over all $THETA records: (low, init, up),
 # (low, init), (init), bare values, FIX/FIXED, repetition (...)xN and
 # labels NAME=(...).
-.nm_ctl_n_theta <- function(lines) {
-  total <- 0L
-  pat <- "\\(([^()]*)\\)(\\s*(?:FIXED|FIX))?(\\s*X\\s*([0-9]+))?"
-  for (txt in .nm_ctl_records_text(lines, "THETA")) {
-    txt <- gsub("\\b[A-Z_][A-Z0-9_]*\\s*=", " ", txt, perl = TRUE)
-    for (g in regmatches(txt, gregexpr(pat, txt, perl = TRUE))[[1]]) {
-      m <- regmatches(g, regexec(pat, g, perl = TRUE))[[1]]
-      total <- total + if (nzchar(m[5])) as.integer(m[5]) else 1L
-    }
-    rest <- gsub("\\b(FIX|FIXED|UNINT|NUMBERPOINTS|ABSOLUTE|NOABORT)\\b", " ",
-                 gsub(pat, " ", txt, perl = TRUE), perl = TRUE)
-    total <- total + length(regmatches(rest, gregexpr(.nm_ctl_num_pattern, rest, perl = TRUE))[[1]])
-  }
-  as.integer(total)
-}
+.nm_ctl_n_theta <- function(lines) nrow(.nm_ctl_theta_parse(lines))
 
 
 # =============================================================================
@@ -451,31 +407,14 @@ print.nm_ctl_check <- function(x, ...) {
 
 # THETA table of the first $THETA record: one row per value line.
 .nm_ctl_theta_table <- function(lines) {
-  r <- .nm_ctl_record_range(lines, "THETA")
-  if (is.null(r)) return(data.frame())
-  z <- list(); n <- 0L
-  for (k in seq.int(r[1], r[2])) {
-    raw <- lines[k]
-    x <- trimws(sub(";.*$", "", raw))
-    if (k == r[1]) x <- trimws(sub("^\\s*\\$THETA\\w*", "", x, ignore.case = TRUE))
-    if (!nzchar(x)) next
-    n <- n + 1L
-    fix <- grepl("\\bFIX(ED)?\\b", x, ignore.case = TRUE)
-    x <- trimws(gsub("\\bFIX(ED)?\\b", "", x, ignore.case = TRUE))
-    lo <- hi <- val <- NA_real_
-    f <- function(a) suppressWarnings(as.numeric(a))
-    if (grepl("^\\(", x)) {
-      p <- trimws(strsplit(sub("^\\((.*)\\).*$", "\\1", x), ",", fixed = TRUE)[[1]])
-      if (length(p) == 1L) val <- f(p[1])
-      if (length(p) == 2L) { lo <- f(p[1]); val <- f(p[2]) }
-      if (length(p) >= 3L) { lo <- f(p[1]); val <- f(p[2]); hi <- f(p[3]) }
-    } else val <- f(strsplit(x, "\\s+")[[1]][1])
-    com <- if (grepl(";", raw, fixed = TRUE)) trimws(sub("^[^;]*;", "", raw)) else paste0("THETA", n)
-    z[[length(z) + 1L]] <- data.frame(theta = n, line = k, value = val, lower = lo, upper = hi,
-                                      fixed = fix, comment = com, single = (k != r[1]),
-                                      stringsAsFactors = FALSE)
-  }
-  if (length(z)) do.call(rbind, z) else data.frame()
+  th <- .nm_ctl_theta_parse(lines)
+  if (!nrow(th)) return(data.frame())
+  data.frame(theta = th$theta, line = th$line, value = th$initial, lower = th$lower,
+             upper = th$upper, fixed = th$fixed,
+             comment = ifelse(nzchar(th$comment), th$comment, paste0("THETA", th$theta)),
+             # alone on its own line (not the record line): the line can be rewritten
+             single = !th$record_line & th$n_on_line == 1L,
+             stringsAsFactors = FALSE)
 }
 
 # Parameters written P = THETA(n)*EXP(ETA(m)) or P = TVP*EXP(ETA(m)) with
@@ -556,7 +495,7 @@ nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
     for (n in unique(cand$theta)) {
       r <- th[th$theta == n, , drop = FALSE]
       if (!nrow(r) || !r$single)
-        stop("MU linear: THETA(", n, ") must be written alone on its own line in the first $THETA record.")
+        stop("MU linear: THETA(", n, ") must be written alone on its own line of a $THETA record.")
       if (!is.finite(r$value) || r$value <= 0)
         stop("MU linear: the initial value of THETA(", n, ") must be > 0.")
       num <- function(v) format(round(v, 6), trim = TRUE, scientific = FALSE)

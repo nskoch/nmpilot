@@ -6,8 +6,6 @@
 
 # Signed integer/decimal with optional scientific exponent
 .NM_NUM_PAT   <- "-?[0-9]*\\.?[0-9]+(?:[Ee][+-]?[0-9]+)?"
-# One $THETA token: a parenthesised group OR a bare number, optional trailing FIX
-.NM_THETA_TOK <- paste0("(\\([^)]*\\)|", .NM_NUM_PAT, ")(\\s*FIX(?:ED)?)?")
 
 #-------------------------------------------------------------------------------
 # Internal helpers (not exported)
@@ -81,73 +79,17 @@
              nmtran_error = nmtran_err)
 }
 
-#' Best-effort initial value of a $THETA token (display only)
-#' @noRd
-.nm_theta_init_value <- function(tok) {
-  body <- sub("\\s*FIX(?:ED)?\\s*$", "", tok, ignore.case = TRUE)
-  if (grepl("^\\(", body)) {
-    inside <- sub("^\\(\\s*", "", sub("\\s*\\)$", "", body))
-    parts  <- trimws(strsplit(inside, ",")[[1]])
-    nums   <- suppressWarnings(as.numeric(parts))
-    nums_ok <- nums[!is.na(nums)]
-    if (length(nums_ok) == 0) return(NA_real_)
-    if (length(parts) >= 2)  return(suppressWarnings(as.numeric(parts[2])))  # (low,init[,up])
-    return(nums_ok[1])                                                       # (init)
-  }
-  suppressWarnings(as.numeric(body))
-}
-
 #' Enumerate every $THETA initial estimate with its exact character span
 #'
 #' Handles continuation lines, several $THETA records, several tokens per line,
 #' and a token sitting on the "$THETA ..." header line itself.
 #' @noRd
 .nm_parse_theta_tokens <- function(ctl_lines) {
-  in_theta <- FALSE
-  rows <- list(); k <- 0L
-  for (li in seq_along(ctl_lines)) {
-    line      <- ctl_lines[li]
-    is_header <- grepl("^\\s*\\$THETA", line, ignore.case = TRUE)
-    if (is_header) {
-      in_theta <- TRUE
-    } else if (grepl("^\\s*\\$", line)) {
-      in_theta <- FALSE
-    }
-    if (!in_theta) next
-
-    cpos    <- regexpr(";", line, fixed = TRUE)
-    code    <- if (cpos > 0) substr(line, 1, cpos - 1) else line
-    comment <- if (cpos > 0) trimws(sub("^;+\\s*", "", substr(line, cpos, nchar(line)))) else ""
-
-    offset <- 0L
-    scan   <- code
-    if (is_header) {
-      hm     <- regexpr("^\\s*\\$THETA\\b", code, ignore.case = TRUE, perl = TRUE)
-      offset <- attr(hm, "match.length")
-      scan   <- substring(code, offset + 1)
-    }
-
-    g <- gregexpr(.NM_THETA_TOK, scan, perl = TRUE)[[1]]
-    if (g[1] == -1) next
-    lens <- attr(g, "match.length")
-    for (t in seq_along(g)) {
-      k <- k + 1L
-      abs_start <- offset + g[t]
-      abs_end   <- offset + g[t] + lens[t] - 1L
-      tok       <- substr(line, abs_start, abs_end)
-      rows[[k]] <- data.frame(
-        theta_index = k, line = li, start = abs_start, end = abs_end,
-        token = tok, value = .nm_theta_init_value(tok),
-        fixed = grepl("FIX", tok, ignore.case = TRUE), label = comment,
-        stringsAsFactors = FALSE
-      )
-    }
-  }
-  if (length(rows) == 0)
-    return(data.frame(theta_index = integer(0), line = integer(0), start = integer(0),
-                      end = integer(0), token = character(0), value = numeric(0),
-                      fixed = logical(0), label = character(0), stringsAsFactors = FALSE))
-  do.call(rbind, rows)
+  # shared reader (nm_ctl_read.R)
+  th <- .nm_ctl_theta_parse(ctl_lines)
+  data.frame(theta_index = th$theta, line = th$line, start = th$start, end = th$end,
+             token = th$token, value = th$initial, fixed = th$fixed, label = th$comment,
+             stringsAsFactors = FALSE)
 }
 
 #' Resolve `param` (index, "THETA(n)", "n", or a $THETA label) to one row

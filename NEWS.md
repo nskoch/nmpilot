@@ -1,5 +1,30 @@
 # nmpilot (development version)
 
+* One reader for the records `$INPUT`, `$THETA`, `$OMEGA` and `$SIGMA`
+  (point A.11, third part), shared by `nm_ctl_check()`, the transformations,
+  `nm_identify_parameters()`, `nm_convert_ctl()` and `nm_profile()`, which
+  had each their own (new internal file `R/nm_ctl_read.R`). Results are
+  unchanged on the 186 control streams of the comparison corpus, except for
+  the following corrections:
+  * `$THETA`: all the `$THETA` records are read by the check of the
+    transformations (only the first one before); `(0.5 FIX)`, with FIX
+    inside the parentheses, and `(0 1 5)`, with blanks as separators, are
+    read; `(2.0)X8` gives 8 THETAs; `$THETAP` and `$THETAPV` (priors) are no
+    longer counted as THETAs by `nm_profile()`;
+  * `$OMEGA`/`$SIGMA`: FIX anywhere in a `BLOCK(n)` record fixes the whole
+    block, as in NONMEM (only when FIX was on every line before); the label
+    of an ETA of a BLOCK is the comment of the line of its variance (one
+    value per line gave shifted labels); a comment-only line is no longer a
+    label; `BLOCK(1) SAME` no longer swallows the values of the next record
+    (one ETA was lost); new column `omega_comment` (full comment);
+  * `$INPUT`: `DROP` written alone is not a data item;
+  * `nm_convert_ctl()`: a name assigned after `IF(...)`, assigned as an
+    array element (`MTIME(1) = ...`) or assigned in an earlier model record
+    (`$PK` before `$DES` or `$ERROR`) is no longer replaced by
+    `THETA(n)`/`ETA(n)`; control streams already in standard NONMEM syntax
+    are left unchanged.
+  Tests in `test-ctl-read.R`.
+
 * Print and plot methods harmonised (point A.11, second part):
   * every `plot()` method returns the figure (a ggplot, or a patchwork for
     the combined panels of `nm_gof`), shown when not assigned and ready for

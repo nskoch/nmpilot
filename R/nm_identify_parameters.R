@@ -88,263 +88,23 @@
 # ------------------------------------------------------------------------------
 
 .nm_ip_parse_theta <- function(lines) {
-  z <- .nm_ip_section_lines(lines, "$THETA")
-  if (!length(z)) return(data.frame())
-
-  z <- z[!.nm_ip_is_full_comment(z)]
-  z <- z[nzchar(.nm_ip_trim(.nm_ip_strip_inline_comment(z)))]
-  if (!length(z)) return(data.frame())
-
-  ans <- list(); k <- 0L
-
-  for (ln in z) {
-    code <- .nm_ip_trim(.nm_ip_strip_inline_comment(ln))
-    if (!nzchar(code)) next
-
-    # Parenthesized THETA records or simple scalar records.
-    entries <- regmatches(code, gregexpr(
-      "\\([^)]*\\)\\s*(?:FIX(?:ED)?\\b)?|[-+]?(?:(?:[0-9]+\\.?[0-9]*)|(?:\\.[0-9]+))(?:[Ee][-+]?[0-9]+)?\\s*(?:FIX(?:ED)?\\b)?",
-      code, perl = TRUE, ignore.case = TRUE))[[1]]
-
-    if (!length(entries) || identical(entries, character(0))) entries <- code
-    cm <- .nm_ip_comment(ln)
-
-    for (entry in entries) {
-      entry <- .nm_ip_trim(entry)
-      fixed <- grepl("\\bFIX(?:ED)?\\b", entry, ignore.case = TRUE, perl = TRUE)
-      core <- .nm_ip_trim(gsub("\\bFIX(?:ED)?\\b", "", entry,
-                           ignore.case = TRUE, perl = TRUE))
-      vals <- .nm_ip_numbers(core)
-
-      if (!length(vals)) next
-      if (length(vals) == 1L) {
-        lower <- NA_real_; initial <- vals[1]; upper <- NA_real_
-      } else if (length(vals) == 2L) {
-        lower <- vals[1]; initial <- vals[2]; upper <- NA_real_
-      } else {
-        lower <- vals[1]; initial <- vals[2]; upper <- vals[3]
-      }
-
-      k <- k + 1L
-      ans[[k]] <- data.frame(
-        theta = k,
-        label = .nm_ip_label_clean(cm),
-        lower = lower,
-        initial = initial,
-        upper = upper,
-        fixed = fixed,
-        raw = ln,
-        stringsAsFactors = FALSE
-      )
-      cm <- NA_character_
-    }
-  }
-
-  if (!length(ans)) return(data.frame())
-  do.call(rbind, ans)
+  # shared reader (nm_ctl_read.R); the label is the comment of the line,
+  # given to the first THETA of the line only
+  th <- .nm_ctl_theta_parse(lines)
+  if (!nrow(th)) return(data.frame())
+  first <- !duplicated(th$line)
+  lab <- vapply(seq_len(nrow(th)), function(i)
+    if (first[i]) .nm_ip_label_clean(.nm_ip_comment(th$raw[i])) else NA_character_, character(1))
+  # raw text without the record name, as before 11c
+  raw <- ifelse(th$record_line,
+                sub("^\\s*\\$THETA\\w*\\s*", "", th$raw, ignore.case = TRUE, perl = TRUE),
+                th$raw)
+  data.frame(theta = th$theta, label = lab, lower = th$lower, initial = th$initial,
+             upper = th$upper, fixed = th$fixed, raw = raw, stringsAsFactors = FALSE)
 }
 
-# ------------------------------------------------------------------------------
-# OMEGA: diagonal, DIAGONAL(n), BLOCK(n)
-# ------------------------------------------------------------------------------
-
-.nm_ip_omega_header <- function(code) {
-  b <- regexec("\\bBLOCK\\s*\\(\\s*([0-9]+)\\s*\\)", code,
-               ignore.case = TRUE, perl = TRUE)
-  mb <- regmatches(code, b)[[1]]
-  if (length(mb) >= 2L)
-    return(list(type = "BLOCK", n = as.integer(mb[2])))
-
-  d <- regexec("\\bDIAGONAL\\s*\\(\\s*([0-9]+)\\s*\\)", code,
-               ignore.case = TRUE, perl = TRUE)
-  md <- regmatches(code, d)[[1]]
-  if (length(md) >= 2L)
-    return(list(type = "DIAGONAL", n = as.integer(md[2])))
-
-  list(type = "SCALAR", n = 1L)
-}
-
-.nm_ip_remove_omega_header <- function(code) {
-  sub("^\\s*(?:BLOCK|DIAGONAL)\\s*\\(\\s*[0-9]+\\s*\\)\\s*", "", code,
-      ignore.case = TRUE, perl = TRUE)
-}
-
-.nm_ip_parse_omega <- function(lines) {
-  z <- .nm_ip_section_lines(lines, "$OMEGA")
-  if (!length(z)) return(list(eta = data.frame(), elements = data.frame()))
-
-  # Keep comments because they often label ETA dimensions.
-  records <- z[!.nm_ip_is_full_comment(z)]
-  records <- records[nzchar(.nm_ip_trim(.nm_ip_strip_inline_comment(records)))]
-  if (!length(records)) return(list(eta = data.frame(), elements = data.frame()))
-
-  eta_rows <- list(); element_rows <- list()
-  eta_offset <- 0L
-  er <- 0L; rr <- 0L
-  i <- 1L
-
-  while (i <= length(records)) {
-    ln <- records[i]
-    code <- .nm_ip_trim(.nm_ip_strip_inline_comment(ln))
-    hdr <- .nm_ip_omega_header(code)
-
-    if (hdr$type == "SCALAR") {
-      vals <- .nm_ip_numbers(code)
-      if (!length(vals)) { i <- i + 1L; next }
-
-      fixed <- grepl("\\bFIX(?:ED)?\\b", code, ignore.case = TRUE, perl = TRUE)
-      eta_offset <- eta_offset + 1L
-      rr <- rr + 1L
-      eta_rows[[rr]] <- data.frame(
-        eta = eta_offset,
-        omega_label = .nm_ip_label_clean(.nm_ip_comment(ln)),
-        omega_initial = vals[1],
-        omega_fixed = fixed,
-        omega_structure = "DIAGONAL",
-        block_id = NA_integer_,
-        block_position = 1L,
-        omega_raw = ln,
-        stringsAsFactors = FALSE
-      )
-      er <- er + 1L
-      element_rows[[er]] <- data.frame(
-        eta_i = eta_offset, eta_j = eta_offset,
-        element_type = "variance", initial = vals[1], fixed = fixed,
-        structure = "DIAGONAL", block_id = NA_integer_, raw = ln,
-        stringsAsFactors = FALSE
-      )
-      i <- i + 1L
-      next
-    }
-
-    # BLOCK(n) / DIAGONAL(n): values can be on header line and/or following lines.
-    n <- hdr$n
-    need <- if (hdr$type == "BLOCK") n * (n + 1L) / 2L else n
-    vals <- numeric(); raws <- character(); comments <- character(); fixed_flags <- logical()
-
-    first_code <- .nm_ip_remove_omega_header(code)
-    if (nzchar(first_code)) {
-      vals <- c(vals, .nm_ip_numbers(first_code))
-      raws <- c(raws, ln)
-      comments <- c(comments, .nm_ip_comment(ln))
-      fixed_flags <- c(fixed_flags,
-                       grepl("\\bFIX(?:ED)?\\b", first_code,
-                             ignore.case = TRUE, perl = TRUE))
-    }
-
-    j <- i + 1L
-    while (length(vals) < need && j <= length(records)) {
-      next_code <- .nm_ip_trim(.nm_ip_strip_inline_comment(records[j]))
-      # A new explicit BLOCK/DIAGONAL header starts a new record.
-      if (grepl("\\b(?:BLOCK|DIAGONAL)\\s*\\(", next_code,
-                ignore.case = TRUE, perl = TRUE)) break
-
-      newvals <- .nm_ip_numbers(next_code)
-      if (length(newvals)) {
-        vals <- c(vals, newvals)
-        raws <- c(raws, records[j])
-        comments <- c(comments, .nm_ip_comment(records[j]))
-        fixed_flags <- c(fixed_flags,
-                         grepl("\\bFIX(?:ED)?\\b", next_code,
-                               ignore.case = TRUE, perl = TRUE))
-      }
-      j <- j + 1L
-    }
-
-    # NONMEM SAME is structurally meaningful but has no new numeric initial values.
-    if (grepl("\\bSAME\\b", code, ignore.case = TRUE, perl = TRUE)) {
-      vals <- rep(NA_real_, need)
-    }
-
-    if (length(vals) < need) vals <- c(vals, rep(NA_real_, need - length(vals)))
-    if (length(vals) > need) vals <- vals[seq_len(need)]
-
-    # BLOCK(n) SAME(k): k blocks identical to the previous one (bbr run
-    # acop-iov: $OMEGA BLOCK(1) SAME(29) stands for 29 ETAs).
-    reps <- 1L
-    sm <- regmatches(code, regexec("\\bSAME\\s*\\(\\s*([0-9]+)\\s*\\)", code,
-                                   ignore.case = TRUE, perl = TRUE))[[1]]
-    if (length(sm) == 2L) reps <- max(1L, as.integer(sm[2]))
-    for (rep_k in seq_len(reps)) {
-      block_id <- eta_offset + 1L
-      eta_ids <- eta_offset + seq_len(n)
-
-      if (hdr$type == "DIAGONAL") {
-        for (a in seq_len(n)) {
-          rr <- rr + 1L
-          eta_rows[[rr]] <- data.frame(
-            eta = eta_ids[a],
-            omega_label = if (a <= length(comments)) .nm_ip_label_clean(comments[a]) else NA_character_,
-            omega_initial = vals[a],
-            omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-            omega_structure = "DIAGONAL",
-            block_id = block_id,
-            block_position = a,
-            omega_raw = paste(raws, collapse = " | "),
-            stringsAsFactors = FALSE
-          )
-          er <- er + 1L
-          element_rows[[er]] <- data.frame(
-            eta_i = eta_ids[a], eta_j = eta_ids[a],
-            element_type = "variance", initial = vals[a],
-            fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-            structure = "DIAGONAL", block_id = block_id,
-            raw = paste(raws, collapse = " | "), stringsAsFactors = FALSE
-          )
-        }
-      } else {
-        # BLOCK values are lower triangular row-wise:
-        # (1,1), (2,1), (2,2), (3,1), (3,2), (3,3), ...
-        pos <- 0L
-        diag_values <- rep(NA_real_, n)
-        diag_fixed <- rep(FALSE, n)
-
-        for (a in seq_len(n)) {
-          for (b in seq_len(a)) {
-            pos <- pos + 1L
-            isdiag <- a == b
-            if (isdiag) diag_values[a] <- vals[pos]
-            er <- er + 1L
-            element_rows[[er]] <- data.frame(
-              eta_i = eta_ids[a], eta_j = eta_ids[b],
-              element_type = if (isdiag) "variance" else "covariance",
-              initial = vals[pos],
-              fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-              structure = "BLOCK", block_id = block_id,
-              raw = paste(raws, collapse = " | "), stringsAsFactors = FALSE
-            )
-          }
-        }
-
-        # Comments in BLOCK records are not standardized. Associate comments from
-        # rows preferentially to the corresponding ETA dimension when available.
-        block_comments <- unique(stats::na.omit(vapply(comments, .nm_ip_label_clean, character(1))))
-        for (a in seq_len(n)) {
-          lab <- if (length(block_comments) >= a) block_comments[a] else NA_character_
-          rr <- rr + 1L
-          eta_rows[[rr]] <- data.frame(
-            eta = eta_ids[a], omega_label = lab,
-            omega_initial = diag_values[a],
-            omega_fixed = if (length(fixed_flags)) all(fixed_flags) else FALSE,
-            omega_structure = "BLOCK",
-            block_id = block_id,
-            block_position = a,
-            omega_raw = paste(raws, collapse = " | "),
-            stringsAsFactors = FALSE
-          )
-        }
-      }
-
-      eta_offset <- eta_offset + n
-    }
-    i <- max(j, i + 1L)
-  }
-
-  list(
-    eta = if (length(eta_rows)) do.call(rbind, eta_rows) else data.frame(),
-    elements = if (length(element_rows)) do.call(rbind, element_rows) else data.frame()
-  )
-}
+# $OMEGA structure: shared reader (nm_ctl_read.R).
+.nm_ip_parse_omega <- function(lines) .nm_ctl_random_parse(lines, "OMEGA")
 
 # ------------------------------------------------------------------------------
 # Generic assignment parser for $PK / $ERROR
@@ -563,20 +323,7 @@
 }
 
 # Data items declared in $INPUT (aliases kept, DROP/SKIP items removed).
-.nm_ip_parse_input <- function(lines) {
-  z <- .nm_ip_section_lines(lines, "$INPUT")
-  if (!length(z)) return(character())
-  z <- .nm_ip_trim(.nm_ip_strip_inline_comment(z[!.nm_ip_is_full_comment(z)]))
-  toks <- unlist(strsplit(paste(z, collapse = " "), "[[:space:],]+"))
-  toks <- toupper(toks[nzchar(toks)])
-  out <- character()
-  for (tk in toks) {
-    parts <- strsplit(tk, "=", fixed = TRUE)[[1]]
-    if (any(parts %in% c("DROP", "SKIP"))) next
-    out <- c(out, parts)
-  }
-  unique(out)
-}
+.nm_ip_parse_input <- function(lines) .nm_ctl_input_items(lines)
 
 # Wings for NONMEM extended syntax: model records may refer to parameters by
 # the label written in the $THETA/$OMEGA/$SIGMA comments (e.g. POPCL, eta_cl)
@@ -589,9 +336,9 @@
   none <- data.frame(label = character(), reference = character(),
                      stringsAsFactors = FALSE)
   lines <- gsub("\r", "", lines, fixed = TRUE)
-  map <- c(.nm_build_mapping(lines, "^\\s*\\$THETA", "THETA"),
-           .nm_build_eta_mapping(lines),
-           .nm_build_err_mapping(lines))
+  map <- c(.nm_theta_name_mapping(lines),
+           .nm_random_name_mapping(lines, "OMEGA"),
+           .nm_random_name_mapping(lines, "SIGMA"))
   if (!length(map)) return(list(lines = lines, substitutions = none))
   map <- map[!duplicated(toupper(names(map)))]
 
