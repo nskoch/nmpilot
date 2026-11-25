@@ -14,7 +14,7 @@ Description: Direct execution of NONMEM via nmfe (no Wings, no PsN),
     VPC/pc-VPC generation, dataset preparation and visualization,
     and run comparison tools for pharmacometric workflows.
 License: MIT + file LICENSE
-URL: https://github.com/nskoch/nmpilot
+URL: https://github.com/nskoch/nmpilot, https://nskoch.github.io/nmpilot/
 BugReports: https://github.com/nskoch/nmpilot/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

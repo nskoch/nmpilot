@@ -1,3 +1,5 @@
+url: https://nskoch.github.io/nmpilot/
+
 template:
   bootstrap: 5
 
@@ -9,3 +11,68 @@ navbar:
     guide:
       text: Guide
       href: guide.html
+
+# Functions grouped by stage of the analysis, as in nm_guide() (action A.13)
+reference:
+- title: "1. Data preparation & inspection"
+  contents:
+  - nm_read_csv
+  - nm_summary
+  - nm_plot_dv
+  - nm_data_previsual
+  - nm_add_rate
+  - nm_export_data
+- title: "2. Exploration & base model"
+  contents:
+  - nm_suggest_model
+  - plot.nm_model_suggestion
+  - nm_suggest_design
+  - nm_suggest_run
+  - nm_suggest_covariates
+- title: "3. Control streams"
+  contents:
+  - nm_write_ctl
+  - nm_ctl_check
+  - nm_ctl_mu
+  - nm_ctl_iov
+  - nm_ctl_m3
+  - nm_convert_ctl
+- title: "4. Running NONMEM"
+  contents:
+  - nm_run
+  - nm_cores
+- title: "5. Results"
+  contents:
+  - nm_extract_runs
+  - nm_filter_runs
+  - nm_compare_runs
+  - nm_extract_run_table
+  - nm_identify_parameters
+  - nm_identify_directory
+  - nm_model_diagram
+- title: "6. Diagnostics"
+  contents:
+  - nm_gof
+- title: "7. Model selection & comparison"
+  contents:
+  - nm_compare
+  - plot.nm_compare
+  - nm_derivatives_ctl
+  - nm_optimize_base
+  - nm_wasserstein
+  - plot.nm_wasserstein
+- title: "8. Model validation"
+  contents:
+  - nm_vpc_ctl
+  - nm_vpc
+  - nm_bootstrap
+  - nm_jackknife
+  - plot.nm_jackknife
+  - nm_profile
+- title: "9. Reporting"
+  contents:
+  - nm_export_plot
+- title: "Task guide"
+  contents:
+  - nm_guide
+  - nm_guide_addin
