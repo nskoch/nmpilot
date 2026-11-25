@@ -79,7 +79,7 @@ Identify the role of THETAs and ETAs
 
 Project summary in Word planned
 
-Diagram of tested models planned
+Diagram of tested models
 
 Goodness-of-fit plots
 
@@ -464,14 +464,21 @@ nm_extract_runs() gives it in R only).
 
 Not available yet: this task is planned for a future version of nmpilot.
 
-## Diagram of tested models planned
+## Diagram of tested models
 
 `nm_model_diagram`
 
-Tree of the runs with, for each, its parent run, OFV, dOFV and
-convergence status.
+Tree of the runs with, for each, its parent run, OFV, dOFV against the
+parent and convergence status. Parents are read from the ";; Based on:"
+comments of the control streams, or given with parents.
 
-Not available yet: this task is planned for a future version of nmpilot.
+Help in R: `?nm_model_diagram`
+
+Copy
+
+    d <- nm_model_diagram(ex, parents = c(run2 = "run1"))
+    d                       # table of the runs
+    plot(d)                 # the diagram
 
 ## Goodness-of-fit plots
 
