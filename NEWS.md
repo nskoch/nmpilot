@@ -1,4 +1,21 @@
-# nmpilot (development version)
+# nmpilot 0.9.0
+
+* Task guide (`nm_guide()`): every argument of the code examples is
+  explained by a comment at the end of its line, and `nm_model_diagram()` is
+  listed as available, with an example. New test `test-guide.R`: every
+  function and every argument cited by the examples must exist (a former
+  argument name, accepted with a warning, is reported), and every example
+  must parse.
+
+* Automatic checks on GitHub (point A.14): `R CMD check` runs at each push on
+  Windows, macOS and Linux (current R), and on Linux with R-devel and the
+  previous R; test coverage is measured with covr and sent to Codecov. Badges
+  in the README.
+
+* Documentation website (point A.13): <https://nskoch.github.io/nmpilot/>,
+  built with pkgdown and published at each push: the README and the task
+  guide on the home page, the functions grouped by stage of the analysis,
+  the vignettes and this file. Its address is in `DESCRIPTION`.
 
 * One reader for the records `$INPUT`, `$THETA`, `$OMEGA` and `$SIGMA`
   (point A.11, third part), shared by `nm_ctl_check()`, the transformations,
