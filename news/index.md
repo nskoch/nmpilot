@@ -2,6 +2,29 @@
 
 ## nmpilot (development version)
 
+- [`nm_suggest_model()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_model.md),
+  sparse designs (no rich individual profile): the residual error model
+  cannot be assessed before NONMEM, and the proportional model was
+  always ranked first (the additive model never). The three error models
+  now get the same support: the best structure is proposed with
+  proportional, combined and additive error as candidates 1 to 3, which
+  [`nm_suggest_run()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_run.md)
+  fits by default, so that NONMEM decides. A test on the residuals
+  within subjects around the pooled fit was tried and left out: it found
+  an additive component in half of the additive-error simulations, but
+  also in 60 to 90% of proportional-error simulations with a
+  two-compartment or saturable structure.
+
+- [`nm_gof()`](https://nskoch.github.io/nmpilot/reference/nm_gof.md)
+  given a run directory: the estimation outputs of NONMEM (`.ext`,
+  `.phi`, `.cov`, `.cor`, `.shk`…), which also start with “TABLE NO.”,
+  are no longer taken for `$TABLE` files; among several tables, the ones
+  holding DV are kept, then `sdtab*`.
+  [`nm_gof()`](https://nskoch.github.io/nmpilot/reference/nm_gof.md)
+  failed on the run directories of the example project (“Several NONMEM
+  tables found”), and so did the examples of the task guide for
+  diagnostics and the Word export.
+
 - [`nm_suggest_model()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_model.md):
   the combined residual error model is now retained only when its BIC is
   better by more than 15 (10 before; point E28). The threshold was

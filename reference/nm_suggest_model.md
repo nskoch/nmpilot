@@ -202,16 +202,20 @@ model comparison in NONMEM):
     dose-normalised concentrations by time bin for sparse data) and
     curvature of the log-concentration decline (concave = saturable).
 
-6.  Residual error: the best structural fit of each interval is refitted
-    by iteratively reweighted least squares under a combined variance
-    `a^2 + b^2 f^2`; on these common, leverage-corrected (PRESS)
-    residuals, the variance models `a^2` (additive), `b^2 f^2`
-    (proportional) and `a^2 + b^2 f^2` (combined) are fitted by maximum
-    likelihood and compared by BIC, the combined model being kept only
-    when its BIC is better by more than 15 (threshold chosen by
-    simulation; 10 until version 0.9.0). Points of leverage above 0.7
-    and predictions below twice the LLOQ are left out. The estimates
-    give the initial SIGMA values (variances).
+6.  Residual error (rich data; in sparse data the error model is not
+    assessable and the best structure is proposed with the three error
+    models, with equal support, to be compared in NONMEM by
+    [`nm_suggest_run()`](https://nskoch.github.io/nmpilot/reference/nm_suggest_run.md)):
+    the best structural fit of each interval is refitted by iteratively
+    reweighted least squares under a combined variance `a^2 + b^2 f^2`;
+    on these common, leverage-corrected (PRESS) residuals, the variance
+    models `a^2` (additive), `b^2 f^2` (proportional) and
+    `a^2 + b^2 f^2` (combined) are fitted by maximum likelihood and
+    compared by BIC, the combined model being kept only when its BIC is
+    better by more than 15 (threshold chosen by simulation; 10 until
+    version 0.9.0). Points of leverage above 0.7 and predictions below
+    twice the LLOQ are left out. The estimates give the initial SIGMA
+    values (variances).
 
 7.  IIV: variance of the log of the individual estimates of CL, central
     volume and absorption parameter (median per subject), given as CV%.
