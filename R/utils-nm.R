@@ -149,3 +149,11 @@ utils::globalVariables(c(
                 run_name = sub(ext_pat, "", basename(p), ignore.case = TRUE)))
   list(analysis_dir = dirname(p), run_name = basename(p))
 }
+
+# Former name of the argument that chooses the figure in a plot() method
+# (`which` or `area`, now `type`): taken from `...` with a warning.
+.nm_plot_type_arg <- function(type, dots, old, fun) {
+  if (is.null(dots[[old]])) return(type)
+  warning("In ", fun, "(), `", old, "` is deprecated; use `type` instead.", call. = FALSE)
+  dots[[old]]
+}

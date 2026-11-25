@@ -41,6 +41,7 @@ test_that("parents are read in the control streams and dOFV is relative to the p
                      "not converged", "not completed"))
   expect_identical(t$description[t$run == "run1"], "run1 test model")
   expect_s3_class(d$plot, "ggplot")
+  expect_s3_class(plot(d), "ggplot")          # plot() returns the figure (action 11b)
   expect_output(print(d), "7 run\\(s\\), 2 root\\(s\\)")
 })
 

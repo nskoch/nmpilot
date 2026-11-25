@@ -10,6 +10,8 @@ test_that("nm_data_previsual reads, summarises and plots a data set", {
   expect_true(all(c("data", "plot_dv", "summary") %in% names(pv)))
   expect_equal(nrow(pv$data), 8L)
   expect_s3_class(pv$plot_dv, "ggplot")
+  expect_s3_class(pv, "nm_data_previsual")
+  expect_output(print(pv), "Data set preview: 8 rows")
 })
 
 test_that("nm_data_previsual exports files only when asked", {

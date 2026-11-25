@@ -96,7 +96,8 @@
 #' @param ...         Former argument name, accepted with a warning until
 #'                    version 1.0: `out_dir` (now `output_dir`).
 #'
-#' @return A list:
+#' @return An object of class `nm_data_previsual` (a list, printed as a short
+#'   summary):
 #'   - `data`: data.frame with TIME (relative if rebuilt) and DV_norm
 #'   - `mapping`: reserved labels -> original column names
 #'   - `plot_dv`: ggplot of DV vs TIME (according to `scales`)
@@ -752,12 +753,28 @@ nm_data_previsual <- function(file,
     files <- c(files, fp_csv)
   }
 
-  list(data      = df,
-       mapping   = mapping,
-       plot_dv   = plot_dv,
-       plot_norm = plot_norm,
-       summary   = summary_df,
-       files     = files)
+  structure(list(data      = df,
+                 mapping   = mapping,
+                 plot_dv   = plot_dv,
+                 plot_norm = plot_norm,
+                 summary   = summary_df,
+                 files     = files),
+            class = c("nm_data_previsual", "list"))
+}
+
+#' @export
+print.nm_data_previsual <- function(x, ...) {
+  cat("Data set preview:", nrow(x$data), "rows\n")
+  if (length(x$mapping)) {
+    m <- unlist(x$mapping)
+    m <- m[!is.na(m)]
+    if (length(m)) cat("  columns:", paste(sprintf("%s = %s", names(m), m), collapse = ", "), "\n")
+  }
+  cat("  plots  :", paste(c(if (!is.null(x$plot_dv)) "plot_dv", if (!is.null(x$plot_norm)) "plot_norm"),
+                          collapse = ", "), "\n")
+  if (length(x$files)) cat("  files  :", paste(x$files, collapse = ", "), "\n")
+  if (!is.null(x$summary)) { cat("\n"); print(as.data.frame(x$summary), row.names = FALSE) }
+  invisible(x)
 }
 
 

@@ -46,6 +46,9 @@ test_that("level 1 diagnostics find the simulated covariates", {
   expect_equal(nrow(o$level1$residual), 4L)
   expect_true(all(o$level1$residual$dOFV > -10))   # true residual model = combined, as in run1
   expect_output(print(o), "Level 1")
+  expect_s3_class(plot(o, type = "residual"), "ggplot")
+  expect_warning(p <- plot(o, area = "residual"), "`area` is deprecated")
+  expect_s3_class(p, "ggplot")
 })
 
 test_that("linearized model reproduces the NONMEM OFV and detects a covariate", {

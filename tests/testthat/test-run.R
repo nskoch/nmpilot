@@ -36,6 +36,8 @@ test_that("nm_run copies the control stream, fixes $DATA and launches nmfe", {
   root <- run_setup()
   nmfe <- fake_nmfe(root)
   expect_silent(log <- nm_run("r1.ctl", nmfe, root, verbose = FALSE))
+  expect_s3_class(log, c("nm_run_log", "data.frame"))
+  expect_output(print(log), "NONMEM runs: 1 \\(launched 1")
   expect_equal(log$action, "launched")
   expect_equal(log$exit_status, 0L)
   reg <- file.path(root, "r1.reg")

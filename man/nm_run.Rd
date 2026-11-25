@@ -67,8 +67,8 @@ If R is interrupted, the runs already started go on in the background.}
 1.0: \code{ctl_files} (now \code{ctl}).}
 }
 \value{
-A \code{data.frame} (run log) with one row per run and the following
-columns:
+A run log of class \code{nm_run_log} (a \code{data.frame}, printed as a
+short summary), with one row per run and the following columns:
 \describe{
 \item{run}{Run name (without extension).}
 \item{reg_dir}{Full path to the run directory (\verb{<run>.reg}, or the folder of the control stream when \code{run_subdir = ""}).}

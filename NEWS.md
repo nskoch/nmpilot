@@ -1,5 +1,20 @@
 # nmpilot (development version)
 
+* Print and plot methods harmonised (point A.11, second part):
+  * every `plot()` method returns the figure (a ggplot, or a patchwork for
+    the combined panels of `nm_gof`), shown when not assigned and ready for
+    `nm_export_plot()`. `plot.nm_gof()` and `plot.nm_model_diagram()`
+    printed the figure themselves and returned the object;
+  * the argument that chooses the figure is `type` in every method:
+    `plot.nm_compare()` and `plot.nm_gof()` (formerly `which`),
+    `plot.nm_optimize_base()` (formerly `area`); the former names still work
+    until 1.0, with a warning;
+  * the run log of `nm_run()` and `nm_vpc_ctl()` has the class `nm_run_log`,
+    the result of `nm_extract_run_table()` the class `nm_run_table`, and the
+    result of `nm_data_previsual()` the class `nm_data_previsual`, each with
+    a print method giving a short summary. They remain a data frame or a
+    list: existing code that uses their columns or elements is unchanged.
+
 * Argument names harmonised before version 1.0 (point A.11, first part). The
   former names and forms still work until 1.0, with a warning that gives
   the new one:

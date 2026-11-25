@@ -116,8 +116,8 @@
 #'   "control stream", "argument" or "none", `ofv`, `dofv_parent`, `n_par`,
 #'   `dpar_parent`, `status`, `description`, and the layout coordinates `x`
 #'   and `y`; rows in depth-first order, each run right after its parent),
-#'   and `plot`, the ggplot2 tree. `plot()` draws it; it can be
-#'   saved with [nm_export_plot()].
+#'   and `plot`, the ggplot2 tree. `plot()` returns it (shown when not
+#'   assigned); it can be saved with [nm_export_plot()].
 #'
 #' @examples
 #' ex <- system.file("extdata", "example", package = "nmpilot")
@@ -268,6 +268,5 @@ print.nm_model_diagram <- function(x, ...) {
 
 #' @export
 plot.nm_model_diagram <- function(x, ...) {
-  print(x$plot)
-  invisible(x$plot)
+  x$plot
 }

@@ -119,9 +119,9 @@ xpose4).
                     labels = c("Base", "+ CLcr"))
   print(cmp)
   plot(cmp)
-  plot(cmp, which = "iofv_caterpillar")
+  plot(cmp, type = "iofv_caterpillar")
   summary(cmp)
-  plot(cmp, which = c("gain_map", "overlay_gof"))
+  plot(cmp, type = c("gain_map", "overlay_gof"))
 }
 
 }

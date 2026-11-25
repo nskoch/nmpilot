@@ -1209,10 +1209,12 @@ print.nm_optimize_base <- function(x, ...) {
 }
 
 #' @rdname nm_optimize_base
-#' @param area For `plot()`: `"all"`, `"residual"`, `"random"` or `"covariate"`.
+#' @param type For `plot()`: `"all"`, `"residual"`, `"random"` or `"covariate"`.
+#'   Formerly `area`, still accepted with a warning.
 #' @export
-plot.nm_optimize_base <- function(x, area = c("all", "residual", "random", "covariate"), ...) {
-  area <- match.arg(area)
+plot.nm_optimize_base <- function(x, type = c("all", "residual", "random", "covariate"), ...) {
+  type <- .nm_plot_type_arg(type, list(...), "area", "plot.nm_optimize_base")
+  area <- match.arg(type, c("all", "residual", "random", "covariate"))
   if (is.null(x$level2)) {
     r <- x$level1$residual
     if (is.null(r)) stop("Nothing to plot: no level 2 and no level-1 residual diagnostics.")

@@ -12,6 +12,8 @@ test_that("nm_extract_run_table builds the parameter table and the Word file", {
     file.path(d, "run1.ext"))
   res <- NULL
   invisible(capture.output(suppressMessages(res <- nm_extract_run_table(d))))
+  expect_s3_class(res, "nm_run_table")
+  expect_output(print(res), "Parameter table of one run")
   expect_true(file.exists(res$output_file))
   p <- res$params
   expect_equal(p$Estimate[p$Type == "THETA"], c(4.2, 45, 0.15))

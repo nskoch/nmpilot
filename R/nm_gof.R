@@ -42,7 +42,7 @@
 #' g <- nm_gof("C:/nm74g64/run/lopi_04.reg/lopi_04_03_04.fit")
 #' g                       # summary
 #' plot(g)                 # all panels
-#' plot(g, which = "dv_pred")
+#' plot(g, type = "dv_pred")
 #' nm_gof(".../run.reg", pred = "CPRED", by = "SEX", save_docx = TRUE)
 #' }
 #' @export
@@ -379,25 +379,25 @@ print.nm_gof <- function(x, ...) {
 }
 
 #' @export
-plot.nm_gof <- function(x, which = NULL, ncol = 2, ...) {
+# Returns the figure (a ggplot, or the panels combined with patchwork; a list
+# of ggplot objects when patchwork is not installed), shown when not
+# assigned and ready for nm_export_plot(). `type` selects panels (formerly
+# `which`, still accepted with a warning).
+plot.nm_gof <- function(x, type = NULL, ncol = 2, ...) {
+  type <- .nm_plot_type_arg(type, list(...), "which", "plot.nm_gof")
   if (length(x$plots) == 0L) {
-    message("No plots to display."); return(invisible(x))
+    message("No plots to display."); return(invisible(NULL))
   }
-  sel <- if (is.null(which)) names(x$plots) else intersect(which, names(x$plots))
+  sel <- if (is.null(type)) names(x$plots) else intersect(type, names(x$plots))
   if (length(sel) == 0L) {
     message("None of the requested plots exist. Available: ",
             paste(names(x$plots), collapse = ", "))
-    return(invisible(x))
+    return(invisible(NULL))
   }
   ps <- x$plots[sel]
-  if (length(ps) == 1L) {
-    print(ps[[1]]); return(invisible(x))
-  }
-  if (requireNamespace("patchwork", quietly = TRUE)) {
-    print(patchwork::wrap_plots(ps, ncol = ncol))
-  } else {
-    for (p in ps) print(p)
-  }
-  invisible(x)
+  if (length(ps) == 1L) return(ps[[1]])
+  if (requireNamespace("patchwork", quietly = TRUE))
+    return(patchwork::wrap_plots(ps, ncol = ncol))
+  ps
 }
 

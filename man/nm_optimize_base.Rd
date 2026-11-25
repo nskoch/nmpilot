@@ -24,7 +24,7 @@ nm_optimize_base(
 
 \method{print}{nm_optimize_base}(x, ...)
 
-\method{plot}{nm_optimize_base}(x, area = c("all", "residual", "random", "covariate"), ...)
+\method{plot}{nm_optimize_base}(x, type = c("all", "residual", "random", "covariate"), ...)
 }
 \arguments{
 \item{run}{Run directory (e.g. \code{"run1.reg"}) or path prefix of the base run.}
@@ -71,7 +71,8 @@ the dOFV are close.}
 
 \item{...}{Ignored.}
 
-\item{area}{For \code{plot()}: \code{"all"}, \code{"residual"}, \code{"random"} or \code{"covariate"}.}
+\item{type}{For \code{plot()}: \code{"all"}, \code{"residual"}, \code{"random"} or \code{"covariate"}.
+Formerly \code{area}, still accepted with a warning.}
 }
 \value{
 An object of class \code{nm_optimize_base}: lists \code{level1} (\code{residual},

@@ -79,7 +79,7 @@ analysis directory.
 g <- nm_gof("C:/nm74g64/run/lopi_04.reg/lopi_04_03_04.fit")
 g                       # summary
 plot(g)                 # all panels
-plot(g, which = "dv_pred")
+plot(g, type = "dv_pred")
 nm_gof(".../run.reg", pred = "CPRED", by = "SEX", save_docx = TRUE)
 }
 }

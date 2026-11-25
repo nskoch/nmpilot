@@ -126,7 +126,8 @@ Formerly \code{out_dir}, still accepted with a warning.}
 version 1.0: \code{out_dir} (now \code{output_dir}).}
 }
 \value{
-A list:
+An object of class \code{nm_data_previsual} (a list, printed as a short
+summary):
 \itemize{
 \item \code{data}: data.frame with TIME (relative if rebuilt) and DV_norm
 \item \code{mapping}: reserved labels -> original column names

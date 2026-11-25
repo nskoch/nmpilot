@@ -90,9 +90,9 @@
 #'                     labels = c("Base", "+ CLcr"))
 #'   print(cmp)
 #'   plot(cmp)
-#'   plot(cmp, which = "iofv_caterpillar")
+#'   plot(cmp, type = "iofv_caterpillar")
 #'   summary(cmp)
-#'   plot(cmp, which = c("gain_map", "overlay_gof"))
+#'   plot(cmp, type = c("gain_map", "overlay_gof"))
 #' }
 #'
 #' @seealso [nm_extract_runs()], [plot.nm_compare()], [print.nm_compare()]
@@ -261,23 +261,25 @@ print.nm_compare <- function(x, ...) {
 #' Diagnostic plots for `nm_compare` objects
 #'
 #' @param x An `nm_compare` object.
-#' @param which Character. One or several of `"cwres_scatter"`,
+#' @param type Character. One or several of `"cwres_scatter"`,
 #'   `"npde_scatter"`, `"iofv_caterpillar"`, `"delta_density"`, `"qq_npde"`,
 #'   `"gain_map"` (Delta|CWRES| versus TIME and PRED, loess with a 95 %
 #'   subject-bootstrap band), `"overlay_gof"` (diagnostics of both runs
 #'   superimposed), `"bootstrap"` (subject bootstrap of dOFV),
 #'   `"iofv_covariate"` (delta iOFV versus the covariates),
 #'   `"parameters"` (estimates with 95 % Wald intervals), `"eta_scatter"`
-#'   (EBEs of the two runs), or `"all"` (default).
+#'   (EBEs of the two runs), or `"all"` (default). Formerly `which`,
+#'   still accepted with a warning.
 #' @param n_band Number of subject resamples for the bands of `"gain_map"`
 #'   and `"overlay_gof"`.
-#' @param ... Unused.
+#' @param ... Unused (except the former name `which`).
 #'
 #' @return A `ggplot` object (single plot) or a list of `ggplot` objects
 #'   (multiple plots). Requires the `ggplot2` package.
 #'
 #' @export
-plot.nm_compare <- function(x, which = "all", n_band = 200L, ...) {
+plot.nm_compare <- function(x, type = "all", n_band = 200L, ...) {
+  which <- .nm_plot_type_arg(type, list(...), "which", "plot.nm_compare")
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("Package 'ggplot2' is required for plot.nm_compare(). ",

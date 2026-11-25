@@ -317,8 +317,8 @@
 #' @param ... Former argument names, accepted with a warning until version
 #'   1.0: `ctl_files` (now `ctl`).
 #'
-#' @return A `data.frame` (run log) with one row per run and the following
-#'   columns:
+#' @return A run log of class `nm_run_log` (a `data.frame`, printed as a
+#'   short summary), with one row per run and the following columns:
 #'   \describe{
 #'     \item{run}{Run name (without extension).}
 #'     \item{reg_dir}{Full path to the run directory (`<run>.reg`, or the folder of the control stream when `run_subdir = ""`).}
@@ -518,6 +518,24 @@ nm_run <- function(
     }
   }
 
-  # Assemble log
-  do.call(rbind, results)
+  # Assemble log (class nm_run_log, still a data.frame)
+  log <- do.call(rbind, results)
+  class(log) <- c("nm_run_log", "data.frame")
+  log
+}
+
+#' @export
+print.nm_run_log <- function(x, ...) {
+  a <- table(factor(x$action, levels = c("launched", "skipped_done", "skipped_no_ctl")))
+  cat(sprintf("NONMEM runs: %d (launched %d, already done %d, control stream missing %d)\n",
+              nrow(x), a[["launched"]], a[["skipped_done"]], a[["skipped_no_ctl"]]))
+  if (nrow(x)) {
+    show <- as.data.frame(x)[, intersect(c("run", "action", "ofv", "minimization_status",
+                                           "cov_status", "run_ok"), names(x)), drop = FALSE]
+    if ("ofv" %in% names(show)) show$ofv <- round(show$ofv, 3)
+    cat("\n"); print(show, row.names = FALSE)
+    n_bad <- sum(!x$run_ok & x$action != "skipped_no_ctl", na.rm = TRUE)
+    if (n_bad) cat(sprintf("\n%d run(s) not OK (minimisation or covariance): see `run_ok`.\n", n_bad))
+  }
+  invisible(x)
 }

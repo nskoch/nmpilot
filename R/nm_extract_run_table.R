@@ -1079,17 +1079,34 @@
     lst_file = run_info$lst_file
   )
 
-  invisible(
-    c(
-      res,
-      list(
-        ext_file = run_info$ext_file,
-        lst_file = run_info$lst_file,
-        run_dir = run_info$run_dir,
-        extension = run_info$extension
-      )
+  out <- c(
+    res,
+    list(
+      ext_file = run_info$ext_file,
+      lst_file = run_info$lst_file,
+      run_dir = run_info$run_dir,
+      extension = run_info$extension
     )
   )
+  class(out) <- c("nm_run_table", "list")
+  invisible(out)
+}
+
+#' @export
+print.nm_run_table <- function(x, ...) {
+  cat("Parameter table of one run\n")
+  cat("  run directory:", x$run_dir, "\n")
+  cat("  estimates    :", if (is.na(x$ext_file %||% NA)) "read in the .lst" else basename(x$ext_file), "\n")
+  cat("  Word file    :", x$output_file, "\n\n")
+  p <- as.data.frame(x$params)
+  keep <- intersect(c("Type", "Parameter", "Estimate", "RSE", "CI95"), names(p))
+  # covariances and correlations that are not estimated (0 or fixed) are left out
+  off <- p$Type %in% c("OMEGA_COV", "ETA_COR") &
+    ((!is.na(p$Estimate) & p$Estimate == 0) | (!is.na(p$Fixed) & p$Fixed))
+  p <- p[!off, keep, drop = FALSE]
+  if ("Estimate" %in% names(p)) p$Estimate <- signif(p$Estimate, 4)
+  print(p, row.names = FALSE)
+  invisible(x)
 }
 
 
@@ -1130,7 +1147,8 @@
 #' @param ...         Former argument name, accepted with a warning until
 #'   version 1.0: `run_rep` (with `run_name`).
 #'
-#' @return Invisibly, a list with `flextable`, `params` (parameter table),
+#' @return Invisibly, an object of class `nm_run_table` (a list, printed as
+#'   a short summary) with `flextable`, `params` (parameter table),
 #'   `ext` (parsed .ext, or estimates read in the .lst, with
 #'   `source = "lst"`), `output_file`, `ext_file` (`NA` without .ext),
 #'   `lst_file`, `run_dir` and `extension`.

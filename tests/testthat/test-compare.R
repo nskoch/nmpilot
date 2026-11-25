@@ -72,8 +72,10 @@ test_that("nm_compare on the example runs (base vs final)", {
   expect_equal(s$favours[s$criterion == "AIC"], "final")
   expect_output(print(s), "Decision criteria")
   expect_output(print(cmp), "Vuong")
-  pl <- plot(cmp, which = c("gain_map", "overlay_gof", "bootstrap", "parameters",
+  pl <- plot(cmp, type = c("gain_map", "overlay_gof", "bootstrap", "parameters",
                             "eta_scatter", "iofv_covariate"), n_band = 20)
   expect_true(all(vapply(pl, inherits, logical(1), "ggplot")))
   expect_true(all(c("gain_map", "overlay_gof", "iofv_covariate_WT") %in% names(pl)))
+  expect_warning(p1 <- plot(cmp, which = "parameters"), "`which` is deprecated")
+  expect_s3_class(p1, "ggplot")
 })

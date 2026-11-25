@@ -33,7 +33,8 @@ layout.}
 version 1.0: \code{run_rep} (with \code{run_name}).}
 }
 \value{
-Invisibly, a list with \code{flextable}, \code{params} (parameter table),
+Invisibly, an object of class \code{nm_run_table} (a list, printed as
+a short summary) with \code{flextable}, \code{params} (parameter table),
 \code{ext} (parsed .ext, or estimates read in the .lst, with
 \code{source = "lst"}), \code{output_file}, \code{ext_file} (\code{NA} without .ext),
 \code{lst_file}, \code{run_dir} and \code{extension}.

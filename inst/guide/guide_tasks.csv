@@ -71,8 +71,8 @@ nm_gof(file.path(ex, ""run2.reg""), by = ""GENO"")","available"
                   covariates = c(""WT"", ""GENO""))
 summary(cmp)            # decision grid
 cmp$tests$table","available"
-28,"selection","7. Model selection & comparison","Comparison plots (gain map, overlaid diagnostics)","plot.nm_compare","Where the second model improves or degrades the fit (gain map with bootstrap band), diagnostics of both runs overlaid, caterpillar of individual dOFV, parameters and ETAs.","plot(cmp, which = ""gain_map"", n_band = 200)
-plot(cmp, which = c(""overlay_gof"", ""iofv_caterpillar"", ""eta_scatter""))","available"
+28,"selection","7. Model selection & comparison","Comparison plots (gain map, overlaid diagnostics)","plot.nm_compare","Where the second model improves or degrades the fit (gain map with bootstrap band), diagnostics of both runs overlaid, caterpillar of individual dOFV, parameters and ETAs.","plot(cmp, type = ""gain_map"", n_band = 200)
+plot(cmp, type = c(""overlay_gof"", ""iofv_caterpillar"", ""eta_scatter""))","available"
 29,"selection","7. Model selection & comparison","Optimise a base model without iterative runs","nm_derivatives_ctl, nm_optimize_base, plot.nm_optimize_base","Ranks the possible changes of a base model (residual error, random effects, covariates) by their expected dOFV, from its outputs (level 1) and one NONMEM evaluation run (level 2, linearised model).","# level 1 only, no NONMEM run
 nm_optimize_base(file.path(ex, ""run1.reg""), covariates = c(""WT"", ""GENO""), level = 1)
 # level 2: one evaluation run, then the linearised model
