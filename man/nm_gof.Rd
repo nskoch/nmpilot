@@ -16,10 +16,11 @@ nm_gof(
   log_pred = FALSE,
   stem = NULL,
   save_docx = FALSE,
-  docx_file = NULL,
+  output_file = NULL,
   width = 6.5,
   height = 5,
-  dpi = 150
+  dpi = 150,
+  ...
 )
 }
 \arguments{
@@ -54,11 +55,13 @@ directory (e.g. "sdtab", "patab"). Not required to be "sdtab".}
 \item{save_docx}{If TRUE, write all plots to a .docx in the analysis
 directory (default FALSE).}
 
-\item{docx_file}{Output .docx path. If NULL and \code{save_docx=TRUE}, a name
-is derived from the table file, written next to it.}
+\item{output_file}{Output .docx path. If NULL and \code{save_docx=TRUE}, a name
+is derived from the table file, written next to it. (Formerly \code{docx_file}, still accepted with a warning.)}
 
 \item{width, height, dpi}{Image size (inches) and resolution for the docx
 export.}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 An object of class \code{"nm_gof"}: a list with \code{plots} (named

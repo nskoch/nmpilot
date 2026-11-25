@@ -461,7 +461,8 @@ print.nm_ctl_check <- function(x, ...) {
 #'   log-transformed; requires one value per line in `$THETA`; an initial
 #'   value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses an
 #'   initial estimate of 0 unless it is fixed).
-#' @param file Output path. If `NULL` (default), nothing is written.
+#' @param output_file Output path. If `NULL` (default), nothing is written. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param overwrite Logical. Replace an existing `file`.
 #' @param verbose Logical. Print a message when the file is written.
 #'
@@ -474,7 +475,10 @@ print.nm_ctl_check <- function(x, ...) {
 #' nm_ctl_mu(ctl, parameters = c("CL", "V"), mode = "linear")
 #' @export
 nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
-                      file = NULL, overwrite = FALSE, verbose = TRUE) {
+                      output_file = NULL, overwrite = FALSE, verbose = TRUE, ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_ctl_mu")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   mode <- match.arg(mode)
   lines <- .nm_ctl_lines(ctl)
   cand <- .nm_ctl_mu_candidates(lines)
@@ -599,7 +603,8 @@ nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
 #' @param rho Initial correlation for `structure = "correlated"`.
 #' @param data Optional dataset (data frame or CSV path) used to check that
 #'   `occ` holds the integers 1 to `n_occ`.
-#' @param file Output path. If `NULL` (default), nothing is written.
+#' @param output_file Output path. If `NULL` (default), nothing is written. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param overwrite Logical. Replace an existing `file`.
 #' @param verbose Logical. Print a message when the file is written.
 #'
@@ -612,7 +617,11 @@ nm_ctl_mu <- function(ctl, parameters = NULL, mode = c("readable", "linear"),
 #' @export
 nm_ctl_iov <- function(ctl, parameters, n_occ, occ = "OCC", cv = 20,
                        structure = c("independent", "correlated"), rho = 0.1,
-                       data = NULL, file = NULL, overwrite = FALSE, verbose = TRUE) {
+                       data = NULL, output_file = NULL, overwrite = FALSE, verbose = TRUE,
+                       ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_ctl_iov")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   structure <- match.arg(structure)
   lines <- .nm_ctl_lines(ctl)
   n_occ <- as.integer(n_occ)
@@ -742,7 +751,8 @@ nm_ctl_iov <- function(ctl, parameters, n_occ, occ = "OCC", cv = 20,
 #'   proportional, combined and `IPRED + W*EPS(1)` models.
 #' @param npde_mode Logical. Add `NPDE_MODE` and `DV_LOQ` handling for the
 #'   NONMEM NPDE diagnostics.
-#' @param file Output path. If `NULL` (default), nothing is written.
+#' @param output_file Output path. If `NULL` (default), nothing is written. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param overwrite Logical. Replace an existing `file`.
 #' @param verbose Logical. Print a message when the file is written.
 #'
@@ -759,7 +769,11 @@ nm_ctl_iov <- function(ctl, parameters, n_occ, occ = "OCC", cv = 20,
 #' @export
 nm_ctl_m3 <- function(ctl, bql = "BQL", lloq = NULL, lloq_col = NULL,
                       method_col = NULL, method_lloq = NULL, residual_sd = NULL,
-                      npde_mode = FALSE, file = NULL, overwrite = FALSE, verbose = TRUE) {
+                      npde_mode = FALSE, output_file = NULL, overwrite = FALSE, verbose = TRUE,
+                      ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_ctl_m3")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   lines <- .nm_ctl_lines(ctl)
   bql <- toupper(trimws(bql))
   if (!nzchar(bql)) stop("M3: `bql` is empty.")

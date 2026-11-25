@@ -1139,8 +1139,8 @@ print.nm_run_table <- function(x, ...) {
 #'   parent directory (former argument `run_rep`) and `run_name` as the run
 #'   name. A full path given here by mistake is converted automatically.
 #' @param run_path    Deprecated: former name of `run`.
-#' @param output_name Name of the Word file, written in the run directory
-#'   (default `"nonmem_results.docx"`).
+#' @param output_file Name of the Word file, written in the run directory
+#'   (default `"nonmem_results.docx"`). (Formerly `output_name`, still accepted with a warning.)
 #' @param extensions  Run directory extensions to try first, in order
 #'   (default `c("nm7", "reg")`), before the folder `<run>` and the flat
 #'   layout.
@@ -1164,10 +1164,13 @@ print.nm_run_table <- function(x, ...) {
 nm_extract_run_table <- function(run = NULL,
                                  run_name = NULL,
                                  run_path = NULL,
-                                 output_name = "nonmem_results.docx",
+                                 output_file = "nonmem_results.docx",
                                  extensions = c("nm7", "reg"),
                                  ...) {
-  dep <- .nm_deprecated_args(list(...), c(run_rep = "run_rep"), "nm_extract_run_table")
+  dep <- .nm_deprecated_args(list(...), c(run_rep = "run_rep", output_name = "output_file"),
+                             "nm_extract_run_table")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  output_name <- output_file
   run_rep <- dep$run_rep
   if (is.null(run_rep) && !is.null(run_name)) {
     # former positional form nm_extract_run_table(run_rep, run_name)

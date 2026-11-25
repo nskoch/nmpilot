@@ -466,7 +466,7 @@ nm_run <- function(
       if (verbose) message("    [Wings CTL detected] Converting to standard NONMEM...")
       # Convert to a temp file, keeping original run name
       tmp_ctl <- tempfile(fileext = ".ctl")
-      nm_convert_ctl(ctl_full, out_file = tmp_ctl,
+      nm_convert_ctl(ctl_full, output_file = tmp_ctl,
                      overwrite = TRUE, verbose = FALSE)
       ctl_to_use <- tmp_ctl
       if (verbose) message("    Wings CTL converted successfully.")

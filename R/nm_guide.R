@@ -15,8 +15,9 @@
 #' project of the package, copied to a temporary folder (see the "Setup" block
 #' of the page); `nmfe` must be set to the path of your NONMEM launcher.
 #'
-#' @param file Output path of the HTML page. Default: `nmpilot_guide.html` in
-#'   the temporary directory of the R session.
+#' @param output_file Output path of the HTML page. Default: `nmpilot_guide.html` in
+#'   the temporary directory of the R session. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param open Open the page in the web browser (default: in interactive
 #'   sessions only).
 #'
@@ -29,7 +30,10 @@
 #' \dontrun{
 #' nm_guide()     # opens the guide in the browser
 #' }
-nm_guide <- function(file = NULL, open = interactive()) {
+nm_guide <- function(output_file = NULL, open = interactive(), ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_guide")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   tasks <- .nm_guide_tasks()
   version <- tryCatch(as.character(utils::packageVersion("nmpilot")),
                       error = function(e) "")

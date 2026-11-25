@@ -86,7 +86,7 @@ nm_suggest_run <- function(x, analysis_dir, nmfe_path = NULL, candidates = 1:3,
     dp <- .nm_sr_prepare_data(data_path, x$specs[[i]], analysis_dir,
                               tag = sprintf("%s%d", prefix, i), overwrite = overwrite, verbose = verbose)
     d_rel <- if (identical(dp, data_path)) data else basename(dp)
-    ctl <- nm_write_ctl(file = NULL, data = d_rel, input = dp, from = x, candidate = i,
+    ctl <- nm_write_ctl(output_file = NULL, data = d_rel, input = dp, from = x, candidate = i,
                         verbose = FALSE, ...)
     ctl <- .nm_sr_add_alag(unclass(ctl), x$specs[[i]]$alag)
     writeLines(ctl, f)

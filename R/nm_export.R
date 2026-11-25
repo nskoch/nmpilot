@@ -17,9 +17,10 @@
 #' ggplot object and leave saving to this function.
 #'
 #' @param plot    A ggplot (or patchwork) object.
-#' @param file    Output path. The file type is taken from the extension:
+#' @param output_file    Output path. The file type is taken from the extension:
 #'   `.jpg`/`.jpeg`, `.png`, `.pdf` or `.tif`/`.tiff`. The directory is
-#'   created if needed.
+#'   created if needed. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param width   Width in inches (default 9).
 #' @param height  Height in inches (default 5).
 #' @param dpi     Resolution in dots per inch (default 300; ignored for PDF).
@@ -33,9 +34,12 @@
 #' p <- nm_plot_dv(nm_read_csv("data.csv")$data)
 #' nm_export_plot(p, "figures/dv_vs_time.png")
 #' }
-nm_export_plot <- function(plot, file,
+nm_export_plot <- function(plot, output_file,
                            width = 9, height = 5, dpi = 300,
-                           verbose = TRUE) {
+                           verbose = TRUE, ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_export_plot")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   if (is.null(plot)) {
     warning("`plot` is NULL: nothing to export.")
     return(invisible(NULL))
@@ -49,7 +53,7 @@ nm_export_plot <- function(plot, file,
                    png  = "png",
                    pdf  = "pdf",
                    tif  = , tiff = "tiff",
-                   stop("Unsupported file extension '", ext, "' in `file`. ",
+                   stop("Unsupported file extension '", ext, "' in `output_file`. ",
                         "Use .jpg, .png, .pdf or .tiff.", call. = FALSE))
 
   out_dir <- dirname(file)
@@ -64,11 +68,15 @@ nm_export_plot <- function(plot, file,
 #' Export a data.frame to CSV (NONMEM convention: na = ".")
 #'
 #' @param data A data.frame, typically from [nm_read_csv()].
-#' @param file Output path (.csv). The directory is created if needed.
+#' @param output_file Output path (.csv). The directory is created if needed. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #'
 #' @return The path of the written file (invisibly).
 #' @export
-nm_export_data <- function(data, file) {
+nm_export_data <- function(data, output_file, ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_export_data")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
   out_dir <- dirname(file)
   if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
   utils::write.csv(data, file, row.names = FALSE, na = ".")

@@ -18,7 +18,7 @@ nm_vpc(
   n_bins_quantile = 8,
   bin_rule = "FD",
   plot_title = NULL,
-  plot_file = NULL,
+  output_file = NULL,
   show_hist = TRUE,
   ...
 )
@@ -69,9 +69,9 @@ percentiles (default: 0.975).}
 \item{plot_title}{Character. Title of the VPC plot. If \code{NULL}
 (default), a title is generated from the run name and \code{type}.}
 
-\item{plot_file}{Character. If provided, the plot is saved to this path
+\item{output_file}{Character. If provided, the plot is saved to this path
 (e.g. \code{"vpc_run001.jpeg"}) through \code{\link{nm_export_plot}}
-(\code{.jpg}, \code{.png}, \code{.pdf} or \code{.tiff}).}
+(\code{.jpg}, \code{.png}, \code{.pdf} or \code{.tiff}). (Formerly \code{plot_file}, still accepted with a warning.)}
 
 \item{show_hist}{Logical. If \code{TRUE} (default), prints a diagnostic
 histogram of observed TIME with bin boundaries before the VPC plot.}
@@ -116,7 +116,7 @@ p <- nm_vpc(
   type             = 2,
   bin_method       = 1,
   TTIME_seq_manual = c(0, 1, 2, 4, 8, 12, 24),
-  plot_file        = "pcvpc_run001.jpeg"
+  output_file      = "pcvpc_run001.jpeg"
 )
 }
 

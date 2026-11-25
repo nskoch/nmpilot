@@ -807,10 +807,11 @@ print.nm_data_previsual <- function(x, ...) {
 #' unchanged.
 #'
 #' @param file        Path to the original CSV.
-#' @param out_file    Name (or path) of the output CSV. `NULL` (default) ->
+#' @param output_file    Name (or path) of the output CSV. `NULL` (default) ->
 #'                    `"<base>_rate.csv"` in the same directory as `file`.
 #'                    If only a file name is given (no directory), it is
-#'                    placed next to the source file.
+#'                    placed next to the source file. (Formerly `out_file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param sep         Column separator (default `","`).
 #' @param dose_value  RATE value on the targeted dosing records: -2 (default,
 #'                    estimated duration) or -1 (estimated rate).
@@ -846,13 +847,13 @@ print.nm_data_previsual <- function(x, ...) {
 #' nm_add_rate("data.csv", dose_cmt = 1)
 #'
 #' # Chosen output name (placed next to the source file)
-#' nm_add_rate("data.csv", out_file = "data_dur.csv")
+#' nm_add_rate("data.csv", output_file = "data_dur.csv")
 #' }
 #' @importFrom utils read.csv write.table
 #' @importFrom tools file_path_sans_ext
 #' @export
 nm_add_rate <- function(file,
-                        out_file   = NULL,
+                        output_file = NULL,
                         sep        = ",",
                         dose_value = -2,
                         base_value = 0,
@@ -862,7 +863,11 @@ nm_add_rate <- function(file,
                         evid_col   = NULL,
                         amt_col    = NULL,
                         overwrite  = FALSE,
-                        verbose    = TRUE) {
+                        verbose    = TRUE,
+                        ...) {
+  dep <- .nm_deprecated_args(list(...), c(out_file = "output_file"), "nm_add_rate")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  out_file <- output_file
 
   if (!is.character(file) || !file.exists(file))
     stop("File not found: ", file)
@@ -979,7 +984,7 @@ nm_add_rate <- function(file,
   if (normalizePath(out_file, mustWork = FALSE) ==
       normalizePath(file,     mustWork = FALSE))
     stop("The output file is the same as the source file. ",
-         "Choose another name with out_file=.")
+         "Choose another name with output_file=.")
 
   # ---------------------------------------------------------------------------
   # 8. Verbatim write (no quotes, '#ID' header kept)

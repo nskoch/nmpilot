@@ -124,9 +124,9 @@ NULL
 #'   \code{"Sturges"}, \code{"Scott"}, or \code{"FD"} (default).
 #' @param plot_title Character. Title of the VPC plot. If \code{NULL}
 #'   (default), a title is generated from the run name and \code{type}.
-#' @param plot_file Character. If provided, the plot is saved to this path
+#' @param output_file Character. If provided, the plot is saved to this path
 #'   (e.g. \code{"vpc_run001.jpeg"}) through \code{\link{nm_export_plot}}
-#'   (\code{.jpg}, \code{.png}, \code{.pdf} or \code{.tiff}).
+#'   (\code{.jpg}, \code{.png}, \code{.pdf} or \code{.tiff}). (Formerly `plot_file`, still accepted with a warning.)
 #' @param show_hist Logical. If \code{TRUE} (default), prints a diagnostic
 #'   histogram of observed TIME with bin boundaries before the VPC plot.
 #' @param ... Former argument name, accepted with a warning until version
@@ -163,7 +163,7 @@ NULL
 #'   type             = 2,
 #'   bin_method       = 1,
 #'   TTIME_seq_manual = c(0, 1, 2, 4, 8, 12, 24),
-#'   plot_file        = "pcvpc_run001.jpeg"
+#'   output_file      = "pcvpc_run001.jpeg"
 #' )
 #' }
 #'
@@ -184,11 +184,13 @@ nm_vpc <- function(
     n_bins_quantile  = 8,
     bin_rule         = "FD",
     plot_title       = NULL,
-    plot_file        = NULL,
+    output_file      = NULL,
     show_hist        = TRUE,
     ...
 ) {
-  dep <- .nm_deprecated_args(list(...), c(run_name = "run"), "nm_vpc")
+  dep <- .nm_deprecated_args(list(...), c(run_name = "run", plot_file = "output_file"), "nm_vpc")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  plot_file <- output_file
   if (!is.null(dep$run)) run <- dep$run
   if (!is.null(analysis_dir)) {
     warning("In nm_vpc(), `analysis_dir` is deprecated: give the path of the run, ",

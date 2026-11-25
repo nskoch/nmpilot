@@ -4,12 +4,14 @@
 \alias{nm_export_data}
 \title{Export a data.frame to CSV (NONMEM convention: na = ".")}
 \usage{
-nm_export_data(data, file)
+nm_export_data(data, output_file, ...)
 }
 \arguments{
 \item{data}{A data.frame, typically from \code{\link[=nm_read_csv]{nm_read_csv()}}.}
 
-\item{file}{Output path (.csv). The directory is created if needed.}
+\item{output_file}{Output path (.csv). The directory is created if needed. (Formerly \code{file}, still accepted with a warning.)}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 The path of the written file (invisibly).

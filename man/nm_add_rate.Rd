@@ -6,7 +6,7 @@
 \usage{
 nm_add_rate(
   file,
-  out_file = NULL,
+  output_file = NULL,
   sep = ",",
   dose_value = -2,
   base_value = 0,
@@ -16,16 +16,17 @@ nm_add_rate(
   evid_col = NULL,
   amt_col = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
 \item{file}{Path to the original CSV.}
 
-\item{out_file}{Name (or path) of the output CSV. \code{NULL} (default) ->
+\item{output_file}{Name (or path) of the output CSV. \code{NULL} (default) ->
 \code{"<base>_rate.csv"} in the same directory as \code{file}.
 If only a file name is given (no directory), it is
-placed next to the source file.}
+placed next to the source file. (Formerly \code{out_file}, still accepted with a warning.)}
 
 \item{sep}{Column separator (default \code{","}).}
 
@@ -55,6 +56,8 @@ when no EVID column is found).}
 \code{FALSE}: the function stops if RATE already exists).}
 
 \item{verbose}{Print a diagnostic report (default \code{TRUE}).}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 The path of the written file (invisibly).
@@ -78,6 +81,6 @@ nm_add_rate("data.csv", dose_value = -1)
 nm_add_rate("data.csv", dose_cmt = 1)
 
 # Chosen output name (placed next to the source file)
-nm_add_rate("data.csv", out_file = "data_dur.csv")
+nm_add_rate("data.csv", output_file = "data_dur.csv")
 }
 }

@@ -1,3 +1,27 @@
+# nmpilot (development version)
+
+* New function `nm_check_dataset()` (point B5): checks that a dataset can be
+  read by NONMEM (ID, TIME and DV columns; missing ID or TIME; non-numeric
+  values; decreasing times within a subject, except at reset records;
+  inconsistent EVID, MDV and AMT; duplicated records or observations;
+  negative DV and outliers compared with the observations taken at the same
+  time after dose). It reads the file as NONMEM does and only reports: the
+  data are never modified. Listed in the task guide (stage 1).
+
+* Output files are named `output_file` everywhere (point B11): in
+  `nm_write_ctl()`, `nm_ctl_mu()`, `nm_ctl_iov()`, `nm_ctl_m3()`,
+  `nm_export_data()`, `nm_export_plot()` and `nm_guide()` (formerly `file`),
+  `nm_add_rate()` and `nm_convert_ctl()` (formerly `out_file`), `nm_gof()`
+  (formerly `docx_file`), `nm_extract_run_table()` (formerly `output_name`)
+  and `nm_vpc()` (formerly `plot_file`). The former names are still
+  accepted, with a warning, until version 1.0. `overwrite` was already used
+  everywhere.
+
+* Every figure written by the package goes through `nm_export_plot()`
+  (point B9): `nm_gof(save_docx = TRUE)` no longer calls `ggsave()`
+  directly. Formats: `.jpg`, `.png`, `.pdf` and `.tiff`, chosen from the
+  extension.
+
 # nmpilot 0.9.0
 
 * Task guide (`nm_guide()`): every argument of the code examples is

@@ -13,9 +13,10 @@ nm_ctl_m3(
   method_lloq = NULL,
   residual_sd = NULL,
   npde_mode = FALSE,
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -41,11 +42,13 @@ proportional, combined and \code{IPRED + W*EPS(1)} models.}
 \item{npde_mode}{Logical. Add \code{NPDE_MODE} and \code{DV_LOQ} handling for the
 NONMEM NPDE diagnostics.}
 
-\item{file}{Output path. If \code{NULL} (default), nothing is written.}
+\item{output_file}{Output path. If \code{NULL} (default), nothing is written. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{overwrite}{Logical. Replace an existing \code{file}.}
 
 \item{verbose}{Logical. Print a message when the file is written.}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 An object of class \code{nm_ctl} (control stream lines), invisibly

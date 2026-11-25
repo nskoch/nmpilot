@@ -27,8 +27,9 @@
 #'   directory (e.g. "sdtab", "patab"). Not required to be "sdtab".
 #' @param save_docx If TRUE, write all plots to a .docx in the analysis
 #'   directory (default FALSE).
-#' @param docx_file Output .docx path. If NULL and \code{save_docx=TRUE}, a name
-#'   is derived from the table file, written next to it.
+#' @param output_file Output .docx path. If NULL and \code{save_docx=TRUE}, a name
+#'   is derived from the table file, written next to it. (Formerly `docx_file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param width,height,dpi Image size (inches) and resolution for the docx
 #'   export.
 #'
@@ -57,8 +58,12 @@ nm_gof <- function(file,
                    log_pred = FALSE,
                    stem = NULL,
                    save_docx = FALSE,
-                   docx_file = NULL,
-                   width = 6.5, height = 5, dpi = 150) {
+                   output_file = NULL,
+                   width = 6.5, height = 5, dpi = 150,
+                   ...) {
+  dep <- .nm_deprecated_args(list(...), c(docx_file = "output_file"), "nm_gof")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  docx_file <- output_file
 
   if (!requireNamespace("ggplot2", quietly = TRUE)) {
     stop("nm_gof() requires 'ggplot2'. Install it or add to Suggests.", call. = FALSE)
@@ -347,8 +352,9 @@ nm_gof <- function(file,
   for (id in names(x$plots)) {
     p <- x$plots[[id]]
     png <- tempfile(fileext = ".png")
-    ggplot2::ggsave(png, plot = p, width = width, height = height,
-                    dpi = dpi, units = "in")
+    # same export path as every other nmpilot figure (point B9)
+    nm_export_plot(p, png, width = width, height = height, dpi = dpi,
+                   verbose = FALSE)
     doc <- officer::body_add_par(doc, p$labels$title %|na|% id, style = "heading 2")
     doc <- officer::body_add_img(doc, src = png, width = width, height = height)
     unlink(png)

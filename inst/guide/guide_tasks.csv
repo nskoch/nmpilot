@@ -32,7 +32,13 @@ nm_add_rate(
   dat$data,                       # data: data frame to write
   file.path(ex, ""data_nm.csv"")    # file: output path (folder created if needed)
 )","available"
-7,"data","1. Data preparation & inspection","Check NONMEM compatibility","nm_check_dataset","Checks that a dataset can be read by NONMEM: missing ID or TIME, non-increasing times, inconsistent EVID/MDV/AMT, duplicates, non-numeric columns, outliers.","","planned"
+7,"data","1. Data preparation & inspection","Check NONMEM compatibility","nm_check_dataset","Checks that a dataset can be read by NONMEM: missing ID or TIME, non-numeric values, decreasing times, inconsistent EVID/MDV/AMT, duplicates, outliers. Report only: the data are never modified.","chk <- nm_check_dataset(
+  file.path(ex, ""example_data.csv"")   # data: CSV path (or a data frame)
+)
+chk$ok          # TRUE when no error was found
+chk$findings    # one row per problem: check, severity, rows, IDs, message
+summary(chk)    # number of findings per check
+# columns with other names: cols = c(ID = ""SUBJ"", DV = ""CONC"")","available"
 8,"explore","2. Exploration & base model","Suggest a structural model and initial values","nm_suggest_model, plot.nm_model_suggestion","Analyses the data before any NONMEM run and ranks candidate models (compartments, input, elimination, residual error), each with initial values for THETA, IIV and SIGMA and alerts on what no candidate describes.","s <- nm_suggest_model(
   file.path(ex, ""example_data.csv"")   # data: path of the CSV (or a data frame)
 )

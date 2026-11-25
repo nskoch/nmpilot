@@ -5,7 +5,7 @@
 \title{Write a NONMEM control stream for a population PK model}
 \usage{
 nm_write_ctl(
-  file = NULL,
+  output_file = NULL,
   data = "data.csv",
   input = NULL,
   cols = NULL,
@@ -38,11 +38,12 @@ nm_write_ctl(
   verbose = TRUE,
   from = NULL,
   candidate = 1L,
-  conc_factor = 1
+  conc_factor = 1,
+  ...
 )
 }
 \arguments{
-\item{file}{Output path. If \code{NULL} (default), nothing is written.}
+\item{output_file}{Output path. If \code{NULL} (default), nothing is written. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{data}{File name written in \verb{$DATA}.}
 
@@ -138,6 +139,8 @@ the scale is written \code{S = V/conc_factor} (e.g. 1000 for doses in mg,
 volumes in L and concentrations in ng/mL). Default 1 (\code{S = V}). With
 \code{from}, the \code{dose_conc_factor} of the suggestion is used, so that its
 initial values (volumes in L, KM in amount/L) match the DV units.}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 An object of class \code{nm_ctl} (a character vector of control

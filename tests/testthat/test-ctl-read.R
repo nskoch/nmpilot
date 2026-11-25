@@ -109,7 +109,7 @@ test_that("nm_convert_ctl: no substitution of a variable assigned after IF(...) 
            "$OMEGA 0.1",
            "$SIGMA 0.1")
   f <- tempfile(fileext = ".ctl"); writeLines(ctl, f)
-  out <- suppressMessages(nm_convert_ctl(f, out_file = tempfile(fileext = ".ctl"), verbose = FALSE))
+  out <- suppressMessages(nm_convert_ctl(f, output_file = tempfile(fileext = ".ctl"), verbose = FALSE))
   txt <- readLines(out)
   expect_true(any(grepl("IF\\(PAT.EQ.1\\) SCAL = THETA\\(1\\)", txt)))
   expect_true(any(grepl("MTIM\\(1\\) = THETA\\(2\\)", txt)))

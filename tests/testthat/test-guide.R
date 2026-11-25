@@ -96,7 +96,7 @@ test_that("every example parses, and its nmpilot calls use existing arguments", 
 
 test_that("nm_guide writes the page with every task", {
   f <- tempfile(fileext = ".html")
-  nm_guide(file = f, open = FALSE)
+  nm_guide(output_file = f, open = FALSE)
   h <- paste(readLines(f, warn = FALSE), collapse = "\n")
   g <- guide_tasks()
   expect_equal(lengths(regmatches(h, gregexpr("<article class=\"detail\"", h))), nrow(g))

@@ -17,6 +17,7 @@ reference:
 - title: "1. Data preparation & inspection"
   contents:
   - nm_read_csv
+  - nm_check_dataset
   - nm_summary
   - nm_plot_dv
   - nm_data_previsual

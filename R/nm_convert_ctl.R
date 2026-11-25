@@ -154,10 +154,10 @@
 #'
 #' @param ctl Path to the Wings extended control stream (\code{.ctl}).
 #'   (Formerly \code{ctl_file}, still accepted with a warning.)
-#' @param out_file Output path for the converted control stream. If
+#' @param output_file Output path for the converted control stream. If
 #'   \code{NULL} (default), the output file is named
-#'   \code{<run>_converted.ctl} in the same directory as \code{ctl}.
-#' @param overwrite Logical. If \code{TRUE}, overwrite \code{out_file} if it
+#'   \code{<run>_converted.ctl} in the same directory as \code{ctl}. (Formerly `out_file`, still accepted with a warning.)
+#' @param overwrite Logical. If \code{TRUE}, overwrite \code{output_file} if it
 #'   already exists (default \code{FALSE}).
 #' @param verbose Logical. If \code{TRUE} (default), print a summary of
 #'   substitutions made.
@@ -197,12 +197,15 @@
 #'
 #' @export
 nm_convert_ctl <- function(ctl,
-                           out_file  = NULL,
+                           output_file = NULL,
                            overwrite = FALSE,
                            verbose   = TRUE,
                            ...) {
-  dep <- .nm_deprecated_args(list(...), c(ctl_file = "ctl"), "nm_convert_ctl")
+  dep <- .nm_deprecated_args(list(...), c(ctl_file = "ctl", out_file = "output_file"),
+                             "nm_convert_ctl")
   if (!is.null(dep$ctl)) ctl <- dep$ctl
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  out_file <- output_file
   ctl_file <- ctl
 
   if (!file.exists(ctl_file))

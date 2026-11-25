@@ -8,7 +8,7 @@ nm_extract_run_table(
   run = NULL,
   run_name = NULL,
   run_path = NULL,
-  output_name = "nonmem_results.docx",
+  output_file = "nonmem_results.docx",
   extensions = c("nm7", "reg"),
   ...
 )
@@ -22,8 +22,8 @@ name. A full path given here by mistake is converted automatically.}
 
 \item{run_path}{Deprecated: former name of \code{run}.}
 
-\item{output_name}{Name of the Word file, written in the run directory
-(default \code{"nonmem_results.docx"}).}
+\item{output_file}{Name of the Word file, written in the run directory
+(default \code{"nonmem_results.docx"}). (Formerly \code{output_name}, still accepted with a warning.)}
 
 \item{extensions}{Run directory extensions to try first, in order
 (default \code{c("nm7", "reg")}), before the folder \verb{<run>} and the flat

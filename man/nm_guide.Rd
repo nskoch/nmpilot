@@ -4,14 +4,16 @@
 \alias{nm_guide}
 \title{Interactive task guide}
 \usage{
-nm_guide(file = NULL, open = interactive())
+nm_guide(output_file = NULL, open = interactive(), ...)
 }
 \arguments{
-\item{file}{Output path of the HTML page. Default: \code{nmpilot_guide.html} in
-the temporary directory of the R session.}
+\item{output_file}{Output path of the HTML page. Default: \code{nmpilot_guide.html} in
+the temporary directory of the R session. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{open}{Open the page in the web browser (default: in interactive
 sessions only).}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 The path of the HTML file, invisibly.

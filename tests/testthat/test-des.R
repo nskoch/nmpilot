@@ -38,7 +38,7 @@ test_that("control streams written by nmpilot keep $MODEL and $DES", {
   expect_true(keeps_des(pr)); expect_true(no_check_error(pr))
   mu <- tempfile(fileext = ".ctl")
   f <- tempfile(fileext = ".ctl"); writeLines(base, f)
-  suppressMessages(nm_ctl_mu(f, file = mu, verbose = FALSE))
+  suppressMessages(nm_ctl_mu(f, output_file = mu, verbose = FALSE))
   expect_true(keeps_des(readLines(mu))); expect_true(no_check_error(readLines(mu)))
 })
 

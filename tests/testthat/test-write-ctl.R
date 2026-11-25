@@ -146,7 +146,7 @@ test_that("nm_ctl_m3 implements the censored likelihood", {
 test_that("transformations accept a file and write a file", {
   f <- tempfile(fileext = ".ctl"); out <- tempfile(fileext = ".ctl")
   nm_write_ctl(f, verbose = FALSE)
-  nm_ctl_mu(f, file = out, verbose = FALSE)
+  nm_ctl_mu(f, output_file = out, verbose = FALSE)
   expect_true(any(grepl("MU_1", readLines(out), fixed = TRUE)))
   expect_error(nm_ctl_mu(tempfile(fileext = ".ctl")), "not found")
 })

@@ -13,9 +13,10 @@ nm_ctl_iov(
   structure = c("independent", "correlated"),
   rho = 0.1,
   data = NULL,
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -40,11 +41,13 @@ named).}
 \item{data}{Optional dataset (data frame or CSV path) used to check that
 \code{occ} holds the integers 1 to \code{n_occ}.}
 
-\item{file}{Output path. If \code{NULL} (default), nothing is written.}
+\item{output_file}{Output path. If \code{NULL} (default), nothing is written. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{overwrite}{Logical. Replace an existing \code{file}.}
 
 \item{verbose}{Logical. Print a message when the file is written.}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 An object of class \code{nm_ctl} (control stream lines), invisibly

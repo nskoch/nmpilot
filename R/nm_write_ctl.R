@@ -396,7 +396,8 @@ print.nm_ctl <- function(x, ...) {
 #' Residual error uses `ERR(1)` (proportional) and `ERR(2)` (additive); the
 #' component absent from the chosen model is fixed to 0.
 #'
-#' @param file Output path. If `NULL` (default), nothing is written.
+#' @param output_file Output path. If `NULL` (default), nothing is written. (Formerly `file`, still accepted with a warning.)
+#' @param ... Former argument name, accepted with a warning until version 1.0.
 #' @param data File name written in `$DATA`.
 #' @param input Dataset column names, in file order, or the path to the
 #'   dataset (its first line is read). If `NULL`, `$INPUT` lists the mapped
@@ -484,7 +485,7 @@ print.nm_ctl <- function(x, ...) {
 #' s <- nm_suggest_model(ex, verbose = FALSE, design_eval = FALSE, max_profiles = 15)
 #' nm_write_ctl(from = s, candidate = 1, verbose = FALSE)
 #' @export
-nm_write_ctl <- function(file = NULL,
+nm_write_ctl <- function(output_file = NULL,
                          data = "data.csv",
                          input = NULL,
                          cols = NULL,
@@ -518,7 +519,11 @@ nm_write_ctl <- function(file = NULL,
                          verbose = TRUE,
                          from = NULL,
                          candidate = 1L,
-                         conc_factor = 1) {
+                         conc_factor = 1,
+                         ...) {
+  dep <- .nm_deprecated_args(list(...), c(file = "output_file"), "nm_write_ctl")
+  if (!is.null(dep$output_file)) output_file <- dep$output_file
+  file <- output_file
 
   # ---- candidate of nm_suggest_model() -------------------------------------------
   from_theta <- FALSE; from_iiv <- FALSE

@@ -8,9 +8,10 @@ nm_ctl_mu(
   ctl,
   parameters = NULL,
   mode = c("readable", "linear"),
-  file = NULL,
+  output_file = NULL,
   overwrite = FALSE,
-  verbose = TRUE
+  verbose = TRUE,
+  ...
 )
 }
 \arguments{
@@ -26,11 +27,13 @@ log-transformed; requires one value per line in \verb{$THETA}; an initial
 value of 1, whose log is 0, is written 0.0001 because NM-TRAN refuses an
 initial estimate of 0 unless it is fixed).}
 
-\item{file}{Output path. If \code{NULL} (default), nothing is written.}
+\item{output_file}{Output path. If \code{NULL} (default), nothing is written. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{overwrite}{Logical. Replace an existing \code{file}.}
 
 \item{verbose}{Logical. Print a message when the file is written.}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 An object of class \code{nm_ctl} (control stream lines), invisibly

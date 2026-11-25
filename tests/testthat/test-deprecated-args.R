@@ -26,7 +26,7 @@ test_that("nm_identify_parameters, nm_convert_ctl: `file` and `ctl_file` still w
   expect_identical(a$parameter_table, b$parameter_table)
   expect_error(nm_identify_parameters(f, foo = 1), "unused argument")
   out <- tempfile(fileext = ".ctl")
-  expect_warning(nm_convert_ctl(ctl_file = f, out_file = out, verbose = FALSE), "`ctl_file` is deprecated")
+  expect_warning(nm_convert_ctl(ctl_file = f, output_file = out, verbose = FALSE), "`ctl_file` is deprecated")
   expect_true(file.exists(out))
 })
 
@@ -81,4 +81,54 @@ test_that("nm_vpc_ctl, nm_vpc, nm_extract_run_table: former run_name + analysis_
   expect_warning(expect_error(nm_extract_run_table(tempdir(), "none")), "`run_rep` \\+ `run_name` is deprecated")
   expect_warning(expect_error(nm_extract_run_table(run_path = file.path(tempdir(), "none"))),
                  "`run_path` is deprecated")
+})
+
+test_that("output files are named `output_file` everywhere; former names still work (B11)", {
+  root <- tempfile("depo_"); dir.create(root); on.exit(unlink(root, recursive = TRUE))
+  # nm_write_ctl, nm_ctl_mu, nm_ctl_iov, nm_ctl_m3: `file`
+  cols <- c("ID", "TIME", "AMT", "DV", "EVID", "MDV", "CMT", "OCC", "BQL")
+  f1 <- file.path(root, "a.ctl")
+  expect_warning(nm_write_ctl(file = f1, input = cols, verbose = FALSE), "`file` is deprecated")
+  expect_true(file.exists(f1))
+  f2 <- file.path(root, "b.ctl")
+  nm_write_ctl(f2, input = cols, verbose = FALSE)            # positional, no warning
+  expect_true(file.exists(f2))
+  ctl <- nm_write_ctl(input = cols, error = "combined", verbose = FALSE)
+  for (fun in c("nm_ctl_mu", "nm_ctl_iov", "nm_ctl_m3")) {
+    out <- file.path(root, paste0(fun, ".ctl"))
+    args <- switch(fun, nm_ctl_mu = list(ctl),
+                   nm_ctl_iov = list(ctl, parameters = "CL", n_occ = 2),
+                   nm_ctl_m3 = list(ctl, lloq = 0.1))
+    expect_warning(do.call(fun, c(args, list(file = out, verbose = FALSE))), "`file` is deprecated")
+    expect_true(file.exists(out))
+    out2 <- file.path(root, paste0(fun, "_2.ctl"))
+    expect_no_warning(do.call(fun, c(args, list(output_file = out2, verbose = FALSE))))
+    expect_true(file.exists(out2))
+  }
+  # nm_export_data, nm_export_plot: `file`
+  d <- data.frame(ID = 1, DV = NA)
+  expect_warning(nm_export_data(d, file = file.path(root, "d.csv")), "`file` is deprecated")
+  expect_true(file.exists(file.path(root, "d.csv")))
+  skip_if_not_installed("ggplot2")
+  p <- ggplot2::ggplot(data.frame(x = 1, y = 1), ggplot2::aes(x, y)) + ggplot2::geom_point()
+  expect_warning(nm_export_plot(p, file = file.path(root, "p.png"), width = 2, height = 2,
+                                dpi = 50, verbose = FALSE), "`file` is deprecated")
+  expect_true(file.exists(file.path(root, "p.png")))
+  # nm_guide: `file`
+  expect_warning(nm_guide(file = file.path(root, "g.html"), open = FALSE), "`file` is deprecated")
+  expect_true(file.exists(file.path(root, "g.html")))
+  # nm_add_rate, nm_convert_ctl: `out_file`
+  csv <- file.path(root, "data.csv")
+  writeLines(c("ID,TIME,AMT,DV,EVID,MDV,CMT", "1,0,100,.,1,1,1", "1,1,.,5,0,0,2"), csv)
+  expect_warning(suppressMessages(nm_add_rate(csv, out_file = file.path(root, "r.csv"),
+                                              verbose = FALSE)), "`out_file` is deprecated")
+  expect_true(file.exists(file.path(root, "r.csv")))
+  # nm_gof: `docx_file`; nm_vpc: `plot_file`; nm_extract_run_table: `output_name`
+  expect_warning(expect_error(nm_gof(file.path(root, "none"), docx_file = "x.docx")),
+                 "`docx_file` is deprecated")
+  expect_warning(expect_error(nm_vpc(file.path(root, "none"), col_names = "ID", show_hist = FALSE,
+                                     plot_file = "x.png")), "`plot_file` is deprecated")
+  skip_if_not_installed("flextable"); skip_if_not_installed("officer")
+  expect_warning(expect_error(nm_extract_run_table(file.path(root, "none"), output_name = "x.docx")),
+                 "`output_name` is deprecated")
 })

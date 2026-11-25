@@ -18,7 +18,7 @@ test_that("nm_summary counts subjects and observations", {
 
 test_that("nm_add_rate adds RATE after AMT", {
   out <- tempfile(fileext = ".csv")
-  suppressMessages(nm_add_rate(write_data_csv(), out_file = out))
+  suppressMessages(nm_add_rate(write_data_csv(), output_file = out))
   d <- utils::read.csv(out)
   expect_equal(names(d)[which(names(d) == "AMT") + 1L], "RATE")
   expect_equal(d$RATE[d$EVID == 1], c(-2, -2))

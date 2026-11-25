@@ -4,17 +4,17 @@
 \alias{nm_convert_ctl}
 \title{Convert a Wings for NONMEM extended control stream to standard NONMEM}
 \usage{
-nm_convert_ctl(ctl, out_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
+nm_convert_ctl(ctl, output_file = NULL, overwrite = FALSE, verbose = TRUE, ...)
 }
 \arguments{
 \item{ctl}{Path to the Wings extended control stream (\code{.ctl}).
 (Formerly \code{ctl_file}, still accepted with a warning.)}
 
-\item{out_file}{Output path for the converted control stream. If
+\item{output_file}{Output path for the converted control stream. If
 \code{NULL} (default), the output file is named
-\code{<run>_converted.ctl} in the same directory as \code{ctl}.}
+\code{<run>_converted.ctl} in the same directory as \code{ctl}. (Formerly \code{out_file}, still accepted with a warning.)}
 
-\item{overwrite}{Logical. If \code{TRUE}, overwrite \code{out_file} if it
+\item{overwrite}{Logical. If \code{TRUE}, overwrite \code{output_file} if it
 already exists (default \code{FALSE}).}
 
 \item{verbose}{Logical. If \code{TRUE} (default), print a summary of

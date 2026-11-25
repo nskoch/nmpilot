@@ -4,14 +4,22 @@
 \alias{nm_export_plot}
 \title{Export a ggplot to an image file}
 \usage{
-nm_export_plot(plot, file, width = 9, height = 5, dpi = 300, verbose = TRUE)
+nm_export_plot(
+  plot,
+  output_file,
+  width = 9,
+  height = 5,
+  dpi = 300,
+  verbose = TRUE,
+  ...
+)
 }
 \arguments{
 \item{plot}{A ggplot (or patchwork) object.}
 
-\item{file}{Output path. The file type is taken from the extension:
+\item{output_file}{Output path. The file type is taken from the extension:
 \code{.jpg}/\code{.jpeg}, \code{.png}, \code{.pdf} or \code{.tif}/\code{.tiff}. The directory is
-created if needed.}
+created if needed. (Formerly \code{file}, still accepted with a warning.)}
 
 \item{width}{Width in inches (default 9).}
 
@@ -20,6 +28,8 @@ created if needed.}
 \item{dpi}{Resolution in dots per inch (default 300; ignored for PDF).}
 
 \item{verbose}{Print the path of the written file (default \code{TRUE}).}
+
+\item{...}{Former argument name, accepted with a warning until version 1.0.}
 }
 \value{
 The path of the written file (invisibly), or \code{NULL} if \code{plot} is
