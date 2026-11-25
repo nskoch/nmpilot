@@ -26,6 +26,16 @@ are also read, so that projects started with Wings can be continued.
 
 ## Installation
 
+The simplest way is R-universe, which provides ready-built binaries for
+Windows and macOS (no compilation, no remotes package needed):
+
+```r
+install.packages("nmpilot",
+                 repos = c("https://nskoch.r-universe.dev", "https://cloud.r-project.org"))
+```
+
+The development version can also be installed from GitHub:
+
 ```r
 # install.packages("remotes")
 remotes::install_github("nskoch/nmpilot")
