@@ -1,5 +1,15 @@
 # nmpilot (development version)
 
+* New `nm_runs_table()` (action 8): summary table of all the runs of a
+  project, one row per run with its description (`$PROBLEM`), its parent run
+  (read in the control stream as in `nm_model_diagram()`, or given with
+  `parents`), OFV, dOFV against the parent and against the best run, number
+  of estimated parameters, AIC, BIC, minimisation and covariance status,
+  largest ETA shrinkage and share of RSE above 50%. Written to a Word file in
+  landscape format when `output_file` is given (`overwrite` to replace it);
+  rows in tree order, by OFV or by run name (`sort`). In the task guide
+  (step 5, no longer "planned") and on the site.
+
 * `nm_suggest_model()`, sparse designs (no rich individual profile): the
   residual error model cannot be assessed before NONMEM, and the proportional
   model was always ranked first (the additive model never). The three error

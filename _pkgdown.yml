@@ -51,6 +51,7 @@ reference:
   - nm_identify_parameters
   - nm_identify_directory
   - nm_model_diagram
+  - nm_runs_table
 - title: "6. Diagnostics"
   contents:
   - nm_gof
