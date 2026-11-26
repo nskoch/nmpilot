@@ -77,7 +77,7 @@ Parameter table of one run (Word)
 
 Identify the role of THETAs and ETAs
 
-Project summary in Word planned
+Project summary in Word
 
 Diagram of tested models
 
@@ -527,12 +527,28 @@ Copy
     x$parameter_table
     nm_identify_directory(ex)     # path: every control stream of a folder
 
-## Project summary in Word planned
+## Project summary in Word
 
-Summary table of all runs of a project exported to Word (today
-nm_extract_runs() gives it in R only).
+`nm_runs_table`
 
-Not available yet: this task is planned for a future version of nmpilot.
+Summary table of all the runs of a project, one row per run:
+description, parent run, OFV, dOFV against the parent and against the
+best run, number of parameters, AIC, BIC, minimisation and covariance
+status, largest shrinkage, share of RSE \> 50%. Written to a Word file
+(landscape) when output_file is given.
+
+Help in R: `?nm_runs_table`
+
+Copy
+
+    tab <- nm_runs_table(
+      ex,                              # x: analysis folder (or nm_extract_runs() result)
+      parents = c(run2 = "run1"),      # optional links run = parent (as in nm_model_diagram)
+      sort = "tree",                   # row order: "tree", "ofv" or "run"
+      output_file = file.path(tempdir(), "runs_summary.docx"),  # Word file (NULL: none)
+      overwrite = TRUE                 # replace an existing file
+    )
+    tab                                # the table in the console
 
 ## Diagram of tested models
 

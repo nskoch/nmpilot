@@ -85,6 +85,8 @@ Results
   : Identify THETA/ETA roles for all control streams of a directory
 - [`nm_model_diagram()`](https://nskoch.github.io/nmpilot/reference/nm_model_diagram.md)
   : Diagram of the models tested in a project
+- [`nm_runs_table()`](https://nskoch.github.io/nmpilot/reference/nm_runs_table.md)
+  : Summary table of all the runs of a project
 
 ## 
 
